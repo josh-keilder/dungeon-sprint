@@ -1,2 +1,2 @@
-# dungeon-sprint
+# Dungeon Sprint!
 My pygame project
