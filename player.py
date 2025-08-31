@@ -1,24 +1,28 @@
 import pygame
+from settings import *
 
+class Player(pygame.sprite.Sprite):
+    def __init__(self, groups, image = pygame.Surface((TILESIZE*2, TILESIZE*3)), position = (SCREENWIDTH // 2, SCREENHEIGHT // 2)):
+        super().__init__(groups)
+        self.image = image
+        self.image.fill('green')
+        self.rect = self.image.get_rect(topleft = position)
 
-class Player:
-    def __init__(self, x , y, color):
-        self.x = x
-        self.y = y
-        self.color = color
-    
-    
-    def render(self):
-        pygame.draw.rect(self.screen, self.color, (self.x, self.y))
-        
-    def up(self):
-        self.y = self.y - self.speed
-        
-    def down(self):
-        self.y = self.y + self.speed
-        
-    def left(self):
-        self.x = self.x - self.speed
-        
-    def right(self):
-        self.x = self.x + self.speed
+    def input(self):
+        keys = pygame.key.get_pressed()
+
+        # Move left
+        if keys[pygame.K_a]:
+            self.rect.x -= 1
+        # Move right
+        if keys[pygame.K_d]:
+            self.rect.x += 1
+        # Move up
+        if keys[pygame.K_w]:
+            self.rect.y -= 1
+        # Move down
+        if keys[pygame.K_s]:
+            self.rect.y += 1
+    def update(self):
+        # Checks for inputs
+        self.input()
