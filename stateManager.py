@@ -16,29 +16,20 @@ class Level:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
-
-        
     def run(self):
-        self.display.fill('blue')
+        self.display.fill('lightblue')
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             self.gameStateManager.set_state('start')
-            
-            
-
 
 # Start menu
 class Start:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
-
-        
-        
-
     def run(self):
-        self.display.fill('red')
+        self.display.fill('lightgreen')
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
