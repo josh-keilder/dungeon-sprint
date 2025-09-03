@@ -1,6 +1,6 @@
 import pygame
 from settings import *
-from texturedata import atlas_texture_data, solo_texture_data
+from texturedata import atlas_texture_data, solo_texture_data, player_texture_data
 
 
 class TextureManager:
@@ -13,7 +13,6 @@ class TextureManager:
             textures[name] = pygame.transform.scale(pygame.image.load(data['file_path']).convert_alpha(), (data['size']) )
         
         return textures
-    
     def gen_atlas_textures(self, filepath) -> dict:
         textures = {}
 
@@ -21,13 +20,30 @@ class TextureManager:
         atlas_img = pygame.image.load(filepath).convert_alpha()
 
         for name, data in atlas_texture_data.items():
-            x = data['position'][0] * PLAYER_SPRITESIZE
-            y = data['position'][1] * PLAYER_SPRITESIZE
+            x = data['position'][0] * TILESIZE
+            y = data['position'][1] * TILESIZE
             w, h = data['size'] # unpacks the size tuple
             textures[name] = atlas_img.subsurface(pygame.Rect(x, y, w, h))
+
+            if data.get('type') == 'player':
+                textures[name] = pygame.transform.scale(textures[name], (w * 2, h * 2))
 
             # Old code - textures[name] = pygame.Surface.subsurface(atlas_img, pygame.Rect(data['position'][0]*SPRITESIZE, data['position'][1]*SPRITESIZE, data['size']))
         
         return textures    
 
+    def gen_player_textures(self, file_path) -> dict:
+        textures = {}
+
+        player_img = pygame.image.load(file_path).convert_alpha()
+
+        for name, data in player_texture_data.items():
+            x = data['position'][0] * PLAYER_SPRITESIZE
+            y = data['position'][1] * PLAYER_SPRITESIZE
+            w, h = data['size'] # unpacks the size tuple
+            textures[name] = player_img.subsurface(pygame.Rect(x, y, w, h))
+
+            if data.get('type') == 'player':
+                textures[name] = pygame.transform.scale(textures[name], (w * 2, h * 2))
+        return textures
 
