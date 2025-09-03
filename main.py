@@ -36,7 +36,7 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
 
-        # Updates the scene (current moves our entity to the right)
+        # Updates the scene
         self.scene.update()
 
         pygame.display.update()

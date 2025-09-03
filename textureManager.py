@@ -32,18 +32,25 @@ class TextureManager:
         
         return textures    
 
-    def gen_player_textures(self, file_path) -> dict:
+    def gen_player_textures(self) -> dict:
         textures = {}
 
-        player_img = pygame.image.load(file_path).convert_alpha()
+        
 
         for name, data in player_texture_data.items():
-            x = data['position'][0] * PLAYER_SPRITESIZE
-            y = data['position'][1] * PLAYER_SPRITESIZE
+            player_img = pygame.image.load(data['file_path']).convert_alpha()
             w, h = data['size'] # unpacks the size tuple
-            textures[name] = player_img.subsurface(pygame.Rect(x, y, w, h))
+            frames = data['frames']
+            row = data['position'][1]
+            textures[name] = []
 
-            if data.get('type') == 'player':
-                textures[name] = pygame.transform.scale(textures[name], (w * 2, h * 2))
+            for i in range(frames):
+                x = i * w
+                y = row * h
+                frame = player_img.subsurface(pygame.Rect(x, y, w, h))
+                textures[name].append(frame)
+
+           # if data.get('type') == 'player':
+            #    textures[name] = pygame.transform.scale(textures[name], (w, h))
         return textures
 

@@ -1,28 +1,68 @@
 import pygame
 from settings import *
 from sprite import Entity
+from textureManager import TextureManager
 
+
+# image = pygame.Surface((PLAYER_SPRITESIZE, PLAYER_SPRITESIZE))    
 class Player(Entity):
-    def __init__(self, groups, image = pygame.Surface((PLAYER_SPRITESIZE, PLAYER_SPRITESIZE)), position = (SCREENWIDTH // 2, SCREENHEIGHT // 2)):
+    def __init__(self, groups, animations, start_anim = 'player_idle_down', position = (50, 50)):
         super().__init__(groups)
-        self.image = image
-        self.rect = self.image.get_rect(topleft = position)
+        self.animations = animations 
+        self.current_anim = start_anim
+        self.frame_index = 0
+        self.image = self.animations[self.current_anim][self.frame_index]
+        self.rect = self.image.get_rect()
+        self.rect.topleft = position
+        self.animation_speed = 0.15 # Speed of animation, we have 6 frames per animation for 1 second equals 0.15
+        self.frame_timer = 0
+        self.last_direction = 'down' # Tracking the last direction moved
+    
+    def set_animation(self, anim_name):
+        if anim_name != self.current_anim:
+            self.current_anim = anim_name
+            self.frame_index = 0
+            self.image = self.animations[self.current_anim][self.frame_index]
         
     def input(self):
         keys = pygame.key.get_pressed()
+        moving = False
+
+        # Our movement detection sets the last direction the player moved in to keep track of the idle and play the walking animation
 
         # Move left
         if keys[pygame.K_a]:
             self.rect.x -= 1
+            self.last_direction = 'left'
+            moving = True
         # Move right
         if keys[pygame.K_d]:
             self.rect.x += 1
+            self.last_direction = 'right'
+            self.set_animation('player_walk_right')
+            moving = True
         # Move up
         if keys[pygame.K_w]:
             self.rect.y -= 1
+            moving = True
+            self.last_direction = 'up'
+            self.set_animation('player_walk_up')
         # Move down
         if keys[pygame.K_s]:
             self.rect.y += 1
+            self.last_direction = 'down'
+            self.set_animation('player_walk_down')
+            moving = True
+
+        #Sets the correct idle
+        if not moving:
+            self.set_animation(f'player_idle_{self.last_direction}')
     def update(self):
         # Checks for inputs
         self.input()
+
+        self.frame_timer += self.animation_speed
+        if self.frame_timer >= 1:
+            self.frame_timer = 0
+            self.frame_index = (self.frame_index + 1) % len(self.animations[self.current_anim])
+            self.image = self.animations[self.current_anim][self.frame_index]
