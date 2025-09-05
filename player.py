@@ -34,6 +34,7 @@ class Player(Entity):
         # Move left
         if keys[pygame.K_a]:
             self.last_direction = 'left'
+            self.set_animation('player_walk_left')
             walking = True
             # Run
             if keys[pygame.K_LSHIFT] and walking:
@@ -103,4 +104,13 @@ class Player(Entity):
         if self.frame_timer >= 1:
             self.frame_timer = 0
             self.frame_index = (self.frame_index + 1) % len(self.animations[self.current_anim])
-            self.image = self.animations[self.current_anim][self.frame_index]
+
+            # Since there is no built in left facing animations, we take the right facing animations and flip them, otherwise set as normal animations
+            if self.current_anim == 'player_walk_left':
+                right_frames = self.animations['player_walk_right']
+                self.image = pygame.transform.flip(right_frames[self.frame_index], True, False)
+            elif self.current_anim == 'player_idle_left':
+                right_frames = self.animations['player_idle_right']
+                self.image = pygame.transform.flip(right_frames[self.frame_index], True, False)
+            else:
+                self.image = self.animations[self.current_anim][self.frame_index]           
