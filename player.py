@@ -27,29 +27,29 @@ class Player(Entity):
     def input(self):
         keys = pygame.key.get_pressed()
         moving = False
-
+        player_speed = 1
         # Our movement detection sets the last direction the player moved in to keep track of the idle and play the walking animation
 
         # Move left
         if keys[pygame.K_a]:
-            self.rect.x -= 1
+            self.rect.x -= player_speed
             self.last_direction = 'left'
             moving = True
         # Move right
         if keys[pygame.K_d]:
-            self.rect.x += 1
+            self.rect.x += player_speed
             self.last_direction = 'right'
             self.set_animation('player_walk_right')
             moving = True
         # Move up
         if keys[pygame.K_w]:
-            self.rect.y -= 1
+            self.rect.y -= player_speed
             moving = True
             self.last_direction = 'up'
             self.set_animation('player_walk_up')
         # Move down
         if keys[pygame.K_s]:
-            self.rect.y += 1
+            self.rect.y += player_speed
             self.last_direction = 'down'
             self.set_animation('player_walk_down')
             moving = True

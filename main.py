@@ -5,6 +5,7 @@ from settings import *
 from player import *
 from scene import Scene
 from stateManager import Level, Start, GameStateManager
+from button import Button
 
 class Game:
     def __init__(self):
@@ -23,7 +24,7 @@ class Game:
         # A dictionary to keep track of the states and their ids
         self.states = {'start':self.start, 'level':self.level}
 
-        # Initialize our game scene (aka level)
+        # Initialize our game scene
         self.scene = Scene(self)
 
     def run(self):
@@ -44,6 +45,20 @@ class Game:
     def draw(self):
         # inside of the self.states dictionary, look for the key that is returned from the get_state() method and update it
         self.states[self.gameStateManager.get_state()].run()
+
+        if self.gameStateManager.currentState == 'start':
+            # Create start menu buttons
+            self.start_button_img = pygame.image.load('Assets/Start-Menu/start-button.png').convert_alpha()
+            self.exit_button_img = pygame.image.load('Assets/Start-Menu/exit-button.png').convert_alpha()
+            # Display the buttons
+            self.start_button =  Button(self.screen, self.start_button_img, 416, 288)
+            self.exit_button =  Button(self.screen, self.exit_button_img, 416, 448)
+
+            # If the start button was clicked, it sets the state to the level screen, if the exit button was clicked, it closes the game 
+            if self.start_button.draw():
+                 self.gameStateManager.set_state('level')
+            elif self.exit_button.draw():
+                self.close()
 
         # If the current state is our level state, it draws the scene
         if self.gameStateManager.currentState == 'level':

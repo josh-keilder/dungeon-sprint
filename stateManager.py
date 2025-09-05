@@ -1,5 +1,6 @@
 import pygame
 from settings import *
+from button import Button
 
 
 # Change between screens
@@ -17,10 +18,8 @@ class Level:
         self.display = display
         self.gameStateManager = gameStateManager
     def run(self):
-        self.display.fill('lightblue')
-
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE]:
+        if keys[pygame.K_ESCAPE]:
             self.gameStateManager.set_state('start')
 
 # Start menu
@@ -28,12 +27,10 @@ class Start:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
+        self.image = pygame.image.load('Assets/Start-Menu/start-screen.png').convert_alpha()
+        
     def run(self):
-        self.display.fill('lightgreen')
+        self.display.blit(self.image, (0,0))
 
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE]:
-            self.gameStateManager.set_state('level')
-            
 
     

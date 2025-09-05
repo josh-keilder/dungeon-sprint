@@ -88,12 +88,10 @@ atlas_texture_data = {
     77:{'name':' ','type':'unused', 'size':(TILESIZE,TILESIZE), 'position':(7,7)},
     78:{'name':'void','type':'void', 'size':(TILESIZE,TILESIZE), 'position':(8,7)},
     79:{'name':' ','type':'unused', 'size':(TILESIZE,TILESIZE), 'position':(9,7)},
-
-    # 'player':{'type':'player', 'file_path':'Assets/Proto_Idle_Down.png', 'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 'position':(0,0)}
 }
 
 solo_texture_data = {
-  # 'player':{'type':'player', 'file_path':'Assets/Proto_Idle_Down.png', 'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 'position':(0,0)}
+  # 'name':{'type':'', 'file_path':'Assets/Proto_Idle_Down.png', 'size':(TILESIZE,TILESIZE), 'position':(0,0)}
 }
 
 
