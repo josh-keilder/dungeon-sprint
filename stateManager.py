@@ -27,7 +27,16 @@ class Start:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
-        self.image = pygame.image.load('Assets/Start-Menu/start-screen.png').convert_alpha()
+        self.image = pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha()
+        
+    def run(self):
+        self.display.blit(self.image, (0,0))
+
+class Options:
+    def __init__(self, display, gameStateManager):
+        self.display = display
+        self.gameStateManager = gameStateManager
+        self.image = pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha()
         
     def run(self):
         self.display.blit(self.image, (0,0))

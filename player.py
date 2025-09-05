@@ -26,36 +26,74 @@ class Player(Entity):
         
     def input(self):
         keys = pygame.key.get_pressed()
-        moving = False
+        walking = False
+        running = False
+        stamina = 100
         player_speed = 1
-        # Our movement detection sets the last direction the player moved in to keep track of the idle and play the walking animation
 
         # Move left
         if keys[pygame.K_a]:
-            self.rect.x -= player_speed
             self.last_direction = 'left'
-            moving = True
+            walking = True
+            # Run
+            if keys[pygame.K_LSHIFT] and walking:
+                player_speed = 2
+                running = True
+                if running:
+                    self.animation_speed = 0.25
+            else:
+                self.animation_speed = 0.15    
+                running = False
+            self.rect.x -= player_speed
         # Move right
         if keys[pygame.K_d]:
-            self.rect.x += player_speed
             self.last_direction = 'right'
             self.set_animation('player_walk_right')
-            moving = True
+            walking = True
+                    # Run
+            if keys[pygame.K_LSHIFT] and walking:
+                player_speed = 2
+                running = True
+                if running:
+                    self.animation_speed = 0.25
+            else:
+                self.animation_speed = 0.15    
+                running = False            
+            self.rect.x += player_speed
         # Move up
         if keys[pygame.K_w]:
-            self.rect.y -= player_speed
-            moving = True
+            walking = True
             self.last_direction = 'up'
             self.set_animation('player_walk_up')
+            # Run
+            if keys[pygame.K_LSHIFT] and walking:
+                player_speed = 2
+                running = True
+                if running:
+                    self.animation_speed = 0.25
+            else:
+                self.animation_speed = 0.15    
+                running = False
+            self.rect.y -= player_speed
+
         # Move down
         if keys[pygame.K_s]:
-            self.rect.y += player_speed
             self.last_direction = 'down'
             self.set_animation('player_walk_down')
-            moving = True
-
+            walking = True
+            # Run
+            if keys[pygame.K_LSHIFT] and walking:
+                player_speed = 2
+                running = True
+                if running:
+                    self.animation_speed = 0.25
+            else:
+                self.animation_speed = 0.15    
+                running = False     
+            self.rect.y += player_speed       
+        
         #Sets the correct idle
-        if not moving:
+        if not walking:
             self.set_animation(f'player_idle_{self.last_direction}')
     def update(self):
         # Checks for inputs

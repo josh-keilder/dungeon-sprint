@@ -48,8 +48,8 @@ class Game:
 
         if self.gameStateManager.currentState == 'start':
             # Create start menu buttons
-            self.start_button_img = pygame.image.load('Assets/Start-Menu/start-button.png').convert_alpha()
-            self.exit_button_img = pygame.image.load('Assets/Start-Menu/exit-button.png').convert_alpha()
+            self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
+            self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
             # Display the buttons
             self.start_button =  Button(self.screen, self.start_button_img, 416, 288)
             self.exit_button =  Button(self.screen, self.exit_button_img, 416, 448)
