@@ -7,7 +7,7 @@ import csv
 class MapLoader:
     def __init__(self):
         pass
-    def load_csv_map(self, file_path):
+    def load_csv_map(self, file_path) -> list:
         with open(file_path) as file:
             reader = csv.reader(file)
             return [[int(cell) for cell in row] for row in reader]
