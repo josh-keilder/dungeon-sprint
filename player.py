@@ -15,6 +15,11 @@ class Player(pygame.sprite.Sprite):
         self.animation_speed = 0.15 # Speed of animation, we have 6 frames per animation for 1 second equals 0.15
         self.frame_timer = 0
         self.last_direction = 'down' # Tracking the last direction moved
+
+
+        self.is_rolling = False  # Initialize our roll check as false 
+        self.roll_speed = 3      # how fast the roll moves
+        self.is_invincible = False # Invincibility is initialized as false 
     
     def set_animation(self, anim_name):
         if anim_name != self.current_anim:
@@ -41,6 +46,9 @@ class Player(pygame.sprite.Sprite):
         dir_x = 0
         dir_y = 0
 
+        # Checks to see if we are rolling, if we are, no other movement is possible
+        if self.is_rolling:
+            return 
         # Move left
         if keys[pygame.K_a]:
             self.last_direction = 'left'
@@ -61,7 +69,7 @@ class Player(pygame.sprite.Sprite):
             self.last_direction = 'right'
             self.set_animation('player_walk_right')
             walking = True
-                    # Run
+            # Run
             if keys[pygame.K_LSHIFT] and walking:
                 player_speed = 2
                 running = True
@@ -103,29 +111,66 @@ class Player(pygame.sprite.Sprite):
                 running = False     
             dir_y += player_speed
         
-        self.move(dir_x, dir_y, wall_tiles)
-        
-        #Sets the correct idle
+        # Sets the correct idle based on last direction walked
         if not walking:
             self.set_animation(f'player_idle_{self.last_direction}')
+
+        # If we aren't already rolling, and we press SPACE, we will roll
+        if not self.is_rolling and keys[pygame.K_SPACE] and walking:
+            self.is_rolling = True
+            self.is_invincible = True
+            self.frame_index = 0
+            self.frame_timer = 0
+            self.animation_speed = 0.2
+
+            # pick roll direction based on last direction and assign our dir_x and dir_y variables as the direction
+            self.roll_direction = (dir_x, dir_y)
+            if self.last_direction == 'left':
+                self.set_animation('player_roll_left')
+            elif self.last_direction == 'right':
+                self.set_animation('player_roll_right')
+            elif self.last_direction == 'up':
+                self.set_animation('player_roll_up')
+            elif self.last_direction == 'down':
+                self.set_animation('player_roll_down')
+
+        self.move(dir_x, dir_y, wall_tiles)
+
     def update(self, wall_tiles):
-        # Checks for inputs
+        # Checks for inputs and passes the wall tiles through to check for collisions
         self.input(wall_tiles)
 
+        # advance frames
         self.frame_timer += self.animation_speed
         if self.frame_timer >= 1:
             self.frame_timer = 0
             self.frame_index = (self.frame_index + 1) % len(self.animations[self.current_anim])
 
             # Since there is no built in left facing animations, we take the right facing animations and flip them, otherwise set as normal animations
-            if self.current_anim == 'player_walk_left':
+            if self.current_anim in 'player_walk_left':
                 right_frames = self.animations['player_walk_right']
                 self.image = pygame.transform.flip(right_frames[self.frame_index], True, False)
             elif self.current_anim == 'player_idle_left':
                 right_frames = self.animations['player_idle_right']
                 self.image = pygame.transform.flip(right_frames[self.frame_index], True, False)
             else:
-                self.image = self.animations[self.current_anim][self.frame_index]           
+                self.image = self.animations[self.current_anim][self.frame_index]        
+
+        if self.is_rolling:
+            dir_x, dir_y = self.roll_direction
+            self.move(dir_x * self.roll_speed, dir_y * self.roll_speed, wall_tiles)
+            self.frame_timer += self.animation_speed # advance frames
+            if self.frame_timer >= 1:
+                self.frame_timer = 0
+                self.frame_index += 1
+                if self.frame_index >= len(self.animations[self.current_anim]): # Checks if roll animation is done
+                    self.is_rolling = False
+                    self.is_invincible = False
+                else:
+                    self.image = self.animations[self.current_anim][self.frame_index] # Keeps rolling frame until it is done
+            
+        
+        print(self.is_invincible)
 
     def gen_player_textures(self) -> dict:
         textures = {}
