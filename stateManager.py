@@ -30,12 +30,11 @@ class Dungeon_Level:
         self.player_pos = MapLoader.get_player_pos(self, file_path = "Assets/Maps/Dungeon Room.tmx")
         self.player = Player([self.sprites], animations=self.player_textures, pos = self.player_pos)
 
-    def run(self):
+    def update(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:
             self.gameStateManager.set_state('start')
-
-    def update(self):
+            
         # Updates all sprites (Entities and player)
         self.sprites.update(self.wall_tiles)
         self.wall_tiles.update()
@@ -56,7 +55,7 @@ class Start:
         self.gameStateManager = gameStateManager
         self.image = pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha()
         
-    def run(self):
+    def draw(self):
         self.display.blit(self.image, (0,0))
     def update(self):
         pass

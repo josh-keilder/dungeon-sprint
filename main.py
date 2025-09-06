@@ -41,7 +41,7 @@ class Game:
         self.clock.tick(FRAMERATE)
     def draw(self):
         # inside of the self.states dictionary, look for the key that is returned from the get_state() method and update it
-        self.states[self.gameStateManager.get_state()].run()
+        self.states[self.gameStateManager.get_state()].draw()
 
         if self.gameStateManager.currentState == 'start':
             # Create start menu buttons
@@ -56,7 +56,7 @@ class Game:
                  self.gameStateManager.set_state('dungeon_level')
             elif self.exit_button.draw():
                 self.close()
-                
+
         # If the current state is our dungeon level state, it loads the level
         elif self.gameStateManager.currentState == 'dungeon_level':
             self.dungeon_level.draw()
