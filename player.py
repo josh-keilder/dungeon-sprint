@@ -18,15 +18,41 @@ class Player(pygame.sprite.Sprite):
 
 
         self.is_rolling = False  # Initialize our roll check as false 
-        self.roll_speed = 3      # how fast the roll moves
+        self.roll_speed = 2      # how fast the roll moves
         self.is_invincible = False # Invincibility is initialized as false 
     
-    def set_animation(self, anim_name):
+    def set_animation(self, anim_name, loop = True):
         if anim_name != self.current_anim:
             self.current_anim = anim_name
             self.frame_index = 0
             self.image = self.animations[self.current_anim][self.frame_index]
-    
+            self.loop = loop
+
+    def play_animation(self, loop = False):
+        self.frame_timer += self.animation_speed
+        if self.frame_timer >= 1:
+            self.frame_timer = 0
+            self.frame_index += 1
+
+            # Handle flipped animations
+            if self.current_anim.endswith("_left"):
+                right_key = self.current_anim.replace("left", "right")
+                right_frames = self.animations[right_key]
+                frames = [pygame.transform.flip(f, True, False) for f in right_frames]
+            else:
+                frames = self.animations[self.current_anim]
+
+            if loop: # Looping animations (idle/walk)
+                self.frame_index %= len(frames)
+                self.image = frames[self.frame_index]
+            else: # Non-looping animations (rolling)
+                if self.frame_index >= len(frames):
+                    self.is_rolling = False
+                    self.is_invincible = False
+                else:
+                    self.image = frames[self.frame_index]
+
+
     def move(self, dir_x, dir_y, wall_tiles):
         self.rect.x += dir_x
         if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
@@ -134,40 +160,17 @@ class Player(pygame.sprite.Sprite):
             elif self.last_direction == 'down':
                 self.set_animation('player_roll_down')
 
+        # Collision check and movement
         self.move(dir_x, dir_y, wall_tiles)
 
     def update(self, wall_tiles):
-        # Checks for inputs and passes the wall tiles through to check for collisions
-        self.input(wall_tiles)
-
-        # advance frames
-        self.frame_timer += self.animation_speed
-        if self.frame_timer >= 1:
-            self.frame_timer = 0
-            self.frame_index = (self.frame_index + 1) % len(self.animations[self.current_anim])
-
-            # Since there is no built in left facing animations, we take the right facing animations and flip them, otherwise set as normal animations
-            if self.current_anim in 'player_walk_left':
-                right_frames = self.animations['player_walk_right']
-                self.image = pygame.transform.flip(right_frames[self.frame_index], True, False)
-            elif self.current_anim == 'player_idle_left':
-                right_frames = self.animations['player_idle_right']
-                self.image = pygame.transform.flip(right_frames[self.frame_index], True, False)
-            else:
-                self.image = self.animations[self.current_anim][self.frame_index]        
-
-        if self.is_rolling:
+        if self.is_rolling: # Checks if the player is rolling and since it isn't a looping animation we play it separately
             dir_x, dir_y = self.roll_direction
             self.move(dir_x * self.roll_speed, dir_y * self.roll_speed, wall_tiles)
-            self.frame_timer += self.animation_speed # advance frames
-            if self.frame_timer >= 1:
-                self.frame_timer = 0
-                self.frame_index += 1
-                if self.frame_index >= len(self.animations[self.current_anim]): # Checks if roll animation is done
-                    self.is_rolling = False
-                    self.is_invincible = False
-                else:
-                    self.image = self.animations[self.current_anim][self.frame_index] # Keeps rolling frame until it is done
+            self.play_animation(loop=False)
+        else:
+            self.input(wall_tiles) # Checks for inputs and passes the wall tiles through to check for collisions
+            self.play_animation(loop=True)
             
         
         print(self.is_invincible)
