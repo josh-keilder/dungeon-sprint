@@ -2,9 +2,7 @@ import pygame
 import sys
 
 from settings import *
-from player import *
-from scene import Scene
-from stateManager import Level, Start, GameStateManager
+from stateManager import Dungeon_Level, Start, GameStateManager
 from button import Button
 
 class Game:
@@ -14,18 +12,17 @@ class Game:
         self.clock = pygame.time.Clock()
         pygame.display.set_caption("Dungeon Sprint")
 
+        self.sprites = pygame.sprite.Group()
+
         self.running = True
 
         # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first
         self.gameStateManager = GameStateManager('start')
         self.start = Start(self.screen, self.gameStateManager)
-        self.level = Level(self.screen, self.gameStateManager)
+        self.dungeon_level = Dungeon_Level(self.screen, self.gameStateManager)
 
         # A dictionary to keep track of the states and their ids
-        self.states = {'start':self.start, 'level':self.level}
-
-        # Initialize our game scene
-        self.scene = Scene(self)
+        self.states = {'start':self.start, 'dungeon_level':self.dungeon_level}
 
     def run(self):
             while self.running:
@@ -38,7 +35,7 @@ class Game:
                     self.running = False
 
         # Updates the scene
-        self.scene.update()
+        self.states[self.gameStateManager.get_state()].update()
 
         pygame.display.update()
         self.clock.tick(FRAMERATE)
@@ -56,13 +53,12 @@ class Game:
 
             # If the start button was clicked, it sets the state to the level screen, if the exit button was clicked, it closes the game 
             if self.start_button.draw():
-                 self.gameStateManager.set_state('level')
+                 self.gameStateManager.set_state('dungeon_level')
             elif self.exit_button.draw():
                 self.close()
-
-        # If the current state is our level state, it draws the scene
-        if self.gameStateManager.currentState == 'level':
-            self.scene.draw()
+        # If the current state is our dungeon level state, it loads the level
+        elif self.gameStateManager.currentState == 'dungeon_level':
+            self.dungeon_level.draw()
     def close(self):
         pygame.quit()
         sys.exit()
