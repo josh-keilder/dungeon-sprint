@@ -1,10 +1,8 @@
 import pygame
 from settings import *
 from sprite import Entity
-from textureManager import TextureManager
+from texturedata import player_texture_data
 
-
-# image = pygame.Surface((PLAYER_SPRITESIZE, PLAYER_SPRITESIZE))    
 class Player(Entity):
     def __init__(self, groups, animations, start_anim = 'player_idle_down', position = (50, 50)):
         super().__init__(groups)
@@ -114,3 +112,20 @@ class Player(Entity):
                 self.image = pygame.transform.flip(right_frames[self.frame_index], True, False)
             else:
                 self.image = self.animations[self.current_anim][self.frame_index]           
+
+    def gen_player_textures(self) -> dict:
+        textures = {}
+
+        for name, data in player_texture_data.items():
+            player_img = pygame.image.load(data['file_path']).convert_alpha()
+            w, h = data['size'] # unpacks the size tuple
+            frames = data['frames']
+            row = data['position'][1]
+            textures[name] = []
+
+            for i in range(frames):
+                x = i * w
+                y = row * h
+                frame = player_img.subsurface(pygame.Rect(x, y, w, h))
+                textures[name].append(frame)
+        return textures

@@ -7,8 +7,20 @@ class Entity(pygame.sprite.Sprite):
         self.image = image
         self.rect = self.image.get_rect(topleft = position)
 
-class TileEntity(pygame.sprite.Sprite):
-    def __init__(self, groups, image = pygame.Surface((TILESIZE, TILESIZE)), position = (0,0)):
+class FloorTile(pygame.sprite.Sprite):
+    def __init__(self, groups, image, pos):
         super().__init__(groups)
         self.image = image
-        self.rect = self.image.get_rect(topleft = position)
+        self.rect = self.image.get_rect(topleft = pos)
+
+class WallTile(pygame.sprite.Sprite):
+    def __init__(self, groups, image, pos):
+        super().__init__(groups)
+        self.image = image
+        self.rect = self.image.get_rect(topleft = pos)
+
+class ObjTile(pygame.sprite.Sprite):
+    def __init__(self, groups, image, pos):
+        super().__init__(groups)
+        self.image = image
+        self.rect = self.image.get_rect(topleft = pos)
