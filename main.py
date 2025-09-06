@@ -56,6 +56,7 @@ class Game:
                  self.gameStateManager.set_state('dungeon_level')
             elif self.exit_button.draw():
                 self.close()
+                
         # If the current state is our dungeon level state, it loads the level
         elif self.gameStateManager.currentState == 'dungeon_level':
             self.dungeon_level.draw()

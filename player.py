@@ -1,17 +1,17 @@
 import pygame
 from settings import *
-from sprite import Entity
+from sprites import Entity
 from texturedata import player_texture_data
 
-class Player(Entity):
-    def __init__(self, groups, animations, start_anim = 'player_idle_down', position = (50, 50)):
+class Player(pygame.sprite.Sprite):
+    def __init__(self, groups, animations, start_anim = 'player_idle_down', pos = (0,0)):
         super().__init__(groups)
         self.animations = animations 
         self.current_anim = start_anim
         self.frame_index = 0
         self.image = self.animations[self.current_anim][self.frame_index]
         self.rect = self.image.get_rect()
-        self.rect.topleft = position
+        self.rect.center = pos
         self.animation_speed = 0.15 # Speed of animation, we have 6 frames per animation for 1 second equals 0.15
         self.frame_timer = 0
         self.last_direction = 'down' # Tracking the last direction moved

@@ -26,7 +26,8 @@ class Dungeon_Level:
 
         # Loads the player
         self.player_textures = Player.gen_player_textures(self)
-        self.player = Player([self.sprites], animations=self.player_textures)
+        self.player_pos = MapLoader.get_player_pos(self, file_path = "Assets/Maps/Dungeon Room.tmx")
+        self.player = Player([self.sprites], animations=self.player_textures, pos = self.player_pos)
 
     def run(self):
         keys = pygame.key.get_pressed()
