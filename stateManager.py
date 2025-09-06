@@ -20,6 +20,7 @@ class Dungeon_Level:
         self.gameStateManager = gameStateManager
 
         self.sprites = pygame.sprite.Group()
+        self.wall_tiles = pygame.sprite.Group()
 
         # Loads our tmx map file
         self.tilemap_dungeon = MapLoader.load_map(self, file_path = "Assets/Maps/Dungeon Room.tmx")
@@ -36,10 +37,17 @@ class Dungeon_Level:
 
     def update(self):
         # Updates all sprites (Entities and player)
-        self.sprites.update()
+        self.sprites.update(self.wall_tiles)
+        self.wall_tiles.update()
     def draw(self):
         # Draws our sprites to the screen 
         self.sprites.draw(self.display)
+        self.wall_tiles.draw(self.display)
+
+        # Shows the wall hitboxes and player hitboxes for collision detection
+        # for wall in self.wall_tiles:
+        #     pygame.draw.rect(self.display, (255,0,0), wall.rect, 2)
+        # pygame.draw.rect(self.display, (0,255,0), self.player.rect, 2)
         
 # Start menu
 class Start:

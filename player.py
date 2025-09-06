@@ -21,13 +21,25 @@ class Player(pygame.sprite.Sprite):
             self.current_anim = anim_name
             self.frame_index = 0
             self.image = self.animations[self.current_anim][self.frame_index]
-        
-    def input(self):
+    
+    def move(self, dir_x, dir_y, wall_tiles):
+        self.rect.x += dir_x
+        if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
+            self.rect.x -= dir_x
+
+        self.rect.y += dir_y
+        if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
+            self.rect.y -= dir_y
+
+
+    def input(self, wall_tiles):
         keys = pygame.key.get_pressed()
         walking = False
         running = False
         stamina = 100
         player_speed = 1
+        dir_x = 0
+        dir_y = 0
 
         # Move left
         if keys[pygame.K_a]:
@@ -43,7 +55,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.animation_speed = 0.15    
                 running = False
-            self.rect.x -= player_speed
+            dir_x -= player_speed
         # Move right
         if keys[pygame.K_d]:
             self.last_direction = 'right'
@@ -58,7 +70,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.animation_speed = 0.15    
                 running = False            
-            self.rect.x += player_speed
+            dir_x += player_speed
         # Move up
         if keys[pygame.K_w]:
             walking = True
@@ -73,7 +85,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.animation_speed = 0.15    
                 running = False
-            self.rect.y -= player_speed
+            dir_y -= player_speed
 
         # Move down
         if keys[pygame.K_s]:
@@ -89,14 +101,16 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.animation_speed = 0.15    
                 running = False     
-            self.rect.y += player_speed       
+            dir_y += player_speed
+        
+        self.move(dir_x, dir_y, wall_tiles)
         
         #Sets the correct idle
         if not walking:
             self.set_animation(f'player_idle_{self.last_direction}')
-    def update(self):
+    def update(self, wall_tiles):
         # Checks for inputs
-        self.input()
+        self.input(wall_tiles)
 
         self.frame_timer += self.animation_speed
         if self.frame_timer >= 1:
@@ -127,5 +141,12 @@ class Player(pygame.sprite.Sprite):
                 x = i * w
                 y = row * h
                 frame = player_img.subsurface(pygame.Rect(x, y, w, h))
-                textures[name].append(frame)
+
+                # Since the player sprites are 64x64, you have to crop out just the center player to get the hitbox to be the right size
+                center_x = (w - 16) // 2
+                center_y = (h - 16) // 2
+                center_rect = pygame.Rect(center_x, center_y, 16, 16)
+                cropped_frame = frame.subsurface(center_rect).copy()
+
+                textures[name].append(cropped_frame)
         return textures

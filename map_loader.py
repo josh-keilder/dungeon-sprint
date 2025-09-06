@@ -14,8 +14,9 @@ class MapLoader:
             if layer.name in ('Floor', 'Walls', 'Decor and Doors'): # Manual way
                 if layer.name == 'Walls':
                     for x, y, surf in layer.tiles():
-                        pos = x * TILESIZE, y * TILESIZE
-                        WallTile(groups= self.sprites, image=surf, pos= pos)
+                        if surf:
+                            pos = x * TILESIZE, y * TILESIZE
+                            WallTile(groups= self.wall_tiles, image=surf, pos= pos)
                 elif layer.name == 'Floor':
                     for x, y, surf in layer.tiles():
                         pos = x * TILESIZE, y * TILESIZE
@@ -24,8 +25,6 @@ class MapLoader:
                     for x, y, surf in layer.tiles():
                         pos = x * TILESIZE, y * TILESIZE
                         ObjTile(groups= self.sprites, image=surf, pos= pos)
-        for obj in tmx_data.objects:
-            print(obj)
     def get_player_pos(self, file_path):
         tmx_data = load_pygame(file_path)
         for obj in tmx_data.objects:
