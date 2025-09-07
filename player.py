@@ -1,26 +1,29 @@
 import pygame
 from settings import *
-from sprites import Entity
 from texturedata import player_texture_data
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, groups, animations, start_anim = 'player_idle_down', pos = (0,0)):
         super().__init__(groups)
+        # Animation initialization
         self.animations = animations 
         self.current_anim = start_anim
         self.frame_index = 0
-        self.image = self.animations[self.current_anim][self.frame_index]
-        self.rect = self.image.get_rect()
-        self.rect.center = pos
         self.animation_speed = 0.15 # Speed of animation, we have 6 frames per animation for 1 second equals 0.15
         self.frame_timer = 0
         self.last_direction = 'down' # Tracking the last direction moved
+        self.image = self.animations[self.current_anim][self.frame_index]
 
-
+        # Player rect initialization
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
+        
         self.is_rolling = False  # Initialize our roll check as false 
         self.roll_speed = 2      # how fast the roll moves
         self.is_invincible = False # Invincibility is initialized as false 
-    
+        self.last_roll_time = 0
+        self.roll_cooldown = 3000 # in milliseconds
+
     def set_animation(self, anim_name, loop = True):
         if anim_name != self.current_anim:
             self.current_anim = anim_name
@@ -81,7 +84,7 @@ class Player(pygame.sprite.Sprite):
             self.set_animation('player_walk_left')
             walking = True
             # Run
-            if keys[pygame.K_LSHIFT] and walking:
+            if keys[pygame.K_LSHIFT] and walking and not self.is_rolling:
                 player_speed = 2
                 running = True
                 if running:
@@ -96,7 +99,7 @@ class Player(pygame.sprite.Sprite):
             self.set_animation('player_walk_right')
             walking = True
             # Run
-            if keys[pygame.K_LSHIFT] and walking:
+            if keys[pygame.K_LSHIFT] and walking and not self.is_rolling:
                 player_speed = 2
                 running = True
                 if running:
@@ -111,7 +114,7 @@ class Player(pygame.sprite.Sprite):
             self.last_direction = 'up'
             self.set_animation('player_walk_up')
             # Run
-            if keys[pygame.K_LSHIFT] and walking:
+            if keys[pygame.K_LSHIFT] and walking and not self.is_rolling:
                 player_speed = 2
                 running = True
                 if running:
@@ -127,7 +130,7 @@ class Player(pygame.sprite.Sprite):
             self.set_animation('player_walk_down')
             walking = True
             # Run
-            if keys[pygame.K_LSHIFT] and walking:
+            if keys[pygame.K_LSHIFT] and walking and not self.is_rolling:
                 player_speed = 2
                 running = True
                 if running:
@@ -141,8 +144,9 @@ class Player(pygame.sprite.Sprite):
         if not walking:
             self.set_animation(f'player_idle_{self.last_direction}')
 
-        # If we aren't already rolling, and we press SPACE, we will roll
-        if not self.is_rolling and keys[pygame.K_SPACE] and walking:
+        # If we aren't already rolling, and we press SPACE, we will roll and we set the cooldown to be 3 seconds between rolls
+        current_time = pygame.time.get_ticks()
+        if not self.is_rolling and keys[pygame.K_SPACE] and walking and current_time - self.last_roll_time >= self.roll_cooldown:
             self.is_rolling = True
             self.is_invincible = True
             self.frame_index = 0
@@ -160,6 +164,7 @@ class Player(pygame.sprite.Sprite):
             elif self.last_direction == 'down':
                 self.set_animation('player_roll_down')
 
+            self.last_roll_time = current_time
         # Collision check and movement
         self.move(dir_x, dir_y, wall_tiles)
 
@@ -172,9 +177,6 @@ class Player(pygame.sprite.Sprite):
             self.input(wall_tiles) # Checks for inputs and passes the wall tiles through to check for collisions
             self.play_animation(loop=True)
             
-        
-        print(self.is_invincible)
-
     def gen_player_textures(self) -> dict:
         textures = {}
 

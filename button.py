@@ -9,7 +9,11 @@ class Button():
         self.screen = screen
         self.clicked = False
 
-    def draw(self) -> bool:
+    def draw(self):
+        # puts the buttons on screen at the rect topleft coordinates
+        self.screen.blit(self.image, (self.rect.x, self.rect.y))
+
+    def is_clicked(self) -> bool:
         # gets mouse position
         pos = pygame.mouse.get_pos()
         action = False
@@ -20,7 +24,4 @@ class Button():
                 action = True       
         if pygame.mouse.get_pressed()[0] == 0:
             self.clicked = False
-        # puts the buttons on screen at the rect topleft coordinates
-        self.screen.blit(self.image, (self.rect.x, self.rect.y))
-
         return action

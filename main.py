@@ -24,6 +24,12 @@ class Game:
         # A dictionary to keep track of the states and their ids
         self.states = {'start':self.start, 'dungeon_level':self.dungeon_level}
 
+        # Create start menu buttons by creating the image and then passing it into the button class
+        self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
+        self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
+        self.start_button =  Button(self.screen, self.start_button_img, 416, 288)
+        self.exit_button =  Button(self.screen, self.exit_button_img, 416, 448)
+
     def run(self):
             while self.running:
                  self.update()
@@ -34,32 +40,26 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
 
-        # Updates the scene
+        # Updates current state
         self.states[self.gameStateManager.get_state()].update()
+
+        if self.gameStateManager.currentState == 'start':
+            # If the start button was clicked, it sets the state to the level screen, if the exit button was clicked, it closes the game 
+            if self.start_button.is_clicked():
+                self.gameStateManager.set_state('dungeon_level')
+            elif self.exit_button.is_clicked():
+                 self.close()
 
         pygame.display.update()
         self.clock.tick(FRAMERATE)
     def draw(self):
-        # inside of the self.states dictionary, look for the key that is returned from the get_state() method and update it
+        # Inside of the self.states dictionary, look for the key that is returned from the get_state() method and update it
         self.states[self.gameStateManager.get_state()].draw()
 
+        # Draws the buttons on the start menu
         if self.gameStateManager.currentState == 'start':
-            # Create start menu buttons
-            self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
-            self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
-            # Display the buttons
-            self.start_button =  Button(self.screen, self.start_button_img, 416, 288)
-            self.exit_button =  Button(self.screen, self.exit_button_img, 416, 448)
-
-            # If the start button was clicked, it sets the state to the level screen, if the exit button was clicked, it closes the game 
-            if self.start_button.draw():
-                 self.gameStateManager.set_state('dungeon_level')
-            elif self.exit_button.draw():
-                self.close()
-
-        # If the current state is our dungeon level state, it loads the level
-        elif self.gameStateManager.currentState == 'dungeon_level':
-            self.dungeon_level.draw()
+            self.start_button.draw()
+            self.exit_button.draw()
     def close(self):
         pygame.quit()
         sys.exit()
