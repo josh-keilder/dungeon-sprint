@@ -25,11 +25,8 @@ class Player(pygame.sprite.Sprite):
     def input(self, wall_tiles):
         keys = pygame.key.get_pressed()
         walking = False
-        running = False
-        stamina = 100
         player_speed = 1
-        dir_x = 0
-        dir_y = 0
+        dir_x, dir_y = 0 , 0
 
         # Checks to see if we are rolling, if we are, no other movement is possible
         if self.is_rolling:
@@ -67,24 +64,16 @@ class Player(pygame.sprite.Sprite):
         # If we aren't already rolling, and we press SPACE, we will roll and we set the cooldown to be 3 seconds between rolls
         current_time = pygame.time.get_ticks()
         if not self.is_rolling and keys[pygame.K_SPACE] and walking and current_time - self.last_roll_time >= self.roll_cooldown:
-            self.is_rolling = True
-            self.is_invincible = True
-
-            # pick roll direction based on last direction and assign our dir_x and dir_y variables as the direction
+            self.roll()
             self.roll_direction = (dir_x, dir_y)
-            if self.last_direction == 'left':
-                self.player_animations.set_animation('player_roll_left')
-            elif self.last_direction == 'right':
-                self.player_animations.set_animation('player_roll_right')
-            elif self.last_direction == 'up':
-                self.player_animations.set_animation('player_roll_up')
-            elif self.last_direction == 'down':
-                self.player_animations.set_animation('player_roll_down')
-
             self.last_roll_time = current_time
-
+            
+        # Normalizes our speed so when we move diagonally its the same as if we move vertically or horizontally separately
+        input_vector = pygame.math.Vector2(dir_x, dir_y)
+        if input_vector.length() > 0:
+            input_vector = input_vector.normalize()
         # Collision check and movement call
-        self.move(dir_x, dir_y, wall_tiles)
+        self.move(input_vector.x * player_speed, input_vector.y * player_speed, wall_tiles)
 
     def move(self, dir_x, dir_y, wall_tiles):
         self.rect.x += dir_x
@@ -94,6 +83,20 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += dir_y
         if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
             self.rect.y -= dir_y
+
+
+    def roll(self):
+        self.is_rolling = True
+        self.is_invincible = True
+        # pick roll direction based on last direction
+        if self.last_direction == 'left':
+            self.player_animations.set_animation('player_roll_left')
+        elif self.last_direction == 'right':
+            self.player_animations.set_animation('player_roll_right')
+        elif self.last_direction == 'up':
+            self.player_animations.set_animation('player_roll_up')
+        elif self.last_direction == 'down':
+            self.player_animations.set_animation('player_roll_down')
 
     def update(self, wall_tiles):
 

@@ -11,10 +11,9 @@ class Game:
         self.screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
         self.clock = pygame.time.Clock()
         pygame.display.set_caption("Dungeon Sprint")
+        self.running = True
 
         self.sprites = pygame.sprite.Group()
-
-        self.running = True
 
         # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first
         self.gameStateManager = GameStateManager('start')
