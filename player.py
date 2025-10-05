@@ -13,7 +13,7 @@ class Player(pygame.sprite.Sprite):
         self.image = self.player_animations.play_animation(loop=True)
 
         # Player rect initialization
-        self.rect = self.image.get_rect()
+        self.rect = self.image.get_frect()
         self.rect.center = pos
         
         self.is_rolling = False  # Initialize our roll check as false 

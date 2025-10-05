@@ -4,7 +4,7 @@ from settings import *
 class Button():
     def __init__(self, screen, image, pos_x, pos_y):
         self.image = image
-        self.rect = self.image.get_rect()
+        self.rect = self.image.get_frect()
         self.rect.topleft = (pos_x,pos_y)
         self.screen = screen
         self.clicked = False
