@@ -55,9 +55,8 @@ class Game:
         self.clock.tick(FRAMERATE)
 
     def draw(self):
-        
         # Clears the screen so theres no duplicate sprites
-        self.screen.fill((0,0,0))
+        self.screen.fill(CLEAR)
 
         # Inside of the self.states dictionary, look for the key that is returned from the get_state() method and update it
         self.states[self.gameStateManager.get_state()].draw()
@@ -66,7 +65,7 @@ class Game:
         if self.gameStateManager.currentState == 'start':
             self.start_button.draw()
             self.exit_button.draw()
-            
+
     def close(self):
         pygame.quit()
         sys.exit()
@@ -74,4 +73,3 @@ class Game:
 if __name__ == '__main__':
     game = Game()
     game.run()
-

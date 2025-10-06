@@ -7,3 +7,4 @@ PLAYER_SPRITESIZE = 64
 
 # Colors
 WHITE = (255, 255, 255)
+CLEAR = (0,0,0)
