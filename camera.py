@@ -14,7 +14,7 @@ def camera_start(pos):
     camera.center = pos
 
 def camera_update(target):
-    # center the camera on the target (sprite or (x,y)) each frame
+    # Center the camera on the target (sprite or (x,y)) each frame
     if hasattr(target, 'rect'):
         target_x, target_y = target.rect.center
     else:

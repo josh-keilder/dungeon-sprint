@@ -35,6 +35,7 @@ class Game:
                  self.update()
                  self.draw()
             self.close()
+
     def update(self):
         for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -52,6 +53,7 @@ class Game:
 
         pygame.display.update()
         self.clock.tick(FRAMERATE)
+
     def draw(self):
         
         # Clears the screen so theres no duplicate sprites
@@ -64,6 +66,7 @@ class Game:
         if self.gameStateManager.currentState == 'start':
             self.start_button.draw()
             self.exit_button.draw()
+            
     def close(self):
         pygame.quit()
         sys.exit()

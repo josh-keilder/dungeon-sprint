@@ -80,7 +80,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += dir_x
         if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
             self.rect.x -= dir_x
-            camera.x = self.rect.x - camera.width/2 + self.image.get_width()/2   
 
         self.rect.y += dir_y
         if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):

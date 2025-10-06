@@ -55,13 +55,11 @@ class Dungeon_Level:
 
         if self.player_group.sprite:
            self.player_group.sprite.draw(self.display)
-        # self.sprites.draw(self.display)
-        # self.wall_tiles.draw(self.display)
 
         # Shows the wall hitboxes and player hitboxes for collision detection
-        # for wall in self.wall_tiles:
-        #     pygame.draw.rect(self.display, (255,0,0), wall.rect, 2)
-        # pygame.draw.rect(self.display, (0,255,0), self.player.rect, 2)
+        for wall in self.wall_tiles:
+            pygame.draw.rect(self.display, (255,0,0), wall.rect, 2)
+        pygame.draw.rect(self.display, (0,255,0), self.player.rect, 2)
         
 # Start menu
 class Start:

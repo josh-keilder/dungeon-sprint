@@ -69,6 +69,7 @@ player_texture_data = {
         'frames':5,
         'file_path':'Assets/Character/Proto_Roll_Right.png'
         },     
+        
      # Left animations   
     'player_idle_left':{    
         'type':'player',
