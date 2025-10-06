@@ -2,6 +2,7 @@ import pygame
 from settings import *
 from texturedata import player_texture_data
 from animations import Animations
+from camera import camera
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, groups, animations, pos = (0,0)):
@@ -79,6 +80,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += dir_x
         if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
             self.rect.x -= dir_x
+            camera.x = self.rect.x - camera.width/2 + self.image.get_width()/2   
 
         self.rect.y += dir_y
         if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
@@ -112,6 +114,14 @@ class Player(pygame.sprite.Sprite):
         else:
             self.input(wall_tiles) # Checks for inputs and passes the wall tiles through to check for collisions
             self.image = self.player_animations.play_animation(loop=True)
+
+        # Constantly updates the camera position to follow the player
+        camera.y = self.rect.y - camera.height/2 + self.image.get_height()/2
+        camera.x = self.rect.x - camera.height/2 + self.image.get_height()/2
+
+    def draw(self, screen):
+        # Draws the player based on the camera offset
+        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
             
     def gen_player_textures(self) -> dict:
         textures = {}

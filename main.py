@@ -4,13 +4,14 @@ import sys
 from settings import *
 from stateManager import Dungeon_Level, Start, GameStateManager
 from button import Button
+from camera import create_screen
 
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
+        # The screen is created within the camera module to allow a player following camera
+        self.screen = create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")
         self.clock = pygame.time.Clock()
-        pygame.display.set_caption("Dungeon Sprint")
         self.running = True
 
         self.sprites = pygame.sprite.Group()
@@ -52,6 +53,10 @@ class Game:
         pygame.display.update()
         self.clock.tick(FRAMERATE)
     def draw(self):
+        
+        # Clears the screen so theres no duplicate sprites
+        self.screen.fill((0,0,0))
+
         # Inside of the self.states dictionary, look for the key that is returned from the get_state() method and update it
         self.states[self.gameStateManager.get_state()].draw()
 
