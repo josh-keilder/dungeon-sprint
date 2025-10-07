@@ -1,10 +1,10 @@
 import pygame
 from settings import *
 
-from player import Player
-from map_loader import MapLoader
+from player.player import Player
+from states.dungeons.map_loader import MapLoader
 from camera import camera_start, camera_update
-from enemy import Enemy
+from enemies.enemy import Enemy
 
 pygame.mixer.init()
 

@@ -2,12 +2,12 @@ import pygame
 import sys
 
 from settings import *
-from stateManager import GameStateManager
+from states.stateManager import GameStateManager
 
-from states.dungeon import Dungeon_Level
+from states.dungeons.dungeon import Dungeon_Level
 from states.start import Start
 from states.options import Options
-from button import Button
+from states.button import Button
 from camera import create_screen
 
 class Game:
