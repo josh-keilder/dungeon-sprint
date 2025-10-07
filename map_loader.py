@@ -34,3 +34,15 @@ class MapLoader:
         player_pos = (pos_x, pos_y)
         
         return player_pos
+    
+    def get_enemy_pos(self, file_path):
+        tmx_data = load_pygame(file_path)
+        enemy_positions = []
+
+        for obj in tmx_data.objects:
+            if obj.name == 'Enemy':
+                pos_x = obj.x
+                pos_y = obj.y
+                enemy_positions.append((pos_x, pos_y))
+        
+        return enemy_positions

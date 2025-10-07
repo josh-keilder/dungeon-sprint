@@ -2,7 +2,11 @@ import pygame
 import sys
 
 from settings import *
-from stateManager import Dungeon_Level, Start, GameStateManager, Options
+from stateManager import GameStateManager
+
+from states.dungeon import Dungeon_Level
+from states.start import Start
+from states.options import Options
 from button import Button
 from camera import create_screen
 
@@ -35,9 +39,9 @@ class Game:
 
         # Create option menu buttons
         self.main_menu_img_button = pygame.image.load('Assets/Menu-Assets/main-menu-button.png').convert_alpha()
-        self.main_menu_button =  Button(self.screen, pygame.transform.scale_by(self.main_menu_img_button, 0.5), 15, 650)
+        self.main_menu_button =  Button(self.screen, pygame.transform.scale_by(self.main_menu_img_button, 0.4), 15, 650)
         self.back_img_button = pygame.image.load('Assets/Menu-Assets/back-button.png').convert_alpha()
-        self.back_button =  Button(self.screen, pygame.transform.scale_by(self.back_img_button, 0.5), 1110, 650)
+        self.back_button =  Button(self.screen, pygame.transform.scale_by(self.back_img_button, 0.4), 1135, 650)
 
     def run(self):
             while self.running:
@@ -73,6 +77,7 @@ class Game:
         elif self.gameStateManager.currentState == 'options':
             if self.main_menu_button.is_clicked():
                 self.gameStateManager.set_state('start')
+            # If the previous screen was the gameplay dungeon, it also adds a back button to return to the game
             if self.gameStateManager.get_previous_state() == 'dungeon_level':
                  if self.back_button.is_clicked():
                       self.gameStateManager.go_back()
