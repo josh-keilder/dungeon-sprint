@@ -19,10 +19,10 @@ class Game:
         # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first
         self.gameStateManager = GameStateManager('start')
         self.start = Start(self.screen, self.gameStateManager)
-        self.dungeon_level = Dungeon_Level(self.screen, self.gameStateManager)
+        self.dungeon_level = None
 
-        # A dictionary to keep track of the states and their ids
-        self.states = {'start':self.start, 'dungeon_level':self.dungeon_level}
+        # A dictionary to keep track of the states and their ids (Only loads start menu at first)
+        self.states = {'start':self.start}
 
         # Create start menu buttons by creating the image and then passing it into the button class
         self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
@@ -47,6 +47,10 @@ class Game:
         if self.gameStateManager.currentState == 'start':
             # If the start button was clicked, it sets the state to the level screen, if the exit button was clicked, it closes the game 
             if self.start_button.is_clicked():
+                # Stops the start menu music and creates the dungeon level. Adds it to our states dictionary
+                pygame.mixer.music.stop()
+                self.dungeon_level = Dungeon_Level(self.screen, self.gameStateManager)
+                self.states['dungeon_level'] = self.dungeon_level
                 self.gameStateManager.set_state('dungeon_level')
             elif self.exit_button.is_clicked():
                  self.close()

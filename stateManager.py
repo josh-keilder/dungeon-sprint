@@ -5,6 +5,8 @@ from player import Player
 from map_loader import MapLoader
 from camera import camera_start, camera_update
 
+pygame.mixer.init()
+
 # Change between screens
 class GameStateManager:
     def __init__(self, currentState):
@@ -19,6 +21,8 @@ class Dungeon_Level:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
+
+        pygame.mixer.music.stop() # Automatically stops the start menu music
 
         self.sprites = pygame.sprite.Group()
         self.wall_tiles = pygame.sprite.Group()
@@ -38,6 +42,7 @@ class Dungeon_Level:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:
             self.gameStateManager.set_state('start')
+            pygame.mixer.music.play(-1)
             
         # Updates all sprites (Entities and player)
         self.player.update(self.wall_tiles) # Passes the wall tiles into the player update to test for collisions
@@ -67,6 +72,13 @@ class Start:
         self.display = display
         self.gameStateManager = gameStateManager
         self.image = pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha()
+        
+        # Loads the music and plays it infinitely on the start menu
+        try:
+            pygame.mixer.music.load("Assets/Music/Starscape.ogg")
+        except pygame.error:
+            print("Music file not found or could not be loaded.")
+        pygame.mixer.music.play(-1)
         
     def draw(self):
         self.display.blit(self.image, (0,0))

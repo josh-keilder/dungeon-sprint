@@ -9,8 +9,17 @@ class Button():
         self.rect = self.image.get_frect()
         self.rect.topleft = (pos_x,pos_y)
         self.screen = screen
+        self.hovered = False
         self.clicked = False
         self.mask = pygame.mask.from_surface(self.image)
+
+        # Loads all the sound effects at once
+        try:
+            self.hover_sound = pygame.mixer.Sound("Assets/Sounds/Button_Hover.wav")
+            self.click_sound = pygame.mixer.Sound("Assets/Sounds/Button_Click.wav")
+        except Exception:
+            self.hover_sound = None
+            self.click_sound = None
 
     def draw(self):
         # puts the buttons on screen at the rect topleft coordinates
@@ -35,10 +44,20 @@ class Button():
         # checks if mouse is over the button, draws the outline and checks if player clicked the button
         if self.rect.collidepoint(pos):
             self.button_outline(self.image, (self.rect.x, self.rect.y))
-            pygame.mixer.music.load("Assets/Sounds/Button_Hover")
+            # play hover sound only once when the mouse enters the button area
+            if not self.hovered:
+                if self.hover_sound:
+                    self.hover_sound.play()
+                self.hovered = True
             if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
                 self.clicked = True
-                action = True       
+                action = True    
+                self.click_sound.play()  
+
+        else:
+            # reset hover state when mouse leaves
+            self.hovered = False
+             
         if pygame.mouse.get_pressed()[0] == 0:
             self.clicked = False
         return action
