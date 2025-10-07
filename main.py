@@ -2,7 +2,7 @@ import pygame
 import sys
 
 from settings import *
-from stateManager import Dungeon_Level, Start, GameStateManager
+from stateManager import Dungeon_Level, Start, GameStateManager, Options
 from button import Button
 from camera import create_screen
 
@@ -19,16 +19,23 @@ class Game:
         # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first
         self.gameStateManager = GameStateManager('start')
         self.start = Start(self.screen, self.gameStateManager)
+        self.options = Options(self.screen, self.gameStateManager)
         self.dungeon_level = None
 
         # A dictionary to keep track of the states and their ids (Only loads start menu at first)
-        self.states = {'start':self.start}
+        self.states = {'start':self.start, 'options':self.options}
 
-        # Create start menu buttons by creating the image and then passing it into the button class
+        # Create start menu buttons by creating the image and then passing it into the button class 
         self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
-        self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
         self.start_button =  Button(self.screen, self.start_button_img, 416, 288)
+        self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
         self.exit_button =  Button(self.screen, self.exit_button_img, 416, 448)
+        self.options_button_img = pygame.image.load('Assets/Menu-Assets/options-button.png').convert_alpha()
+        self.options_button =  Button(self.screen, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650)
+
+        # Create option menu buttons
+        self.main_menu_img_button = pygame.image.load('Assets/Menu-Assets/main-menu-button.png').convert_alpha()
+        self.main_menu_button =  Button(self.screen, pygame.transform.scale_by(self.main_menu_img_button, 0.5), 15, 650)
 
     def run(self):
             while self.running:
@@ -52,8 +59,18 @@ class Game:
                 self.dungeon_level = Dungeon_Level(self.screen, self.gameStateManager)
                 self.states['dungeon_level'] = self.dungeon_level
                 self.gameStateManager.set_state('dungeon_level')
+
+            elif self.options_button.is_clicked():
+                self.gameStateManager.set_state('options')
+
+            # Closes the game
             elif self.exit_button.is_clicked():
-                 self.close()
+                self.close()
+
+        # Sets the options screen
+        elif self.gameStateManager.currentState == 'options':
+            if self.main_menu_button.is_clicked():
+                self.gameStateManager.set_state('start')
 
         pygame.display.update()
         self.clock.tick(FRAMERATE)
@@ -69,6 +86,9 @@ class Game:
         if self.gameStateManager.currentState == 'start':
             self.start_button.draw()
             self.exit_button.draw()
+            self.options_button.draw()
+        elif self.gameStateManager.currentState == 'options':
+             self.main_menu_button.draw()
 
     def close(self):
         pygame.quit()

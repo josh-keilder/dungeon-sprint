@@ -13,7 +13,7 @@ class Button():
         self.clicked = False
         self.mask = pygame.mask.from_surface(self.image)
 
-        # Loads all the sound effects at once
+        # Loads all the button sound effects once
         try:
             self.hover_sound = pygame.mixer.Sound("Assets/Sounds/Button_Hover.wav")
             self.click_sound = pygame.mixer.Sound("Assets/Sounds/Button_Click.wav")

@@ -11,10 +11,18 @@ pygame.mixer.init()
 class GameStateManager:
     def __init__(self, currentState):
         self.currentState = currentState
+        self.state_history = []
     def get_state(self):
         return self.currentState
-    def set_state(self, state):
-        self.currentState = state
+    def set_state(self, new_state):
+        if self.currentState:
+            self.state_history.append(self.currentState)
+        self.currentState = new_state
+    def get_previous_state(self):
+        if self.state_history:
+            return self.state_history[-1]
+        return None
+
 
 # Dungeon_Level screen
 class Dungeon_Level:
@@ -37,12 +45,18 @@ class Dungeon_Level:
         self.player = Player([self.player_group], animations=self.player_textures, pos = self.player_pos)
 
         camera_start(self.player.rect.center)
+        try:
+            self.pause_sound = pygame.mixer.Sound("Assets/Sounds/Pause.wav")
+        except Exception:
+            self.pause_sound = None
 
     def update(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:
-            self.gameStateManager.set_state('start')
-            pygame.mixer.music.play(-1)
+            self.gameStateManager.set_state('options')
+            self.pause_sound.play()
+
+            
             
         # Updates all sprites (Entities and player)
         self.player.update(self.wall_tiles) # Passes the wall tiles into the player update to test for collisions
@@ -62,9 +76,9 @@ class Dungeon_Level:
            self.player_group.sprite.draw(self.display)
 
         # Shows the wall hitboxes and player hitboxes for collision detection
-        for wall in self.wall_tiles:
-            pygame.draw.rect(self.display, (255,0,0), wall.rect, 2)
-        pygame.draw.rect(self.display, (0,255,0), self.player.rect, 2)
+        # for wall in self.wall_tiles:
+        #     pygame.draw.rect(self.display, (255,0,0), wall.rect, 2)
+        # pygame.draw.rect(self.display, (0,255,0), self.player.rect, 2)
         
 # Start menu
 class Start:
@@ -78,6 +92,7 @@ class Start:
             pygame.mixer.music.load("Assets/Music/Starscape.ogg")
         except pygame.error:
             print("Music file not found or could not be loaded.")
+        pygame.mixer.music.set_volume(0.1)
         pygame.mixer.music.play(-1)
         
     def draw(self):
@@ -89,10 +104,24 @@ class Options:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager
-        self.image = pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha()
+        self.image = pygame.image.load('Assets/Menu-Assets/options-screen.png').convert_alpha()
+
+        # Loads unpausing sound
+        try:
+            self.unpause_sound = pygame.mixer.Sound("Assets/Sounds/Pause.wav")
+        except Exception:
+            self.unpause_sound = None
         
-    def run(self):
+    def draw(self):
         self.display.blit(self.image, (0,0))
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        
+        if keys[pygame.K_ESCAPE] and self.gameStateManager.get_previous_state() == 'dungeon_level':
+            self.gameStateManager.set_state('dungeon_level')
+            self.unpause_sound.play()
+            
 
 
     
