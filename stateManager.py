@@ -19,9 +19,14 @@ class GameStateManager:
             self.state_history.append(self.currentState)
         self.currentState = new_state
     def get_previous_state(self):
+        # If history is available, return the previous one
         if self.state_history:
             return self.state_history[-1]
         return None
+    def go_back(self):
+        # Pop the last state if available
+        if self.state_history:
+            self.currentState = self.state_history.pop()
 
 
 # Dungeon_Level screen
@@ -45,6 +50,8 @@ class Dungeon_Level:
         self.player = Player([self.player_group], animations=self.player_textures, pos = self.player_pos)
 
         camera_start(self.player.rect.center)
+
+        # Load the pause sound and pause cooldown
         try:
             self.pause_sound = pygame.mixer.Sound("Assets/Sounds/Pause.wav")
         except Exception:
@@ -56,8 +63,6 @@ class Dungeon_Level:
             self.gameStateManager.set_state('options')
             self.pause_sound.play()
 
-            
-            
         # Updates all sprites (Entities and player)
         self.player.update(self.wall_tiles) # Passes the wall tiles into the player update to test for collisions
         self.sprites.update()
@@ -116,11 +121,8 @@ class Options:
         self.display.blit(self.image, (0,0))
 
     def update(self):
-        keys = pygame.key.get_pressed()
-        
-        if keys[pygame.K_ESCAPE] and self.gameStateManager.get_previous_state() == 'dungeon_level':
-            self.gameStateManager.set_state('dungeon_level')
-            self.unpause_sound.play()
+        pass
+            
             
 
 

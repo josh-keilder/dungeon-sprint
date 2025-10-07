@@ -14,7 +14,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        self.sprites = pygame.sprite.Group()
+        
 
         # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first
         self.gameStateManager = GameStateManager('start')
@@ -36,6 +36,8 @@ class Game:
         # Create option menu buttons
         self.main_menu_img_button = pygame.image.load('Assets/Menu-Assets/main-menu-button.png').convert_alpha()
         self.main_menu_button =  Button(self.screen, pygame.transform.scale_by(self.main_menu_img_button, 0.5), 15, 650)
+        self.back_img_button = pygame.image.load('Assets/Menu-Assets/back-button.png').convert_alpha()
+        self.back_button =  Button(self.screen, pygame.transform.scale_by(self.back_img_button, 0.5), 1110, 650)
 
     def run(self):
             while self.running:
@@ -71,6 +73,9 @@ class Game:
         elif self.gameStateManager.currentState == 'options':
             if self.main_menu_button.is_clicked():
                 self.gameStateManager.set_state('start')
+            if self.gameStateManager.get_previous_state() == 'dungeon_level':
+                 if self.back_button.is_clicked():
+                      self.gameStateManager.go_back()
 
         pygame.display.update()
         self.clock.tick(FRAMERATE)
@@ -87,8 +92,12 @@ class Game:
             self.start_button.draw()
             self.exit_button.draw()
             self.options_button.draw()
+            # Draws the buttons on the options menu
         elif self.gameStateManager.currentState == 'options':
              self.main_menu_button.draw()
+             # The back button loads ONLY if the previous state was the gameplay dungeon level
+             if self.gameStateManager.get_previous_state() == 'dungeon_level':
+                  self.back_button.draw()
 
     def close(self):
         pygame.quit()
