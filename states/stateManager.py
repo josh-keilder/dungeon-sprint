@@ -8,11 +8,11 @@ class GameStateManager:
         self.state_history = []
         self.states = {}
 
-    def add_state(self, name, state_obj):
+    def add_state(self, name, state_object):
         # Add a new state to the manager
-        self.states[name] = state_obj
+        self.states[name] = state_object
 
-    def get_state(self):
+    def get_state(self) -> str:
         return self.states.get(self.currentState, None)
     
     def set_state(self, new_state):
@@ -20,7 +20,7 @@ class GameStateManager:
             self.state_history.append(self.currentState)
         self.currentState = new_state
 
-    def get_previous_state(self):
+    def get_previous_state(self) -> str:
         # If history is available, return the previous one. Return None if none exists
         if self.state_history:
             return self.state_history[-1]
@@ -31,5 +31,5 @@ class GameStateManager:
         if self.state_history:
             self.currentState = self.state_history.pop()
 
-    def all_states(self):
+    def all_states(self) -> list: # Returns all states currently in the dict
         return list(self.states.keys())

@@ -85,7 +85,6 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
             self.rect.y -= dir_y
 
-
     def roll(self):
         self.is_rolling = True
         self.is_invincible = True

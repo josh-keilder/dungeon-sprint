@@ -4,19 +4,21 @@ from states.dungeons.camera import camera
 from Characters.animations import Animations
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, groups, pos=(0,0), size=TILESIZE, color=(255,0,0)):
+    def __init__(self, groups, pos=(0,0), size=TILESIZE):
         super().__init__(groups)
         # Simple red square
         self.image = pygame.Surface((size, size))
-        self.image.fill(color)
+        self.image.fill(RED)
         self.rect = self.image.get_frect()
-        self.pos = pos
+        self.pos = pygame.math.Vector2(pos)
         self.rect.topleft = self.pos
+
+        self.patrolling = True
 
         self.health_bar = self.create_health_bar()
 
     def update(self, wall_tiles):
-        pass
+        self.patrol()
 
     def draw(self, screen):
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
@@ -26,15 +28,19 @@ class Enemy(pygame.sprite.Sprite):
         screen.blit(self.health_bar, (self.health_bar_rect))
 
     def patrol(self):
-        pass
         # Allows the enemy to patrol from one point to another UNTIL the player is close enough to be spotted
+        if self.patrolling:
+            if self.pos.x <= 1220:
+                self.pos.x += 1
+            elif self.pos.x >= 1200:
+                self.pos.x -= 1
     def attack(self):
         pass
         # Enemy attacks
     def create_health_bar(self):
         # Create a green health bar image
         health_image = pygame.Surface((TILESIZE, 4))
-        health_image.fill((0,255,0))
+        health_image.fill(GREEN)
         self.health_bar_rect = health_image.get_frect()
 
         return health_image

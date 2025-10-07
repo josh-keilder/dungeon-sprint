@@ -18,7 +18,7 @@ class Start:
         self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
         self.exit_button =  Button(self.display, self.exit_button_img, 416, 448, self.gameStateManager)
         self.options_button_img = pygame.image.load('Assets/Menu-Assets/options-button.png').convert_alpha()
-        self.options_button =  Button(self.display, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650,self.gameStateManager)
+        self.options_button =  Button(self.display, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650, self.gameStateManager)
         
         # Loads the music and plays it infinitely on the start menu
         try:
