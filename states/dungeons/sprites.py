@@ -1,6 +1,6 @@
 import pygame
 from settings import *
-from camera import camera
+from states.dungeons.camera import camera
 
 class Entity(pygame.sprite.Sprite):
     def __init__(self, groups, image, pos):

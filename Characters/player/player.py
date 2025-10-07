@@ -1,8 +1,8 @@
 import pygame
 from settings import *
-from player.playerTextureData import player_texture_data
-from animations import Animations
-from camera import camera
+from Characters.player.playerTextureData import player_texture_data
+from Characters.animations import Animations
+from states.dungeons.camera import camera
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, groups, animations, pos = (0,0)):

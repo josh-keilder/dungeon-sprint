@@ -8,7 +8,7 @@ from states.dungeons.dungeon_level_one import Dungeon_Level_One
 from states.start import Start
 from states.options import Options
 from states.button import Button
-from camera import create_screen
+from states.dungeons.camera import create_screen
 
 class Game:
     def __init__(self):

@@ -1,7 +1,7 @@
 import pygame
 from settings import *
-from camera import camera
-from animations import Animations
+from states.dungeons.camera import camera
+from Characters.animations import Animations
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, groups, pos=(0,0), size=TILESIZE, color=(255,0,0)):
