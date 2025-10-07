@@ -8,8 +8,8 @@ from enemies.enemy import Enemy
 
 pygame.mixer.init()
 
-# Dungeon_Level screen
-class Dungeon_Level:
+# Dungeon Level One screen
+class Dungeon_Level_One:
     def __init__(self, display, gameStateManager):
         self.display = display
         self.gameStateManager = gameStateManager

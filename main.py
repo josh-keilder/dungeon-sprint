@@ -4,7 +4,7 @@ import sys
 from settings import *
 from states.stateManager import GameStateManager
 
-from states.dungeons.dungeon import Dungeon_Level
+from states.dungeons.dungeon_level_one import Dungeon_Level_One
 from states.start import Start
 from states.options import Options
 from states.button import Button
@@ -62,9 +62,9 @@ class Game:
             if self.start_button.is_clicked():
                 # Stops the start menu music and creates the dungeon level. Adds it to our states dictionary
                 pygame.mixer.music.stop()
-                self.dungeon_level = Dungeon_Level(self.screen, self.gameStateManager)
-                self.states['dungeon_level'] = self.dungeon_level
-                self.gameStateManager.set_state('dungeon_level')
+                self.dungeon_level_one = Dungeon_Level_One(self.screen, self.gameStateManager)
+                self.states['dungeon_level_one'] = self.dungeon_level_one
+                self.gameStateManager.set_state('dungeon_level_one')
 
             elif self.options_button.is_clicked():
                 self.gameStateManager.set_state('options')
@@ -78,7 +78,7 @@ class Game:
             if self.main_menu_button.is_clicked():
                 self.gameStateManager.set_state('start')
             # If the previous screen was the gameplay dungeon, it also adds a back button to return to the game
-            if self.gameStateManager.get_previous_state() == 'dungeon_level':
+            if self.gameStateManager.get_previous_state().startswith('dungeon_level'):
                  if self.back_button.is_clicked():
                       self.gameStateManager.go_back()
 
@@ -101,7 +101,7 @@ class Game:
         elif self.gameStateManager.currentState == 'options':
              self.main_menu_button.draw()
              # The back button loads ONLY if the previous state was the gameplay dungeon level
-             if self.gameStateManager.get_previous_state() == 'dungeon_level':
+             if self.gameStateManager.get_previous_state().startswith('dungeon_level'):
                   self.back_button.draw()
 
     def close(self):
