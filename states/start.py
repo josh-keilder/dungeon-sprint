@@ -13,7 +13,7 @@ class Start:
             pygame.mixer.music.load("Assets/Music/Starscape.ogg")
         except pygame.error:
             print("Music file not found or could not be loaded.")
-        pygame.mixer.music.set_volume(0.1)
+        pygame.mixer.music.set_volume(0.01)
         pygame.mixer.music.play(-1)
         
     def draw(self):

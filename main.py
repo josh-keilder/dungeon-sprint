@@ -31,17 +31,17 @@ class Game:
 
         # Create start menu buttons by creating the image and then passing it into the button class 
         self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
-        self.start_button =  Button(self.screen, self.start_button_img, 416, 288)
+        self.start_button =  Button(self.screen, self.start_button_img, 416, 288, self.gameStateManager)
         self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
-        self.exit_button =  Button(self.screen, self.exit_button_img, 416, 448)
+        self.exit_button =  Button(self.screen, self.exit_button_img, 416, 448, self.gameStateManager)
         self.options_button_img = pygame.image.load('Assets/Menu-Assets/options-button.png').convert_alpha()
-        self.options_button =  Button(self.screen, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650)
+        self.options_button =  Button(self.screen, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650,self.gameStateManager)
 
         # Create option menu buttons
         self.main_menu_img_button = pygame.image.load('Assets/Menu-Assets/main-menu-button.png').convert_alpha()
-        self.main_menu_button =  Button(self.screen, pygame.transform.scale_by(self.main_menu_img_button, 0.4), 15, 650)
+        self.main_menu_button =  Button(self.screen, pygame.transform.scale_by(self.main_menu_img_button, 0.4), 15, 650, self.gameStateManager)
         self.back_img_button = pygame.image.load('Assets/Menu-Assets/back-button.png').convert_alpha()
-        self.back_button =  Button(self.screen, pygame.transform.scale_by(self.back_img_button, 0.4), 1135, 650)
+        self.back_button =  Button(self.screen, pygame.transform.scale_by(self.back_img_button, 0.4), 1135, 650, self.gameStateManager)
 
     def run(self):
             while self.running:
