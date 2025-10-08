@@ -2,7 +2,6 @@ import pygame
 from settings import *
 
 from states.stateManager import GameStateManager
-from states.dungeons.dungeon_level_one import Dungeon_Level_One
 from states.start import Start
 from states.options import Options
 from states.dungeons.camera import create_screen
