@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from globals import *
 
 class Animations:
     def __init__(self, animations, start_anim):

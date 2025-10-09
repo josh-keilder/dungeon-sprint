@@ -1,4 +1,4 @@
-from settings import *
+from globals import *
 
 player_texture_data = {
     # Down animations

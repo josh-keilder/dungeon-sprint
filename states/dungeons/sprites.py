@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from globals import *
 from states.dungeons.camera import camera
 
 class Entity(pygame.sprite.Sprite):

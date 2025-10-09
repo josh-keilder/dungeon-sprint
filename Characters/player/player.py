@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from globals import *
 from Characters.player.playerTextureData import player_texture_data
 from Characters.animations import Animations
 from states.dungeons.camera import camera

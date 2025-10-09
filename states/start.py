@@ -1,6 +1,6 @@
 import pygame
 import sys
-from settings import *
+from globals import *
 from states.button import Button
 from states.dungeons.dungeon_level_one import Dungeon_Level_One
 

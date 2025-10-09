@@ -1,5 +1,5 @@
 import pygame
-from settings import * 
+from globals import * 
 
 camera = pygame.Rect(0, 0, 0, 0)
 
