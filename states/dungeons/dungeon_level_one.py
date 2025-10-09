@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from globals import *
 
 from Characters.player.player import Player
 from states.dungeons.map_loader import MapLoader

@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from globals import *
 from pytmx.util_pygame import load_pygame
 from states.dungeons.sprites import FloorTile, WallTile, ObjTile
 

@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from globals import *
 
 pygame.mixer.init()
 
