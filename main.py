@@ -1,58 +1,50 @@
 import pygame
-import sys
-
 from settings import *
-from player import *
-from scene import Scene
-from stateManager import Level, Start, GameStateManager
+
+from states.stateManager import GameStateManager
+from states.start import Start
+from states.options import Options
+from states.dungeons.camera import create_screen
 
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
+        # The screen is created within the camera module to allow a player following camera
+        self.screen = create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")
         self.clock = pygame.time.Clock()
-        pygame.display.set_caption("Dungeon Sprint")
-
         self.running = True
 
-        # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first
+        # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first and creates the start and options screen right away
         self.gameStateManager = GameStateManager('start')
         self.start = Start(self.screen, self.gameStateManager)
-        self.level = Level(self.screen, self.gameStateManager)
-
-        # A dictionary to keep track of the states and their ids
-        self.states = {'start':self.start, 'level':self.level}
-
-        # Initialize our game scene (aka level)
-        self.scene = Scene(self)
+        self.options = Options(self.screen, self.gameStateManager)
+        self.gameStateManager.add_state('options', self.options)
+        self.gameStateManager.add_state('start', self.start)
 
     def run(self):
             while self.running:
                  self.update()
                  self.draw()
-            self.close()
+
     def update(self):
         for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
 
-        # Updates the scene (current moves our entity to the right)
-        self.scene.update()
+        # Updates current state
+        self.gameStateManager.get_state().update()
+        # print(self.gameStateManager.all_states()) # Check states
 
         pygame.display.update()
         self.clock.tick(FRAMERATE)
-    def draw(self):
-        # inside of the self.states dictionary, look for the key that is returned from the get_state() method and update it
-        self.states[self.gameStateManager.get_state()].run()
 
-        # If the current state is our level state, it draws the scene
-        if self.gameStateManager.currentState == 'level':
-            self.scene.draw()
-    def close(self):
-        pygame.quit()
-        sys.exit()
+    def draw(self):
+        # Clears the screen so theres no duplicate sprites
+        self.screen.fill(CLEAR)
+
+        # Draws the current state
+        self.gameStateManager.get_state().draw()
 
 if __name__ == '__main__':
     game = Game()
     game.run()
-
