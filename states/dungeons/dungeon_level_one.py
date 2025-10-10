@@ -11,9 +11,10 @@ pygame.mixer.init()
 
 # Dungeon Level One screen
 class Dungeon_Level_One:
-    def __init__(self, display, gameStateManager):
+    def __init__(self, display, gameStateManager, cursor):
         self.display = display
         self.gameStateManager = gameStateManager
+        self.cursor = cursor
 
         # Sprite Groups
         self.sprites = pygame.sprite.Group()

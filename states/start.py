@@ -7,18 +7,19 @@ from states.dungeons.dungeon_level_one import Dungeon_Level_One
 
 # Start menu
 class Start:
-    def __init__(self, display, gameStateManager):
+    def __init__(self, display, gameStateManager, cursor):
         self.display = display
         self.gameStateManager = gameStateManager
-        self.image = pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha()
+        self.image = pygame.transform.scale_by(pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha(), 1)
+        self.cursor = cursor
 
         # Create start menu buttons by creating the image and then passing it into the button class 
         self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
-        self.start_button =  Button(self.display, self.start_button_img, 416, 288, self.gameStateManager)
+        self.start_button =  Button(self.display, self.start_button_img, 416, 288, self.gameStateManager, self.cursor)
         self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
-        self.exit_button =  Button(self.display, self.exit_button_img, 416, 448, self.gameStateManager)
+        self.exit_button =  Button(self.display, self.exit_button_img, 416, 448, self.gameStateManager, self.cursor)
         self.options_button_img = pygame.image.load('Assets/Menu-Assets/options-button.png').convert_alpha()
-        self.options_button =  Button(self.display, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650, self.gameStateManager)
+        self.options_button =  Button(self.display, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650, self.gameStateManager, self.cursor)
         
         # Loads the music and plays it infinitely on the start menu
         try:
@@ -37,11 +38,14 @@ class Start:
         self.options_button.draw()
 
     def update(self):
+        self.start_button.update()
+        self.exit_button.update()
+        self.options_button.update()
         # If the start button was clicked, it sets the state to the level screen, if the exit button was clicked, it closes the game 
         if self.start_button.is_clicked():
             # Stops the start menu music and creates the dungeon level. Adds it to our states dictionary
             pygame.mixer.music.stop()
-            self.dungeon_level_one = Dungeon_Level_One(self.display, self.gameStateManager)
+            self.dungeon_level_one = Dungeon_Level_One(self.display, self.gameStateManager, self.cursor)
             self.gameStateManager.add_state('dungeon_level_one', self.dungeon_level_one)
             self.gameStateManager.set_state('dungeon_level_one')
 
