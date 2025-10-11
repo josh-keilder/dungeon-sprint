@@ -12,7 +12,8 @@ class Cursor:
         self.rect = self.image.get_frect(center=self.rect.center)
 
     def update(self):
-        self.rect.center = pygame.mouse.get_pos()
+        mouse_pos_x, mouse_pos_y = pygame.mouse.get_pos()
+        self.rect.center = mouse_pos_x + 5, mouse_pos_y + 5
 
     def draw(self):
         self.screen.blit(self.image, self.rect)
