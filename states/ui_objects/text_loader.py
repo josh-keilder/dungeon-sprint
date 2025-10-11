@@ -11,7 +11,6 @@ class Text_Loader:
         self.text = text
         self.text_surface = self.font.render(self.text, False, self.color)
 
-
     def draw(self):
         self.screen.blit(self.text_surface, self.pos)
 

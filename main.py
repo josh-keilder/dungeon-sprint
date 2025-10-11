@@ -29,7 +29,7 @@ class Game:
 
         # Showing FPS
         self.fps = None
-        self.fps_text = Text_Loader(str(self.fps), self.screen, pos= (10,10), color=WHITE)
+        self.fps_text = Text_Loader(str(self.fps), self.screen, font_size=15, pos= (10,10), color=WHITE)
 
     def run(self):
             while self.running:
@@ -60,9 +60,8 @@ class Game:
         self.gameStateManager.get_state().draw()
 
         # Only show FPS if the toggle is ON in options
-        if hasattr(self.gameStateManager.get_state(), "fps_toggle"):
-            if self.gameStateManager.get_state().fps_toggle:
-                self.fps_text.draw()
+        if hasattr(self.options, "fps_toggle") and self.options.fps_toggle:
+            self.fps_text.draw()
 
         self.cursor.draw()
 
