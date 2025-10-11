@@ -17,7 +17,7 @@ class Game:
 
 
         pygame.mouse.set_visible(False)
-        self.cursor_img = pygame.image.load("Assets/Cursors/01.png").convert_alpha()
+        self.cursor_img = pygame.transform.scale_by(pygame.image.load("Assets/Cursors/01.png").convert_alpha(), .5)
         self.cursor = Cursor(self.screen, self.cursor_img)
         
         # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first and creates the start and options screen right away

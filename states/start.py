@@ -10,7 +10,7 @@ class Start:
     def __init__(self, display, gameStateManager, cursor):
         self.display = display
         self.gameStateManager = gameStateManager
-        self.image = pygame.transform.scale_by(pygame.image.load('Assets/Menu-Assets/start-screen.png').convert_alpha(), 1)
+        self.image = pygame.image.load('Assets/Menu-Assets/start-screen_1.png').convert_alpha()
         self.cursor = cursor
 
         # Create start menu buttons by creating the image and then passing it into the button class 

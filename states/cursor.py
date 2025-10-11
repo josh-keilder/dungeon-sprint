@@ -6,7 +6,6 @@ class Cursor:
         self.screen = screen
         self.image = image
         self.rect =  self.image.get_frect()
-        self.default_image = image
 
     def set_image(self, new_image):
         self.image = new_image
