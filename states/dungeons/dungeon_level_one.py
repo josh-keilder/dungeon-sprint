@@ -5,7 +5,7 @@ from Characters.player.player import Player
 from states.dungeons.map_loader import MapLoader
 from states.dungeons.camera import camera_start, camera_update
 from Characters.enemies.enemy import Enemy
-from states.button import Button
+from states.ui_objects.button import Button
 
 pygame.mixer.init()
 
