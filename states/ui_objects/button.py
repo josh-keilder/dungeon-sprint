@@ -4,16 +4,15 @@ from globals import *
 pygame.mixer.init()
 
 class Button():
-    def __init__(self, screen, image, pos_x, pos_y, gamestateManager, cursor):
+    def __init__(self, screen, image, pos =(0,0)):
         self.image = image
         self.rect = self.image.get_frect()
-        self.rect.topleft = (pos_x,pos_y)
+        self.rect.topleft = pos
         self.screen = screen
         self.hovered = False
         self.clicked = False
         self.mask = pygame.mask.from_surface(self.image)
-        self.gamestateManager = gamestateManager
-        self.cursor = cursor
+        
         
         # Loads all the button sound effects once
         try:

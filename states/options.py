@@ -8,17 +8,17 @@ class Options:
         self.display = display
         self.gameStateManager = gameStateManager
         self.cursor = cursor
-        self.image = pygame.image.load('Assets/Menu-Assets/options-screen.png').convert_alpha()
+        self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
 
         # Create option menu buttons
-        self.main_menu_img_button = pygame.image.load('Assets/Menu-Assets/main-menu-button.png').convert_alpha()
-        self.main_menu_button =  Button(self.display, pygame.transform.scale_by(self.main_menu_img_button, 0.4), 15, 650, self.gameStateManager, self.cursor)
-        self.back_img_button = pygame.image.load('Assets/Menu-Assets/back-button.png').convert_alpha()
-        self.back_button =  Button(self.display, pygame.transform.scale_by(self.back_img_button, 0.4), 1135, 650, self.gameStateManager, self.cursor)
+        self.main_menu_button_img = MAIN_MENU_BUTTON_IMAGE.convert_alpha()
+        self.main_menu_button =  Button(self.display, pygame.transform.scale_by(self.main_menu_button_img, 0.4), pos=(15, 650))
+        self.back_button_img = BACK_BUTTON_IMAGE.convert_alpha()
+        self.back_button =  Button(self.display, pygame.transform.scale_by(self.back_button_img, 0.4), pos=(1135, 650))
 
-        self.fps_button_off_img = pygame.transform.scale_by(pygame.image.load('Assets/Menu-Assets/Fps_Off.png').convert_alpha(), 0.5)
-        self.fps_button_on_img = pygame.transform.scale_by(pygame.image.load('Assets/Menu-Assets/Fps_On.png').convert_alpha(), 0.5)
-        self.fps_button = Button(self.display, self.fps_button_off_img, 450, 200, self.gameStateManager, self.cursor)
+        self.fps_button_off_img = pygame.transform.scale_by(FPS_BUTTON_OFF_IMAGE.convert_alpha(), 0.5)
+        self.fps_button_on_img = pygame.transform.scale_by(FPS_BUTTON_ON_IMAGE.convert_alpha(), 0.5)
+        self.fps_button = Button(self.display, self.fps_button_off_img, pos=(450, 200))
 
         # Toggles
         self.fps_toggle = False

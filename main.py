@@ -29,12 +29,12 @@ class Game:
 
         # Showing FPS
         self.fps = None
-        self.fps_text = Text_Loader(str(self.fps), self.screen, font_size=15, pos= (10,10), color=WHITE)
+        self.fps_text = Text_Loader(self.fps, self.screen, font_size=15, pos= (10,10), color=WHITE)
 
     def run(self):
-            while self.running:
-                 self.update()
-                 self.draw()
+        while self.running:
+            self.update()
+            self.draw()
 
     def update(self):
         for event in pygame.event.get():

@@ -10,16 +10,16 @@ class Start:
     def __init__(self, display, gameStateManager, cursor):
         self.display = display
         self.gameStateManager = gameStateManager
-        self.image = pygame.image.load('Assets/Menu-Assets/start-screen_1.png').convert_alpha()
+        self.image = START_SCREEN_IMAGE.convert_alpha()
         self.cursor = cursor
 
         # Create start menu buttons by creating the image and then passing it into the button class 
-        self.start_button_img = pygame.image.load('Assets/Menu-Assets/start-button.png').convert_alpha()
-        self.start_button =  Button(self.display, self.start_button_img, 416, 288, self.gameStateManager, self.cursor)
-        self.exit_button_img = pygame.image.load('Assets/Menu-Assets/exit-button.png').convert_alpha()
-        self.exit_button =  Button(self.display, self.exit_button_img, 416, 448, self.gameStateManager, self.cursor)
-        self.options_button_img = pygame.image.load('Assets/Menu-Assets/options-button.png').convert_alpha()
-        self.options_button =  Button(self.display, pygame.transform.scale_by(self.options_button_img, 0.5), 985, 650, self.gameStateManager, self.cursor)
+        self.start_button_img = START_BUTTON_IMAGE.convert_alpha()
+        self.start_button =  Button(self.display, self.start_button_img, pos=(416, 288))
+        self.exit_button_img = EXIT_BUTTON_IMAGE.convert_alpha()
+        self.exit_button =  Button(self.display, self.exit_button_img, pos=(416, 448))
+        self.options_button_img = OPTIONS_BUTTON_IMAGE.convert_alpha()
+        self.options_button =  Button(self.display, pygame.transform.scale_by(self.options_button_img, 0.5), pos=(985, 650))
         
         # Loads the music and plays it infinitely on the start menu
         try:

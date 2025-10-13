@@ -23,17 +23,17 @@ class Dungeon_Level_One:
         self.enemies_group = pygame.sprite.Group()
 
         # Loads our tmx map file
-        self.tilemap_dungeon = MapLoader.load_map(self, self.sprites, self.wall_tiles, file_path = "Assets/Maps/Dungeon Room.tmx")
+        self.tilemap_dungeon = MapLoader.load_map(self, self.sprites, self.wall_tiles, file_path = DUNGEON_LEVEL_ONE)
 
         # Loads and creates the player and makes sure our camera starts with the player in the center
         self.player_textures = Player.gen_player_textures(self)
-        self.player_pos = MapLoader.get_player_pos(self, file_path = "Assets/Maps/Dungeon Room.tmx")
+        self.player_pos = MapLoader.get_player_pos(self, file_path = DUNGEON_LEVEL_ONE)
         self.player = Player([self.player_group], animations=self.player_textures, pos = self.player_pos)
         camera_start(self.player.rect.center)
         
         # Spawns in enemies at enemy locations on the map
         self.enemies = []
-        self.enemy_positions = MapLoader.get_enemy_pos(self, file_path = "Assets/Maps/Dungeon Room.tmx")
+        self.enemy_positions = MapLoader.get_enemy_pos(self, file_path = DUNGEON_LEVEL_ONE)
         print(self.enemy_positions)
         for pos in self.enemy_positions:
             new_enemy = Enemy(self.enemies_group, pos=pos)
