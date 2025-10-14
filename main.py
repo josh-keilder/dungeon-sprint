@@ -2,8 +2,8 @@ import pygame
 from globals import *
 
 from states.stateManager import GameStateManager
-from states.start import Start
-from states.options import Options
+from states.menus.start import Start
+from states.menus.options import Options
 from states.dungeons.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader

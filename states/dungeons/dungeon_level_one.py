@@ -4,7 +4,7 @@ from globals import *
 from Characters.player.player import Player
 from states.dungeons.map_loader import MapLoader
 from states.dungeons.camera import camera_start, camera_update
-from Characters.enemies.enemy import Enemy
+from Characters.enemies.enemy import Skeleton, Skull_Enemy
 from ui_objects.button import Button
 from ui_objects.create_outline import create_outline
 
@@ -37,7 +37,7 @@ class Dungeon_Level_One:
         self.enemy_positions = MapLoader.get_enemy_pos(self, file_path = DUNGEON_LEVEL_ONE)
         print(self.enemy_positions)
         for pos in self.enemy_positions:
-            new_enemy = Enemy(self.enemies_group, pos=pos)
+            new_enemy = Skull_Enemy([self.enemies_group], pos=pos)
             self.enemies.append(new_enemy)
 
         # Load the pause sound
