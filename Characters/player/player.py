@@ -1,6 +1,5 @@
 import pygame
 from globals import *
-from Characters.player.playerTextureData import player_texture_data
 from Characters.animations import Animations
 from ui_objects.camera import camera
 
@@ -120,27 +119,3 @@ class Player(pygame.sprite.Sprite):
     def draw(self, screen):
         # Draws the player based on the camera offset
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-            
-    def gen_player_textures(self) -> dict:
-        textures = {}
-
-        for name, data in player_texture_data.items():
-            player_img = pygame.image.load(data['file_path']).convert_alpha()
-            w, h = data['size'] # unpacks the size tuple
-            frames = data['frames']
-            row = data['position'][1]
-            textures[name] = []
-
-            for i in range(frames):
-                x = i * w
-                y = row * h
-                frame = player_img.subsurface(pygame.Rect(x, y, w, h))
-
-                # Since the player sprites are 64x64, you have to crop out just the center player to get the hitbox to be the right size
-                center_x = (w - 16) // 2
-                center_y = (h - 16) // 2
-                center_rect = pygame.Rect(center_x, center_y, 16, 16)
-                cropped_frame = frame.subsurface(center_rect).copy()
-
-                textures[name].append(cropped_frame)
-        return textures

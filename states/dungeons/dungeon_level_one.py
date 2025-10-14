@@ -26,7 +26,7 @@ class Dungeon_Level_One:
         # Loads our map
         self.map = load_map(self.sprites, self.wall_tiles, file_path = DUNGEON_LEVEL_ONE)
         # Loads our player
-        self.player = load_player(self, self.player_group)
+        self.player = load_player(self.player_group)
         # Loads all of our enemies
         self.enemies = load_enemies(self.enemies_group)
         

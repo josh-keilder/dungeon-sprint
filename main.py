@@ -7,7 +7,6 @@ from states.menus.options import Options
 from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
-from ui_objects.create_outline import create_outline
 
 class Game:
     def __init__(self):
