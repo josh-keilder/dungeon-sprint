@@ -2,17 +2,17 @@ import pygame
 from globals import *
 
 class Animations:
-    def __init__(self, animations, start_anim):
+    def __init__(self, animations, start_anim, animation_speed = 0.15):
         self.animations = animations 
         self.current_anim = start_anim
         self.frame_index = 0
-        self.animation_speed = 0.15 # Speed of animation, we have 6 frames per animation for 1 second equals 0.15
+        self.animation_speed = animation_speed
         self.frame_timer = 0
+        
     def set_animation(self, anim_name):
         if anim_name != self.current_anim:
             self.current_anim = anim_name
             self.frame_index = 0
-            
 
     def play_animation(self, loop = False):
         self.frame_timer += self.animation_speed
@@ -20,7 +20,7 @@ class Animations:
             self.frame_timer = 0
             self.frame_index += 1
 
-            # Handle flipped animations
+            # Handle flipped animations (Will remove when future assets are changed and they automatically are made with left AND right sprites)
             if self.current_anim.endswith("_left"):
                 right_key = self.current_anim.replace("left", "right")
                 right_frames = self.animations[right_key]

@@ -1,12 +1,6 @@
 import pygame
 from globals import *
-from states.dungeons.camera import camera
-
-class Entity(pygame.sprite.Sprite):
-    def __init__(self, groups, image, pos):
-        super().__init__(groups)
-        self.image = image
-        self.rect = self.image.get_frect(topleft = pos)
+from ui_objects.camera import camera
 
 class FloorTile(pygame.sprite.Sprite):
     def __init__(self, groups, image, pos):
