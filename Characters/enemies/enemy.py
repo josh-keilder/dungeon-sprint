@@ -1,6 +1,6 @@
 import pygame
 from globals import *
-from states.dungeons.camera import camera
+from ui_objects.camera import camera
 from Characters.animations import Animations
 from Characters.enemies.enemyTextureData import skull_enemy_texture_data
 

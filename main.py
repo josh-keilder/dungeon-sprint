@@ -4,7 +4,7 @@ from globals import *
 from states.stateManager import GameStateManager
 from states.menus.start import Start
 from states.menus.options import Options
-from states.dungeons.camera import create_screen
+from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
 from ui_objects.create_outline import create_outline

@@ -29,7 +29,7 @@ class Button():
 
         # Draws the outline if the cursor is hovering the button
         if self.hovered == True:
-            create_outline(self.screen, self, (self.rect.x, self.rect.y))
+            create_outline(self.screen, self, WHITE, (self.rect.x, self.rect.y))
 
     def update(self):
         if self.rect.collidepoint(pygame.mouse.get_pos()):

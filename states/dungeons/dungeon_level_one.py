@@ -1,10 +1,10 @@
 import pygame
 from globals import *
 
-from Characters.player.player import Player
-from states.dungeons.map_loader import MapLoader
-from states.dungeons.camera import camera_start, camera_update
-from Characters.enemies.enemy import Skeleton, Skull_Enemy
+from Characters.player.load_player import load_player
+from states.dungeons.map_loader import load_map
+from ui_objects.camera import camera_update
+from Characters.enemies.load_enemies import load_enemies
 from ui_objects.button import Button
 from ui_objects.create_outline import create_outline
 
@@ -23,22 +23,13 @@ class Dungeon_Level_One:
         self.player_group = pygame.sprite.GroupSingle()
         self.enemies_group = pygame.sprite.Group()
 
-        # Loads our tmx map file
-        self.tilemap_dungeon = MapLoader.load_map(self, self.sprites, self.wall_tiles, file_path = DUNGEON_LEVEL_ONE)
-
-        # Loads and creates the player and makes sure our camera starts with the player in the center
-        self.player_textures = Player.gen_player_textures(self)
-        self.player_pos = MapLoader.get_player_pos(self, file_path = DUNGEON_LEVEL_ONE)
-        self.player = Player([self.player_group], animations=self.player_textures, pos = self.player_pos)
-        camera_start(self.player.rect.center)
+        # Loads our map
+        self.map = load_map(self.sprites, self.wall_tiles, file_path = DUNGEON_LEVEL_ONE)
+        # Loads our player
+        self.player = load_player(self, self.player_group)
+        # Loads all of our enemies
+        self.enemies = load_enemies(self.enemies_group)
         
-        # Spawns in enemies at enemy locations on the map
-        self.enemies = []
-        self.enemy_positions = MapLoader.get_enemy_pos(self, file_path = DUNGEON_LEVEL_ONE)
-        print(self.enemy_positions)
-        for pos in self.enemy_positions:
-            new_enemy = Skull_Enemy([self.enemies_group], pos=pos)
-            self.enemies.append(new_enemy)
 
         # Load the pause sound
         try:
