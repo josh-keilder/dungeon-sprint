@@ -5,14 +5,15 @@ from Characters.player.player import Player
 from states.dungeons.map_loader import MapLoader
 from states.dungeons.camera import camera_start, camera_update
 from Characters.enemies.enemy import Enemy
-from states.ui_objects.button import Button
+from ui_objects.button import Button
+from ui_objects.create_outline import create_outline
 
 pygame.mixer.init()
 
 # Dungeon Level One screen
 class Dungeon_Level_One:
-    def __init__(self, display, gameStateManager, cursor):
-        self.display = display
+    def __init__(self, screen, gameStateManager, cursor):
+        self.screen = screen
         self.gameStateManager = gameStateManager
         self.cursor = cursor
 
@@ -63,15 +64,15 @@ class Dungeon_Level_One:
     def draw(self):
         # Draws our sprites and walls to the screen 
         for sprite in self.sprites:
-            sprite.draw(self.display)
+            sprite.draw(self.screen)
         for wall in self.wall_tiles:
-            wall.draw(self.display)
+            wall.draw(self.screen)
 
         for enemy in self.enemies:
-            enemy.draw(self.display)
+            enemy.draw(self.screen)
 
         if self.player_group.sprite:
-           self.player_group.sprite.draw(self.display)
+           self.player_group.sprite.draw(self.screen)
 
         # Shows the wall hitboxes and player hitboxes for collision detection
         # for wall in self.wall_tiles:

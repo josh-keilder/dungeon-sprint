@@ -1,24 +1,24 @@
 import pygame
 from globals import *
 
-from states.ui_objects.button import Button
+from ui_objects.button import Button
 
 class Options:
-    def __init__(self, display, gameStateManager, cursor):
-        self.display = display
+    def __init__(self, screen, gameStateManager, cursor):
+        self.screen = screen
         self.gameStateManager = gameStateManager
         self.cursor = cursor
         self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
 
         # Create option menu buttons
         self.main_menu_button_img = MAIN_MENU_BUTTON_IMAGE.convert_alpha()
-        self.main_menu_button =  Button(self.display, pygame.transform.scale_by(self.main_menu_button_img, 0.4), pos=(15, 650))
+        self.main_menu_button =  Button(self.screen, pygame.transform.scale_by(self.main_menu_button_img, 0.4), pos=(15, 650))
         self.back_button_img = BACK_BUTTON_IMAGE.convert_alpha()
-        self.back_button =  Button(self.display, pygame.transform.scale_by(self.back_button_img, 0.4), pos=(1135, 650))
+        self.back_button =  Button(self.screen, pygame.transform.scale_by(self.back_button_img, 0.4), pos=(1135, 650))
 
         self.fps_button_off_img = pygame.transform.scale_by(FPS_BUTTON_OFF_IMAGE.convert_alpha(), 0.5)
         self.fps_button_on_img = pygame.transform.scale_by(FPS_BUTTON_ON_IMAGE.convert_alpha(), 0.5)
-        self.fps_button = Button(self.display, self.fps_button_off_img, pos=(450, 200))
+        self.fps_button = Button(self.screen, self.fps_button_off_img, pos=(450, 200))
 
         # Toggles
         self.fps_toggle = False
@@ -30,7 +30,7 @@ class Options:
             self.unpause_sound = None
         
     def draw(self):
-        self.display.blit(self.image, (0,0))
+        self.screen.blit(self.image, (0,0))
 
         # Draws the buttons on the options menu
         if self.gameStateManager.currentState == 'options':

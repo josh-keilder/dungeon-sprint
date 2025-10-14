@@ -1,5 +1,6 @@
 import pygame
 from globals import *
+from ui_objects.create_outline import create_outline
 
 pygame.mixer.init()
 
@@ -28,7 +29,7 @@ class Button():
 
         # Draws the outline if the cursor is hovering the button
         if self.hovered == True:
-            self.button_outline(self.image, (self.rect.x, self.rect.y))
+            create_outline(self.screen, self, (self.rect.x, self.rect.y))
 
     def update(self):
         if self.rect.collidepoint(pygame.mouse.get_pos()):
@@ -40,18 +41,6 @@ class Button():
         else:
             # reset hover state and cursor when mouse leaves
             self.hovered = False
-
-    def button_outline(self, img, pos):
-        mask = pygame.mask.from_surface(img)
-        mask_outline = mask.outline()
-        mask_surf = pygame.Surface(img.get_size())
-        for pixel in mask_outline:
-            mask_surf.set_at(pixel,(255,255,255))
-        mask_surf.set_colorkey((0,0,0))
-        self.screen.blit(mask_surf,(pos[0] - 1, pos[1]))
-        self.screen.blit(mask_surf,(pos[0] + 1, pos[1]))
-        self.screen.blit(mask_surf,(pos[0], pos[1] - 1))
-        self.screen.blit(mask_surf,(pos[0], pos[1] + 1))
 
     def is_clicked(self) -> bool:
         action = False

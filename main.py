@@ -5,8 +5,9 @@ from states.stateManager import GameStateManager
 from states.start import Start
 from states.options import Options
 from states.dungeons.camera import create_screen
-from states.ui_objects.cursor import Cursor
-from states.ui_objects.text_loader import Text_Loader
+from ui_objects.cursor import Cursor
+from ui_objects.text_loader import Text_Loader
+from ui_objects.create_outline import create_outline
 
 class Game:
     def __init__(self):
