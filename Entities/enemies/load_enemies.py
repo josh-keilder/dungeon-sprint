@@ -1,5 +1,5 @@
 from globals import *
-from Characters.enemies.enemy import Skeleton, Skull_Enemy
+from Entities.enemies.enemy import Skeleton, Skull_Enemy
 from pytmx.util_pygame import load_pygame
 
 def load_enemies(groups) -> list:

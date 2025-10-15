@@ -1,6 +1,6 @@
 import pygame
 from globals import *
-from Characters.animations import Animations
+from Entities.animations import Animations
 from ui_objects.camera import camera
 
 class Player(pygame.sprite.Sprite):

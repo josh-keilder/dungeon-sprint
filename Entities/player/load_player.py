@@ -1,8 +1,8 @@
 from globals import *
 from ui_objects.camera import camera_start
-from Characters.player.player import Player
+from Entities.player.player import Player
 from pytmx.util_pygame import load_pygame
-from Characters.player.playerTextureData import player_texture_data
+from Entities.player.playerTextureData import player_texture_data
 
 def load_player(groups) -> object:
     # Loads and creates the player and makes sure our camera starts with the player in the center

@@ -1,10 +1,10 @@
 import pygame
 from globals import *
 
-from Characters.player.load_player import load_player
+from Entities.player.load_player import load_player
 from states.dungeons.map_loader import load_map
 from ui_objects.camera import camera_update
-from Characters.enemies.load_enemies import load_enemies
+from Entities.enemies.load_enemies import load_enemies
 from ui_objects.button import Button
 from ui_objects.create_outline import create_outline
 
