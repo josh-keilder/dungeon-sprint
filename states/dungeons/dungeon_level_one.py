@@ -49,7 +49,13 @@ class Dungeon_Level_One:
         self.sprites.update()
         self.wall_tiles.update()
         
+        # Taking damage test
+        for enemy in self.enemies:
+            if enemy.hitbox.collides_with(self.player.hitbox):
+                self.player.health.current -= 1
+                enemy.health.current -= 1
 
+        # Keeps the camera on the player       
         camera_update(self.player)
 
     def draw(self):

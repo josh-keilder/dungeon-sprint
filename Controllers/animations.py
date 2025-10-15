@@ -1,7 +1,7 @@
 import pygame
 from globals import *
 
-class Animations:
+class AnimationController:
     def __init__(self, animations, start_anim, animation_speed = 0.15):
         self.animations = animations 
         self.current_anim = start_anim

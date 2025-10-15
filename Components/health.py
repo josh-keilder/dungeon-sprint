@@ -18,11 +18,13 @@ class Health:
 
 
 class HealthBar:
-    def __init__(self, max_health, width = TILESIZE, height = 4, shrink_speed = 0.5, is_player = False):
+    def __init__(self, max_health, width = TILESIZE, height = 4, shrink_speed = 0.5, is_player = False, pos=(20, 20)):
+
         # --- VISUALS ---
         self.width, self.height = width, height
         self.image = pygame.Surface((width, height))
         self.rect = self.image.get_frect()
+        self.pos = pos # only used if it's a player bar
 
         # --- HEALTH BAR ATTRIBUTES ---
         self.is_player = is_player       # Player Health bar check
@@ -54,7 +56,12 @@ class HealthBar:
         # Position above entity
         if not self.is_player:
             self.rect.midbottom = (entity_rect.centerx, entity_rect.top - 4)
+        else:
+            self.rect.topleft = self.pos
     
     def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        if self.is_player: # Fixed position on screen
+            screen.blit(self.image, self.rect.topleft)  
+        else: # Above entity
+            screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
     
