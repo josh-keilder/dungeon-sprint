@@ -18,6 +18,7 @@ class Player(pygame.sprite.Sprite):
         # --- CONTROLLERS ---
         self.movement = MovementController(speed=1)
         self.roll = RollController()
+        # self.input = input()
 
         # --- COMPONENTS ---
         self.health = Health(100)
