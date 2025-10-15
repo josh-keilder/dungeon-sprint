@@ -2,115 +2,78 @@ import pygame
 from globals import *
 from Entities.animations import Animations
 from ui_objects.camera import camera
+from Components.health import Health, HealthBar
+from Components.movement import MovementController, RollController
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, groups, animations, pos = (0,0)):
         super().__init__(groups)
-        # Animation and image initialization
-        self.animations = animations 
-        self.player_animations = Animations(animations= self.animations, start_anim= 'player_idle_down')
-        self.last_direction = 'down' # Tracking the last direction moved
-        self.image = self.player_animations.play_animation(loop=True)
 
-        # Player rect initialization
+        # --- VISUALS ---
+        self.animations = Animations(animations= animations, start_anim= 'player_idle_down')
+        self.image = self.animations.play_animation(loop=True)
         self.rect = self.image.get_frect()
         self.rect.center = pos
         
-        self.is_rolling = False  # Initialize our roll check as false 
-        self.roll_speed = 2      # how fast the roll moves
-        self.is_invincible = False # Invincibility is initialized as false 
-        self.last_roll_time = 0
-        self.roll_cooldown = 3000 # in milliseconds
+        # --- CONTROLLERS ---
+        self.movement = MovementController(speed=1)
+        self.roll = RollController()
 
-    def input(self, wall_tiles):
+        # --- COMPONENTS ---
+        self.health = Health(100)
+        self.health_bar = HealthBar(100, is_player =True)
+
+        # --- PLAYER ATTRIBUTES ---
+        self.last_direction = 'down'
+
+    def input(self):
         keys = pygame.key.get_pressed()
         walking = False
         player_speed = 1
         dir_x, dir_y = 0 , 0
 
-        # Checks to see if we are rolling, if we are, no other movement is possible
-        if self.is_rolling:
-            return 
-        # Move left
+        # Movement checks
         if keys[pygame.K_a]:
-            self.last_direction = 'left'
-            self.player_animations.set_animation('player_walk_left')
-            walking = True
-            dir_x -= player_speed
-        # Move right
+            dir_x -= player_speed; self.last_direction = 'left'; walking = True
         if keys[pygame.K_d]:
-            self.last_direction = 'right'
-            self.player_animations.set_animation('player_walk_right')
-            walking = True          
-            dir_x += player_speed
-        # Move up
+            dir_x += player_speed; self.last_direction = 'right'; walking = True
         if keys[pygame.K_w]:
-            walking = True
-            self.last_direction = 'up'
-            self.player_animations.set_animation('player_walk_up')
-            dir_y -= player_speed
-
-        # Move down
+            dir_y -= player_speed; self.last_direction = 'up'; walking = True
         if keys[pygame.K_s]:
-            self.last_direction = 'down'
-            self.player_animations.set_animation('player_walk_down')
-            walking = True    
-            dir_y += player_speed
-        
-        # Sets the correct idle based on last direction walked
-        if not walking:
-            self.player_animations.set_animation(f'player_idle_{self.last_direction}')
+            dir_y += player_speed; self.last_direction = 'down'; walking = True
 
-        # If we aren't already rolling, and we press SPACE, we will roll and we set the cooldown to be 3 seconds between rolls
-        current_time = pygame.time.get_ticks()
-        if not self.is_rolling and keys[pygame.K_SPACE] and walking and current_time - self.last_roll_time >= self.roll_cooldown:
-            self.roll()
-            self.roll_direction = (dir_x, dir_y)
-            self.last_roll_time = current_time
-            
-        # Normalizes our speed so when we move diagonally its the same as if we move vertically or horizontally separately
         input_vector = pygame.math.Vector2(dir_x, dir_y)
         if input_vector.length() > 0:
             input_vector = input_vector.normalize()
-        # Collision check and movement call
-        self.move(input_vector.x * player_speed, input_vector.y * player_speed, wall_tiles)
 
-    def move(self, dir_x, dir_y, wall_tiles):
-        self.rect.x += dir_x
-        if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
-            self.rect.x -= dir_x
+        # Roll Check
+        if keys[pygame.K_SPACE] and walking and not self.roll.is_rolling:
+            self.roll.start_roll(self, input_vector, self.last_direction)
 
-        self.rect.y += dir_y
-        if pygame.sprite.spritecollide(self, wall_tiles, dokill=False, collided=None):
-            self.rect.y -= dir_y
-
-    def roll(self):
-        self.is_rolling = True
-        self.is_invincible = True
-        # pick roll direction based on last direction
-        if self.last_direction == 'left':
-            self.player_animations.set_animation('player_roll_left')
-        elif self.last_direction == 'right':
-            self.player_animations.set_animation('player_roll_right')
-        elif self.last_direction == 'up':
-            self.player_animations.set_animation('player_roll_up')
-        elif self.last_direction == 'down':
-            self.player_animations.set_animation('player_roll_down')
+        return input_vector, walking
 
     def update(self, wall_tiles):
+        input_vector, walking = self.input()
 
-        if self.is_rolling: # Checks if the player is rolling and since it isn't a looping animation we play it separately
-            dir_x, dir_y = self.roll_direction
-            self.move(dir_x * self.roll_speed, dir_y * self.roll_speed, wall_tiles)
-            self.image = self.player_animations.play_animation(loop=False)
-
-            frames = self.player_animations.animations[self.player_animations.current_anim]
-            if self.player_animations.frame_index >= len(frames) - 1:
-                self.is_rolling = False
-                self.is_invincible = False
+        if self.roll.is_rolling: # Checks if the player is rolling and since it isn't a looping animation we play it separately
+            self.roll.start_roll(self, input_vector, self.last_direction)
+            self.movement.move(self, self.roll.roll_direction * self.roll.roll_speed, wall_tiles)  
+            self.image = self.animations.play_animation(loop=False)
+            frames = self.animations.animations[self.animations.current_anim]
+            if self.animations.frame_index >= len(frames) - 1:
+                self.roll.is_rolling = False
+                self.roll.is_invincible = False
         else:
-            self.input(wall_tiles) # Checks for inputs and passes the wall tiles through to check for collisions
-            self.image = self.player_animations.play_animation(loop=True)
+            # Move when not rolling
+            self.movement.move(self, input_vector, wall_tiles)
+            # --- Walking/Idle Animations ---
+            if walking:
+                self.animations.set_animation(f'player_walk_{self.last_direction}')
+            else:
+                self.animations.set_animation(f'player_idle_{self.last_direction}')
+
+        # Constantly updates whatever animation the player is currently doing
+        self.image = self.animations.play_animation(loop=True)
 
         # Constantly updates the camera position to follow the player
         camera.y = self.rect.y - camera.height/2 + self.image.get_height()/2

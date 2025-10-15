@@ -15,11 +15,46 @@ class Health:
     def is_dead(self):
         return self.current <= 0
     
-    def display_health_bar():
-        # Create a green health bar image
-        health_image = pygame.Surface((TILESIZE, 4))
-        health_image.fill(GREEN)
-        health_bar_rect = health_image.get_frect()
 
-        return health_image, health_bar_rect
+
+class HealthBar:
+    def __init__(self, max_health, width = TILESIZE, height = 4, shrink_speed = 0.5, is_player = False):
+        # --- VISUALS ---
+        self.width, self.height = width, height
+        self.image = pygame.Surface((width, height))
+        self.rect = self.image.get_frect()
+
+        # --- HEALTH BAR ATTRIBUTES ---
+        self.is_player = is_player       # Player Health bar check
+        self.max_health = max_health
+        self.display_health = max_health # what's visually shown
+        self.current_health = max_health # actual entity health
+        self.shrink_speed = shrink_speed # The speed in which the health bar shrinks from the entity being damaged
+
+    def update(self, current_health, entity_rect):
+        self.current_health = max(0, min(current_health , self.max_health))
+        
+        # Smoothly move display_health towards the current_health
+        if self.display_health > self.current_health:
+            self.display_health -= self.shrink_speed
+            if self.display_health < self.current_health:
+                self.display_health = self.current_health
+        elif self.display_health < self.current_health:
+            self.display_health += self.shrink_speed
+            if self.display_health > self.current_health:
+                self.display_health = self.current_health
+
+        # Calculate ratio
+        display_ratio = self.display_health / self.max_health
+
+        # Draw gray background and green front bar
+        self.image.fill(GRAY)
+        pygame.draw.rect(self.image, GREEN, (0, 0, self.width * display_ratio, self.height))
+
+        # Position above entity
+        if not self.is_player:
+            self.rect.midbottom = (entity_rect.centerx, entity_rect.top - 4)
+    
+    def draw(self, screen, camera):
+        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
     

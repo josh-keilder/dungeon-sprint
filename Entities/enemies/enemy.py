@@ -3,7 +3,7 @@ from globals import *
 from ui_objects.camera import camera
 from Entities.animations import Animations
 from Entities.enemies.enemyTextureData import skull_enemy_texture_data
-from Components.health import Health
+from Components.health import Health, HealthBar
 
 # Texture loader
 def gen_enemy_textures(texture_data) -> dict:
@@ -54,6 +54,7 @@ class Skull_Enemy(pygame.sprite.Sprite):
 
         # --- COMPONENTS ---
         self.health = Health(100)
+        self.health_bar = HealthBar(100)
         self.animations = Animations(animations= gen_enemy_textures(skull_enemy_texture_data), start_anim= 'skull_idle', animation_speed=.1)
 
         # --- VISUALS / STATE ---
@@ -66,6 +67,16 @@ class Skull_Enemy(pygame.sprite.Sprite):
         # Animation
         self.image = self.animations.play_animation(loop=True)
 
+        # Health Bar
+        self.health_bar.update(self.health.current, self.rect)
+
+        if self.health:
+            self.health.current -= 1
+
     def draw(self, screen):
+
+        # Skull Enemy
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-    
+
+        # Health Bar
+        self.health_bar.draw(screen, camera)
