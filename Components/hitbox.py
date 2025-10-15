@@ -1,4 +1,5 @@
 import pygame
+import globals
 from globals import *
 from ui_objects.camera import camera
 
@@ -22,6 +23,10 @@ class Hitbox:
         return self.mask.overlap(other_hitbox.mask, offset) is not None
 
     def draw(self, screen, color = (255, 0, 0)):
+        # Only draw if hitbox debug is turned on
+        if not globals.DEBUG_HITBOXES:
+            return
+
         outline = self.mask.outline()
         if not outline:
             return  # if mask is empty, skip

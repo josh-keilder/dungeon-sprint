@@ -1,10 +1,14 @@
 import pygame
 
+# Game Settings
 SCREENWIDTH = 1280
 SCREENHEIGHT = 720
 FRAMERATE = 60
 TILESIZE = 16
 PLAYER_SPRITESIZE = 64
+
+# Debug
+DEBUG_HITBOXES = False
 
 # Colors
 WHITE       = (255, 255, 255)

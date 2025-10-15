@@ -75,4 +75,4 @@ class Player(pygame.sprite.Sprite):
         self.health_bar.draw(screen, camera)
 
         # Show Hitbox for debug
-        self.hitbox.draw(screen)
+        self.hitbox.draw(screen, color=GREEN)

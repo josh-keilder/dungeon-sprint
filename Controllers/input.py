@@ -1,4 +1,5 @@
 import pygame
+import globals
 from globals import *
 
 class InputController:
@@ -28,5 +29,10 @@ class InputController:
         # Roll Check
         if keys[pygame.K_SPACE] and walking and not self.player.roll.is_rolling:
             self.player.roll.start_roll(self.player, input_vector, self.player.last_direction)
+
+
+        # Debug Button
+        if keys[pygame.K_p]:
+            globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
 
         return input_vector, walking
