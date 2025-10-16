@@ -52,8 +52,13 @@ class Dungeon_Level_One:
         # Taking damage test
         for enemy in self.enemies:
             if enemy.hitbox.collides_with(self.player.hitbox):
-                self.player.health.current -= 1
-                enemy.health.current -= 1
+                self.player.health.take_damage(enemy.attack_damage )
+                enemy.health.take_damage(1)
+            else:
+                self.player.health.take_damage(0)
+                enemy.health.take_damage(0)
+
+        print(self.player.health.current)
 
         # Keeps the camera on the player       
         camera_update(self.player)
@@ -70,8 +75,3 @@ class Dungeon_Level_One:
 
         if self.player_group.sprite:
            self.player_group.sprite.draw(self.screen)
-
-        # Shows the wall hitboxes and player hitboxes for collision detection
-        # for wall in self.wall_tiles:
-        #     pygame.draw.rect(self.display, (255,0,0), wall.rect, 2)
-        # pygame.draw.rect(self.display, (0,255,0), self.player.rect, 2)

@@ -12,7 +12,7 @@ skull_enemy_texture_data = {
         'size':(TILESIZE,TILESIZE), 
         'position':(0,0),
         'frames':4,
-        'file_path':'Assets/Enemies/Skull/skull_idle.png'
+        'file_path':'Assets/Enemies/Skull/Idle/skull_idle.png'
         },
 
 }

@@ -29,6 +29,11 @@ class Skeleton(pygame.sprite.Sprite):
     def __init__(self, groups, pos=(0,0)):
         super().__init__(groups)
 
+        # --- ATTRIBUTES ---
+        self.max_health = 100
+        self.attack_damage = 3
+        self.attack_cooldown = 5000
+
         # --- VISUALS / STATE ---
         self.animations = AnimationController(animations= gen_enemy_textures(skull_enemy_texture_data), start_anim= 'skull_idle', animation_speed=.1)
         self.image = self.animations.play_animation(loop=True)
@@ -65,6 +70,11 @@ class Skeleton(pygame.sprite.Sprite):
 class Skull_Enemy(pygame.sprite.Sprite):
     def __init__(self, groups, pos=(0,0)):
         super().__init__(groups)
+        
+        # --- ATTRIBUTES ---
+        self.max_health = 100
+        self.attack_damage = 5
+        self.attack_cooldown = 5000
 
         # --- VISUALS / STATE ---
         self.animations = AnimationController(animations= gen_enemy_textures(skull_enemy_texture_data), start_anim= 'skull_idle', animation_speed=.1)
@@ -73,9 +83,11 @@ class Skull_Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(topleft = self.pos)
 
         # --- COMPONENTS ---
-        self.health = Health(100)
-        self.health_bar = HealthBar(100)
+        self.health = Health(self.max_health)
+        self.health_bar = HealthBar(self.max_health)
         self.hitbox = Hitbox(self)
+
+        
 
     def update(self,wall_tiles):
 
@@ -91,10 +103,10 @@ class Skull_Enemy(pygame.sprite.Sprite):
     def draw(self, screen):
 
         # Skull Enemy
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-
-        # Health Bar
-        self.health_bar.draw(screen, camera)
+        if self.health.current > 0:
+            screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+            # Health Bar
+            self.health_bar.draw(screen, camera)
 
         # Show Hitbox for debug
         self.hitbox.draw(screen)

@@ -23,6 +23,9 @@ class Button():
             self.hover_sound = None
             self.click_sound = None
 
+        self.hover_sound.set_volume(0.3)
+        self.click_sound.set_volume(0.3)
+
     def draw(self):
         # puts the buttons on screen at the rect topleft coordinates
         self.screen.blit(self.image, (self.rect.x, self.rect.y))

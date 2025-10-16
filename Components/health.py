@@ -3,6 +3,8 @@ from globals import *
 
 class Health:
     def __init__(self, max_health):
+
+        # --- ATTRIBUTES ---
         self.max_health = max_health
         self.current = max_health
 
@@ -18,7 +20,7 @@ class Health:
 
 
 class HealthBar:
-    def __init__(self, max_health, width = TILESIZE, height = 4, shrink_speed = 0.5, is_player = False, pos=(20, 20)):
+    def __init__(self, max_health, width = TILESIZE, height = 4, shrink_speed = 1, is_player = False, pos=(20, 20)):
 
         # --- VISUALS ---
         self.width, self.height = width, height
@@ -26,7 +28,7 @@ class HealthBar:
         self.rect = self.image.get_frect()
         self.pos = pos # only used if it's a player bar
 
-        # --- HEALTH BAR ATTRIBUTES ---
+        # --- ATTRIBUTES ---
         self.is_player = is_player       # Player Health bar check
         self.max_health = max_health
         self.display_health = max_health # what's visually shown
