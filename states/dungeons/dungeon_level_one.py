@@ -1,10 +1,10 @@
 import pygame
 from globals import *
 
-from Characters.player.load_player import load_player
+from Entities.player.load_player import load_player
 from states.dungeons.map_loader import load_map
 from ui_objects.camera import camera_update
-from Characters.enemies.load_enemies import load_enemies
+from Entities.enemies.load_enemies import load_enemies
 from ui_objects.button import Button
 from ui_objects.create_outline import create_outline
 
@@ -26,7 +26,7 @@ class Dungeon_Level_One:
         # Loads our map
         self.map = load_map(self.sprites, self.wall_tiles, file_path = DUNGEON_LEVEL_ONE)
         # Loads our player
-        self.player = load_player(self, self.player_group)
+        self.player = load_player(self.player_group)
         # Loads all of our enemies
         self.enemies = load_enemies(self.enemies_group)
         
@@ -49,7 +49,18 @@ class Dungeon_Level_One:
         self.sprites.update()
         self.wall_tiles.update()
         
+        # Taking damage test
+        for enemy in self.enemies:
+            if enemy.hitbox.collides_with(self.player.hitbox):
+                self.player.health.take_damage(enemy.attack_damage )
+                enemy.health.take_damage(1)
+            else:
+                self.player.health.take_damage(0)
+                enemy.health.take_damage(0)
 
+        print(self.player.health.current)
+
+        # Keeps the camera on the player       
         camera_update(self.player)
 
     def draw(self):
@@ -64,8 +75,3 @@ class Dungeon_Level_One:
 
         if self.player_group.sprite:
            self.player_group.sprite.draw(self.screen)
-
-        # Shows the wall hitboxes and player hitboxes for collision detection
-        # for wall in self.wall_tiles:
-        #     pygame.draw.rect(self.display, (255,0,0), wall.rect, 2)
-        # pygame.draw.rect(self.display, (0,255,0), self.player.rect, 2)

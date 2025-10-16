@@ -7,21 +7,21 @@ player_texture_data = {
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Idle_Down.png'
+        'file_path':'Assets/Player/Idle/Proto_Idle_Down.png'
         },
     'player_walk_down':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Walk_Down.png'
+        'file_path':'Assets/Player/Walk/Proto_Walk_Down.png'
         },
     'player_roll_down':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':5,
-        'file_path':'Assets/Player/Proto_Roll_Down.png'
+        'file_path':'Assets/Player/Roll/Proto_Roll_Down.png'
         },
 
      # Up animations   
@@ -30,21 +30,21 @@ player_texture_data = {
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Idle_Up.png'
+        'file_path':'Assets/Player/Idle/Proto_Idle_Up.png'
         },
     'player_walk_up':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Walk_Up.png'
+        'file_path':'Assets/Player/Walk/Proto_Walk_Up.png'
         },
     'player_roll_up':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':5,
-        'file_path':'Assets/Player/Proto_Roll_Up.png'
+        'file_path':'Assets/Player/Roll/Proto_Roll_Up.png'
         },
 
      # Right animations   
@@ -53,21 +53,21 @@ player_texture_data = {
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Idle_Right.png'
+        'file_path':'Assets/Player/Idle/Proto_Idle_Right.png'
         },
     'player_walk_right':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Walk_Right.png'
+        'file_path':'Assets/Player/Walk/Proto_Walk_Right.png'
         },
     'player_roll_right':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':5,
-        'file_path':'Assets/Player/Proto_Roll_Right.png'
+        'file_path':'Assets/Player/Roll/Proto_Roll_Right.png'
         },     
         
      # Left animations   
@@ -76,20 +76,20 @@ player_texture_data = {
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Idle_Right.png'
+        'file_path':'Assets/Player/Idle/Proto_Idle_Right.png'
         },
     'player_walk_left':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':6,
-        'file_path':'Assets/Player/Proto_Walk_Right.png'
+        'file_path':'Assets/Player/Walk/Proto_Walk_Right.png'
         },    
     'player_roll_left':{    
         'type':'player',
         'size':(PLAYER_SPRITESIZE,PLAYER_SPRITESIZE), 
         'position':(0,0),
         'frames':5,
-        'file_path':'Assets/Player/Proto_Roll_Right.png'
+        'file_path':'Assets/Player/Roll/Proto_Roll_Right.png'
         },
 }

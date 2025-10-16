@@ -7,7 +7,6 @@ from states.menus.options import Options
 from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
-from ui_objects.create_outline import create_outline
 
 class Game:
     def __init__(self):
@@ -30,7 +29,7 @@ class Game:
 
         # Showing FPS
         self.fps = None
-        self.fps_text = Text_Loader(self.fps, self.screen, font_size=15, pos= (10,10), color=WHITE)
+        self.fps_text = Text_Loader(self.fps, self.screen, font_size=15, pos= (1220,10), color=WHITE)
 
     def run(self):
         while self.running:

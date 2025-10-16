@@ -5,7 +5,7 @@ def create_outline(screen, object, color, pos):
     object_image = object.image
     mask = pygame.mask.from_surface(object_image)
     mask_outline = mask.outline()
-    mask_surf = pygame.Surface(object_image.get_size())
+    mask_surf = pygame.Surface(object_image.get_size(), pygame.SRCALPHA)
     for pixel in mask_outline:
         mask_surf.set_at(pixel,(color))
     mask_surf.set_colorkey((0,0,0))

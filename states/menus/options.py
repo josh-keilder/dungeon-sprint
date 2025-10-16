@@ -1,6 +1,5 @@
 import pygame
 from globals import *
-
 from ui_objects.button import Button
 
 class Options:
@@ -51,7 +50,6 @@ class Options:
         # Checks for fps toggle button clicks
         if self.fps_button.is_clicked():
             self.fps_toggle = not self.fps_toggle # Flips toggle
-            print(self.fps_toggle)
             if self.fps_toggle == True:
                 self.fps_button.image = self.fps_button_on_img
             else:
