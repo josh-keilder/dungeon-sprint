@@ -58,8 +58,6 @@ class Dungeon_Level_One:
                 self.player.health.take_damage(0)
                 enemy.health.take_damage(0)
 
-        print(self.player.health.current)
-
         # Keeps the camera on the player       
         camera_update(self.player)
 

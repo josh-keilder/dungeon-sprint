@@ -25,6 +25,7 @@ def gen_enemy_textures(texture_data) -> dict:
                 textures[name].append(frame)
         return textures
 
+# Skeleton Enemy
 class Skeleton(pygame.sprite.Sprite):
     def __init__(self, groups, pos=(0,0)):
         super().__init__(groups)
@@ -67,6 +68,8 @@ class Skeleton(pygame.sprite.Sprite):
         # Show Hitbox for debug
         self.hitbox.draw(screen)
 
+
+# Skull Enemy
 class Skull_Enemy(pygame.sprite.Sprite):
     def __init__(self, groups, pos=(0,0)):
         super().__init__(groups)

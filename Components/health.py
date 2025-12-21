@@ -30,7 +30,7 @@ class HealthBar:
 
         # --- ATTRIBUTES ---
         self.is_player = is_player       # Player Health bar check
-        self.max_health = max_health
+        self.max_health = max_health     # Setting max health
         self.display_health = max_health # what's visually shown
         self.current_health = max_health # actual entity health
         self.shrink_speed = shrink_speed # The speed in which the health bar shrinks from the entity being damaged

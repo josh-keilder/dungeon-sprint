@@ -39,6 +39,7 @@ class RollController:
             self.last_roll_time = current_time
             self.roll_direction = dir_vector
 
+            # --- VISUALS ---
             self.roll_anim = f'{entity.name}_roll_{last_direction}'
             entity.animations.set_animation(self.roll_anim)
 
