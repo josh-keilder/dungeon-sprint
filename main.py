@@ -41,14 +41,16 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
 
+        self.dt = self.clock.tick(FRAMERATE) / 1000.0
+
         # Updates current state
-        self.gameStateManager.get_state().update()
+        self.gameStateManager.get_state().update(self.dt)
         # print(self.gameStateManager.all_states()) # Check states
 
         self.cursor.update()
 
         pygame.display.update()
-        self.clock.tick(FRAMERATE)
+
         self.fps = self.clock.get_fps()
         self.fps_text.update_text(f'FPS: {int(self.fps)}')
 

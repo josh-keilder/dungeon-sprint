@@ -40,7 +40,7 @@ class Options:
             if self.gameStateManager.get_previous_state().startswith('dungeon_level'):
                   self.back_button.draw()
 
-    def update(self):
+    def update(self, dt):
         self.main_menu_button.update()
 
         # Checks for main menu button clicks

@@ -4,11 +4,11 @@ from Entities.player.player import Player
 from pytmx.util_pygame import load_pygame
 from Entities.player.playerTextureData import player_texture_data
 
-def load_player(groups) -> object:
+def load_player(map) -> object:
     # Loads and creates the player and makes sure our camera starts with the player in the center
     player_textures = gen_player_textures()
     player_pos = get_player_pos(file_path = DUNGEON_LEVEL_ONE)
-    player = Player(groups, animations=player_textures, pos = player_pos)
+    player = Player(animations=player_textures, pos = player_pos, map=map)
     camera_start(player.rect.center)
 
     return player
