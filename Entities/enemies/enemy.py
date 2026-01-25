@@ -1,10 +1,11 @@
 import pygame
 from globals import *
-from ui_objects.camera import camera
-from Controllers.animations import AnimationController
+from node import Node
 from Entities.enemies.enemyTextureData import skull_enemy_texture_data
-from Components.health import Health, HealthBar
-from Components.hitbox import Hitbox
+from Components.healthComponent import Health, HealthBar
+from Components.hitboxComponent import Hitbox
+from Components.animationComponent import AnimationComponent
+from Components.movementComponent import MovementComponent
 
 # Texture loader
 def gen_enemy_textures(texture_data) -> dict:
@@ -25,91 +26,68 @@ def gen_enemy_textures(texture_data) -> dict:
                 textures[name].append(frame)
         return textures
 
-# Skeleton Enemy
-class Skeleton(pygame.sprite.Sprite):
-    def __init__(self, groups, pos=(0,0)):
-        super().__init__(groups)
-
-        # --- ATTRIBUTES ---
-        self.max_health = 100
-        self.attack_damage = 3
-        self.attack_cooldown = 5000
+# Base Enemy class
+class Enemy(Node):
+    def __init__(self, animations, pos=(0,0), max_health=100, attack_damage=5, movement_behavior=None, player= None):
+        super().__init__()
+        self.max_health = max_health
+        self.attack_damage = attack_damage
+        self.pos = pos
+        self.wall_tiles = None 
 
         # --- VISUALS / STATE ---
-        self.animations = AnimationController(animations= gen_enemy_textures(skull_enemy_texture_data), start_anim= 'skull_idle', animation_speed=.1)
-        self.image = self.animations.play_animation(loop=True)
+        self.animations = AnimationComponent(self, animations, 'skull_idle')
+        self.image = self.animations.controller.play_animation(loop=True)
         self.pos = pygame.math.Vector2(pos)
-        self.rect = self.image.get_frect(topleft = self.pos)
+        self.rect = self.image.get_frect(topleft=self.pos)
 
         # --- COMPONENTS ---
-        self.health = Health(100)
-        self.health_bar = HealthBar(100)
+        self.health = Health(self, self.max_health)
+        self.health_bar = HealthBar(self, self.max_health)
         self.hitbox = Hitbox(self)
+        self.movement_component = MovementComponent(self, speed=1, behavior=movement_behavior, player=player)
 
-    def update(self,wall_tiles):
-
+    def update(self, dt=0):
+        super().update(dt)
         # Animation
-        self.image = self.animations.play_animation(loop=True)
+        self.animations.update(dt)
 
         # Health Bar
-        self.health_bar.update(self.health.current, self.rect)
+        self.health_bar.update(dt)
 
         # Hitbox
-        self.hitbox.update()
+        self.hitbox.update(dt)
 
-    def draw(self, screen):
+        self.movement_component.update(dt)
 
-        # Skeleton Enemy
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        self.pos = pygame.math.Vector2(self.rect.topleft)
+
+    def draw(self, screen, camera=None):
+        if camera:
+            screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        else:
+            screen.blit(self.image, self.rect.topleft)
 
         # Health Bar
         self.health_bar.draw(screen, camera)
 
         # Show Hitbox for debug
-        self.hitbox.draw(screen)
+        self.hitbox.draw(screen, camera)
 
+        super().draw(screen, camera)
+
+# Skeleton Enemy
+class Skeleton(Enemy):
+    def __init__(self, pos=(0,0), player=None):
+        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=3, movement_behavior='wander_chase',player=player)
+
+        self.movement_component.speed = 40
 
 # Skull Enemy
-class Skull_Enemy(pygame.sprite.Sprite):
-    def __init__(self, groups, pos=(0,0)):
-        super().__init__(groups)
-        
-        # --- ATTRIBUTES ---
-        self.max_health = 100
-        self.attack_damage = 5
-        self.attack_cooldown = 5000
-
-        # --- VISUALS / STATE ---
-        self.animations = AnimationController(animations= gen_enemy_textures(skull_enemy_texture_data), start_anim= 'skull_idle', animation_speed=.1)
-        self.image = self.animations.play_animation(loop=True)
-        self.pos = pygame.math.Vector2(pos)
-        self.rect = self.image.get_frect(topleft = self.pos)
-
-        # --- COMPONENTS ---
-        self.health = Health(self.max_health)
-        self.health_bar = HealthBar(self.max_health)
-        self.hitbox = Hitbox(self)
+class Skull_Enemy(Enemy):
+    def __init__(self, pos=(0,0), player=None):
+        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=5, movement_behavior='fly', player=player)
 
         
-
-    def update(self,wall_tiles):
-
-        # Animation
-        self.image = self.animations.play_animation(loop=True)
-
-        # Health Bar
-        self.health_bar.update(self.health.current, self.rect)
-
-        # Hitbox
-        self.hitbox.update()
-
-    def draw(self, screen):
-
-        # Skull Enemy
-        if self.health.current > 0:
-            screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-            # Health Bar
-            self.health_bar.draw(screen, camera)
-
-        # Show Hitbox for debug
-        self.hitbox.draw(screen)
+        self.movement_component.flying = True
+        self.movement_component.speed = 50

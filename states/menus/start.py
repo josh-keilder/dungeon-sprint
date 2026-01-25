@@ -2,7 +2,7 @@ import pygame
 import sys
 from globals import *
 from ui_objects.button import Button
-from states.dungeons.dungeon_level_one import Dungeon_Level_One
+from states.map.dungeon_level_one import Dungeon_Level_One
 
 
 # Start menu
@@ -37,7 +37,7 @@ class Start:
         self.exit_button.draw()
         self.options_button.draw()
 
-    def update(self):
+    def update(self, dt):
         self.start_button.update()
         self.exit_button.update()
         self.options_button.update()

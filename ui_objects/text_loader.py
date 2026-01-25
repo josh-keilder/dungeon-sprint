@@ -11,8 +11,9 @@ class Text_Loader:
         self.text = text
         self.text_surface = self.font.render(self.text, False, self.color)
 
-    def draw(self):
-        self.screen.blit(self.text_surface, self.pos)
+    def draw(self, specifc_pos = None):
+        pos_to_use = specifc_pos if specifc_pos else self.pos
+        self.screen.blit(self.text_surface, pos_to_use)
 
     def update_text(self, new_text):
         self.text_surface = self.font.render(new_text, False, self.color)
