@@ -19,7 +19,6 @@ class Health(Component):
         return self.current <= 0
     
 
-
 class HealthBar(Component):
     def __init__(self, node, max_health, width = TILESIZE, height = 4, shrink_speed = 1, is_player = False, pos=(20, 20)):
         super().__init__(node)

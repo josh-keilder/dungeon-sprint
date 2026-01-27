@@ -2,7 +2,7 @@ import pygame
 from globals import *
 
 class AnimationController:
-    def __init__(self, animations, start_anim, animation_speed = 0.15):
+    def __init__(self, animations, start_anim, animation_speed):
         self.animations = animations 
         self.current_anim = start_anim
         self.frame_index = 0
@@ -14,8 +14,8 @@ class AnimationController:
             self.current_anim = anim_name
             self.frame_index = 0
 
-    def play_animation(self, loop = False):
-        self.frame_timer += self.animation_speed
+    def play_animation(self, dt, loop = False):
+        self.frame_timer += self.animation_speed * dt
         if self.frame_timer >= 1:
             self.frame_timer = 0
             self.frame_index += 1

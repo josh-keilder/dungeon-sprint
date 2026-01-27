@@ -31,21 +31,24 @@ class RollComponent(Component):
     def update(self, dt):
         if self.is_rolling:
             wall_tiles = getattr(self.node, 'wall_tiles', [])
-            self.node.rect.x += self.roll_direction.x * self.roll_speed
+            move_x = self.roll_direction.x * self.roll_speed * dt
+            move_y = self.roll_direction.y * self.roll_speed * dt
+
+            self.node.rect.x += move_x
             if wall_tiles:
                 for wall in wall_tiles:
                     if self.node.rect.colliderect(wall.rect):
-                        self.node.rect.x -= self.roll_direction.x * self.roll_speed
+                        self.node.rect.x -= move_x
                         break
-            self.node.rect.y += self.roll_direction.y * self.roll_speed
+            self.node.rect.y += move_y
             if wall_tiles:
                 for wall in wall_tiles:
                     if self.node.rect.colliderect(wall.rect):
-                        self.node.rect.y -= self.roll_direction.y * self.roll_speed
+                        self.node.rect.y -= move_y
                         break
 
             if hasattr(self.node, 'animations'):
-                self.node.image = self.node.animations.controller.play_animation(loop=False)
+                self.node.image = self.node.animations.controller.play_animation(dt, loop=False)
                 frames = self.node.animations.controller.animations[self.node.animations.controller.current_anim]
 
                 # End roll when animation finishes

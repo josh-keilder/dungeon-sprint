@@ -1,14 +1,17 @@
-import pygame
+import pygame, random
 from globals import *
 
 from pytmx.util_pygame import load_pygame
-from states.map.tiles import FloorTile, WallTile, ObjTile, Door, Key
+from states.map.tiles import FloorTile, WallTile, DecorTile, Door
 
 from Entities.player.load_player import load_player
 from ui_objects.camera import camera_update, camera
 from ui_objects.create_outline import create_outline
 from Entities.enemies.load_enemies import load_enemies
 from states.scene import Scene
+
+from items.items import Chest, WorldItem
+from items.itemDataBase import initialize_item_database
 
 pygame.mixer.init()
 
@@ -17,7 +20,7 @@ class Dungeon_Level_One:
         self.screen = screen
         self.gameStateManager = gameStateManager
 
-        self.file_path = None
+        self.file_path = DUNGEON_LEVEL_ONE
 
         # Create Scene
         self.scene = Scene()
@@ -26,14 +29,18 @@ class Dungeon_Level_One:
         self.sprites = pygame.sprite.Group()
         self.wall_tiles = pygame.sprite.Group()
         self.door_tiles = pygame.sprite.Group()
-        self.keys = pygame.sprite.Group()
+        self.items = pygame.sprite.Group()
+        self.chests = pygame.sprite.Group()
 
         self.player_group = pygame.sprite.GroupSingle()
         self.enemies_group = pygame.sprite.Group()
 
+        # Loads our items
+        self.ITEM_DATABASE = initialize_item_database()
+        
 
         # Loads our map
-        self.load_map(file_path = DUNGEON_LEVEL_ONE)
+        self.load_map(file_path = self.file_path)
 
         # Loads our player
         self.player = load_player(map = self)
@@ -42,7 +49,7 @@ class Dungeon_Level_One:
 
 
         # Loads all of our enemies
-        self.enemies = load_enemies(player=self.player)
+        self.enemies = load_enemies(player=self.player, file_path=self.file_path)
         for enemy in self.enemies:
             self.scene.add_child(enemy)
         
@@ -59,11 +66,13 @@ class Dungeon_Level_One:
         # Update the scene
         self.scene.update(dt)
 
+        self.items.update(dt)
+
         # Keeps the camera on the player       
         camera_update(self.player)
 
     def draw(self):
-        # Draws our sprites and walls to the screen 
+        # Draws our sprites, tiles and objects to the screen 
         for sprite in self.sprites:
             sprite.draw(self.screen)
         for wall in self.wall_tiles:
@@ -73,24 +82,32 @@ class Dungeon_Level_One:
             if door.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DIST:
                 door.hitbox.draw(self.screen, camera=camera, color= WHITE, skip_debug = True)
 
-        for key in self.keys:
-            key.draw(self.screen)
-            if key.pos.distance_to(self.player.pos) < PICK_UP_KEY_DIST:
-                key.hitbox.draw(self.screen, camera=camera, color= BLACK, skip_debug = True)
+        for item in self.items:
+            item.draw(self.screen, camera)
+
+        for chest in self.chests:
+            chest.draw(self.screen, camera)
+            # if chest.pos.distance_to(self.player.pos) < OPEN_CHEST_DIST:
+            #     chest.hitbox.draw(self.screen, camera=camera, color= WHITE, skip_debug = True)
 
         # Draw the scene
         self.scene.draw(self.screen, camera)
 
     def load_map(self, file_path):
+        tmx_data = load_pygame(file_path)
+
         layer_names = [
             'Floor', 
             'Walls', 
-            'Decor',
+            'Wall_Decor',
+            'Floor_Decor',
             'Door_Tiles',
-            'Doors',
-            'Keys'
+            'Items',
+            'Chests'
             ]
-        tmx_data = load_pygame(file_path)
+        
+        logic_layer = tmx_data.get_layer_by_name('Logic_Layer')
+        
         for layer in tmx_data.visible_layers:
             if layer.name in layer_names: 
                 if layer.name == 'Walls':
@@ -103,31 +120,29 @@ class Dungeon_Level_One:
                         pos = (x * TILESIZE, y * TILESIZE)
                         FloorTile(groups= self.sprites, image=surf, pos= pos)
 
-                if layer.name == 'Decor':
+                if layer.name == 'Wall_Decor' or layer.name == 'Floor_Decor':
                     for x, y, surf in layer.tiles():
                         pos = (x * TILESIZE, y * TILESIZE)
-                        ObjTile(groups= self.sprites, image=surf, pos= pos)
+                        DecorTile(groups= self.sprites, image=surf, pos= pos)
 
                 if layer.name == 'Door_Tiles':
                     for x, y, surf in layer.tiles():
                         pos = (x * TILESIZE, y * TILESIZE)
                         door_tile = Door(groups= self.door_tiles, image=surf, pos= pos)
-                        for obj in tmx_data.objects:
-                            if int(obj.x) == pos[0] and int(obj.y) == pos[1]:
-                                door_tile.door_id = obj.properties.get('id', None)
-                                break
+                        logic_props = tmx_data.get_tile_properties(x,y, tmx_data.layers.index(logic_layer))
+                        if logic_props:
+                            door_tile.door_id = logic_props.get('door_id')
 
-                if layer.name == 'Keys':
-                    for x, y, surf in layer.tiles():
-                        pos = (x * TILESIZE, y * TILESIZE)
-                        key_tile = Key(groups= self.keys, image=surf, pos= pos)
-                        for obj in tmx_data.objects:
-                            if int(obj.x) == pos[0] and int(obj.y) == pos[1]:
-                                key_tile.key_id = obj.properties.get('id', None)
-                                break
+                # For testing items
+                # if layer.name == 'Items':
+                #     for obj in layer:
+                #         item_name = obj.name.lower()
+                #         if item_name in ITEM_DATABASE:
+                #             item_data = ITEM_DATABASE[item_name]
+                #             WorldItem(pos=(obj.x, obj.y), groups = self.items, item_data = item_data)
 
-    def unlock_door(self, door_id):
-        for door in list(self.door_tiles):
-            if door.door_id == door_id:
-                self.door_tiles.remove(door)
-        self.scene.set_wall_tiles(list(self.wall_tiles.sprites()) + list(self.door_tiles.sprites()))
+                # Items will spawn from chests
+                if layer.name == 'Chests':
+                    for obj in layer:
+                        if obj.name.lower() == 'chest':
+                            Chest(pos=(obj.x, obj.y), groups=self.chests, map=self)

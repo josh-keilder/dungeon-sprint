@@ -2,10 +2,10 @@ from globals import *
 from Entities.enemies.enemy import Skeleton, Skull_Enemy
 from pytmx.util_pygame import load_pygame
 
-def load_enemies(player= None) -> list:
+def load_enemies(player= None, file_path= None) -> list:
     # Spawns in enemies at enemy locations on the map
     enemies = []
-    enemy_positions = get_enemy_pos(file_path = DUNGEON_LEVEL_ONE)
+    enemy_positions = get_enemy_pos(file_path = file_path)
     for pos in enemy_positions.get("Skull", []):
         new_skull_enemy = Skull_Enemy(pos=pos, player=player)
         enemies.append(new_skull_enemy)

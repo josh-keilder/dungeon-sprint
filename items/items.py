@@ -1,0 +1,95 @@
+from globals import *
+import pygame, copy, random
+from Components.animationComponent import AnimationComponent
+
+class Item:
+    def __init__(self, id, type = None, name=None, animations= None, desc = None, quantity = 1, max_stack= 99, anim_speed = 4, value = None):
+        self.id = id
+        self.type = type
+        self.name = name
+        self.animations = animations
+        self.desc = desc
+        self.quantity = quantity
+        self.max_stack = max_stack
+        self.anim_speed = anim_speed
+        self.value = value
+
+        self.image = animations.get('idle', [None])[0]
+
+    def clone(self):
+        return copy.copy(self)
+    
+    @staticmethod
+    def gen_item_textures(texture_data, item_name) -> dict:
+        textures = {}
+        for name, data in texture_data.items():
+            if name == item_name:
+                item_img = pygame.image.load(data['file_path']).convert_alpha()
+                w, h = data['size']
+                frames = data['frames']
+                row = data['position'][1]
+                textures[name] = []
+                for i in range(frames):
+                    x = i * w
+                    y = row * h
+                    frame = item_img.subsurface(pygame.Rect(x, y, w, h))
+                    textures[name].append(frame)
+        return textures
+    
+class WorldItem(pygame.sprite.Sprite):
+    def __init__(self, groups, pos, item_data):
+        super().__init__(groups)
+        self.item_data = item_data.clone()
+        self.animations = AnimationComponent(node=self, animations=item_data.animations, start_anim='idle', anim_speed=item_data.anim_speed)
+        self.image = item_data.image
+        self.pos = pos
+        self.rect = self.image.get_rect(center = self.pos)
+
+
+        # Specific Item Modifiers
+        if self.item_data.type == 'small_potion':
+            self.item_data.quantity = random.randint(1, 3)
+
+    def draw(self, screen, camera):
+        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+
+    def update(self, dt):
+        self.animations.update(dt)
+
+class Chest(pygame.sprite.Sprite):
+    def __init__(self, groups, pos, map):
+        super().__init__(groups)
+        self.image = CHEST_IMAGE
+        self.rect = self.image.get_frect(topleft = pos)
+        self.pos = pygame.math.Vector2(pos)
+        self.map = map
+        self.opened = False
+
+        
+    def draw(self, screen, camera):
+        # Draws the tiles based on the camera offset
+        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y)) 
+
+    def update(self):
+        pass
+
+    def roll_loot(self):
+        drops = []
+        if random.random() < 0.8:
+            drops.append('gold_key')
+        if random.random() < 0.9:
+            drops.append('small_health_potion')
+
+        return drops
+    
+    def open(self):
+        if self.opened:
+            return
+
+        self.opened = True
+        cx, cy = self.rect.center
+        for item_id in self.roll_loot():
+            item_data = self.map.ITEM_DATABASE.get(item_id)
+            offset_x = random.randint(-10, 10)
+            offset_y = random.randint(-5, 5)
+            WorldItem(pos=(cx + offset_x, cy + offset_y), groups=self.map.items, item_data=item_data)
