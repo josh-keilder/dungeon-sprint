@@ -7,7 +7,7 @@ from Entities.player.playerTextureData import player_texture_data
 def load_player(map) -> object:
     # Loads and creates the player and makes sure our camera starts with the player in the center
     player_textures = gen_player_textures()
-    player_pos = get_player_pos(file_path = DUNGEON_LEVEL_ONE)
+    player_pos = get_player_pos(file_path = map.file_path)
     player = Player(animations=player_textures, pos = player_pos, map=map)
     camera_start(player.rect.center)
 

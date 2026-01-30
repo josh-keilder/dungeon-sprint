@@ -2,21 +2,6 @@ import pygame
 from globals import *
 from Components.component import Component
 from ui_objects.text_loader import Text_Loader
-import copy
-
-class Item:
-    def __init__(self, id, type= None, name=None, image= None, desc = None, quantity = 1, max_stack= 99):
-        self.id = id
-        self.type = type
-        self.name = name
-        self.image = image
-        self.desc = desc
-        self.quantity = quantity
-        self.max_stack = max_stack
-
-    def clone(self):
-        return copy.copy(self)
-
 
 class InventoryComponent(Component):
     def __init__(self, node, size, cols = 10):
@@ -24,23 +9,33 @@ class InventoryComponent(Component):
         self.size = size
         self.cols = cols
         self.inventory_slots = [None] * size
-        self.slot_size = 40
+        self.slot_size = 48 # Adjust for inventory size on screen
         self.padding = 2
 
-        self.quantity_label = Text_Loader(text="", screen=None, font_size=18, color=WHITE)
-        
+        # Quantity attributes
+        self.quantity_label = Text_Loader(text="", screen=None, font_name='Arial', font_size=10, color=WHITE)
 
+        # Tool tip attributes
+        self.tooltip_name = Text_Loader(text="", screen=None, font_name='Arial', font_size=14, color=WHITE)
+        self.tooltip_desc = Text_Loader(text="", screen=None, font_name='Arial', font_size=12, color=(200, 200, 200))
+        self.tooltip_value = Text_Loader(text="", screen=None, font_name='Arial', font_size=12, color=(200, 200, 200))
+
+        # State for moving items
+        self.held_item = None
+
+        self.start_x, self.start_y = SCREENWIDTH - 780 - self.slot_size * self.cols, 610
+        
     def add_item(self, item):
         for slot in self.inventory_slots:
             if slot and slot.id == item.id:
                 space_available = slot.max_stack - slot.quantity
-                amount_to_add = min(space_available, item.quantity)
+                if space_available > 0:
+                    amount_to_add = min(space_available, item.quantity)
+                    slot.quantity += amount_to_add
+                    item.quantity -= amount_to_add
                 
-                slot.quantity += amount_to_add
-                item.quantity -= amount_to_add
-                
-                if item.quantity <= 0:
-                    return True
+                    if item.quantity <= 0:
+                        return True
 
         if item.quantity > 0:
             for i in range(len(self.inventory_slots)):
@@ -52,13 +47,32 @@ class InventoryComponent(Component):
         return False
 
     def remove_item(self, item_id, quantity=1):
-        for i, slot in enumerate(self.inventory_slots):
+        # First, check if the player even has enough total across all stacks
+        total_found = sum(slot.quantity for slot in self.inventory_slots if slot and slot.id == item_id)
+    
+        if total_found < quantity:
+            return False  # Not enough items to remove
+
+        # Start removing
+        remaining_to_remove = quantity
+        for i in range(len(self.inventory_slots)):
+            slot = self.inventory_slots[i]
+        
             if slot and slot.id == item_id:
-                slot.quantity -= quantity
-                if slot.quantity <= 0:
-                    self.inventory_slots[i] = None
-                return True
-        return False
+                if slot.quantity > remaining_to_remove:
+                    # This stack has more than we need, just subtract and stop
+                    slot.quantity -= remaining_to_remove
+                    remaining_to_remove = 0
+                    break
+                else:
+                    # This stack is smaller or equal to what we need
+                    remaining_to_remove -= slot.quantity
+                    self.inventory_slots[i] = None # Empty the slot
+                
+                if remaining_to_remove <= 0:
+                    break
+                
+        return True
     
     def get_item(self, item_id):
         for slot in self.inventory_slots:
@@ -75,25 +89,125 @@ class InventoryComponent(Component):
         if item:
             return True
         return False
-
+    
     def draw(self, screen):
-        start_x, start_y = screen.get_width() - 10 - self.slot_size * self.cols, 10
         
         for i, slot in enumerate(self.inventory_slots):
-            x = start_x + (i % self.cols) * self.slot_size
-            y = start_y + (i // self.cols) * self.slot_size
+            x = self.start_x + (i % self.cols) * self.slot_size
+            y = self.start_y + (i // self.cols) * self.slot_size
             
-            pygame.draw.rect(screen, (100, 100, 100), (x, y, self.slot_size, self.slot_size), 2)
+            pygame.draw.rect(screen, DARK_GRAY, (x, y, self.slot_size, self.slot_size), 2)
             
             if slot:
                 if slot.image:
-                    screen.blit(slot.image, (x + 5, y + 5))
+                    scaled_image = pygame.transform.scale(slot.image, (self.slot_size - 10, self.slot_size - 10))
+                    screen.blit(scaled_image, (x + 5, y + 5))
                 
-                if slot.quantity > 1:
+                if slot.quantity < 10:
+                    text_pos = (x + self.slot_size - 10, y + self.slot_size - 16)
+                else:
+                    text_pos = (x + self.slot_size - 12, y + self.slot_size - 16)
+                
+                if slot.quantity >= 1:
                     # Update the loader's internal state
                     self.quantity_label.update_text(str(slot.quantity))
                     
                     # Manual blit using the loader's surface at the calculated grid position
-                    # We offset it to the bottom-right of the current slot
-                    text_pos = (x + self.slot_size - 18, y + self.slot_size - 18)
+                    # We offset it to the bottom-right of the current slot depending on the quantity
                     screen.blit(self.quantity_label.text_surface, text_pos)
+
+        # Draw the held item at the mouse position
+        if self.held_item:
+            m_x, m_y = pygame.mouse.get_pos()
+            # Center the item on the cursor
+            img_pos = (m_x - self.slot_size // 2, m_y - self.slot_size // 2)
+            if self.held_item.image:
+                scaled_image = pygame.transform.scale(self.held_item.image, (self.slot_size - 10, self.slot_size - 10))
+                screen.blit(scaled_image, img_pos)
+        
+            # Draw quantity for held item
+            if self.held_item.quantity >= 1:
+                self.quantity_label.update_text(str(self.held_item.quantity))
+                screen.blit(self.quantity_label.text_surface, (m_x + 10, m_y + 10))
+
+        # Tooltip logic
+        if not self.held_item:
+            mouse_pos = pygame.mouse.get_pos()
+            hover_idx = self.get_slot_at_mouse(mouse_pos)
+            if hover_idx is not None:
+                hovered_item = self.inventory_slots[hover_idx]
+                if hovered_item:
+                    self.draw_tooltip(screen, hovered_item, mouse_pos)
+
+    def draw_tooltip(self, screen, item, mouse_pos):
+        if not item: 
+            return
+
+       # Update the text surfaces with current item data
+        self.tooltip_name.update_text(item.name)
+        self.tooltip_desc.update_text(item.desc)
+
+        self.tooltip_value.update_text(item.value)
+
+        # Calculate dimensions
+        padding = 8
+        line_spacing = 4
+        name_w = self.tooltip_name.text_surface.get_width()
+        name_h = self.tooltip_name.text_surface.get_height()
+        desc_w = self.tooltip_desc.text_surface.get_width()
+        desc_h = self.tooltip_desc.text_surface.get_height()
+        value_w = self.tooltip_value.text_surface.get_width()
+        value_h = self.tooltip_value.text_surface.get_height()
+
+        if not item.value:
+            width = max(name_w, desc_w) + (padding * 2)
+            height = name_h + desc_h + (padding * 2) + line_spacing
+        else:
+            width = max(name_w, desc_w, value_w) + (padding * 2)
+            height = name_h + desc_h + value_h + (padding * 2) + line_spacing
+
+        # Offset from cursor
+        tx, ty = mouse_pos[0] + 15, mouse_pos[1] + 15
+    
+        # Boundary check: Keep tooltip on screen
+        if tx + width > screen.get_width():
+            tx = mouse_pos[0] - width - 5
+        if ty + height > screen.get_height():
+            ty = mouse_pos[1] - height - 5
+
+        pygame.draw.rect(screen, (20, 20, 20), (tx, ty, width, height))
+        pygame.draw.rect(screen, (150, 150, 150), (tx, ty, width, height), 1) # Border
+
+        screen.blit(self.tooltip_name.text_surface, (tx + padding, ty + padding))
+        screen.blit(self.tooltip_desc.text_surface, (tx + padding, ty + padding + name_h + line_spacing))
+        screen.blit(self.tooltip_value.text_surface, (tx + padding, ty + padding + name_h + desc_h + line_spacing + 4))
+
+    def get_slot_at_mouse(self, mouse_pos):
+        mx, my = mouse_pos
+
+        # Check if mouse is within the inventory grid bounds
+        if (self.start_x <= mx <= self.start_x + self.cols * self.slot_size and
+            self.start_y <= my <= self.start_y + (self.size // self.cols) * self.slot_size):
+        
+            col = (mx - self.start_x) // self.slot_size
+            row = (my - self.start_y) // self.slot_size
+            index = int(row * self.cols + col)
+
+            if 0 <= index < len(self.inventory_slots):
+                return index
+        return None
+    
+    def handle_click(self, mouse_pos):
+        index = self.get_slot_at_mouse(mouse_pos)
+    
+        if index is not None:
+        # If we are holding an item
+            if self.held_item:
+                # Swap held item with whatever is in the slot (even if None)
+                temp = self.inventory_slots[index]
+                self.inventory_slots[index] = self.held_item
+                self.held_item = temp
+            else:
+                # If not holding anything, pick up the item in the slot
+                self.held_item = self.inventory_slots[index]
+                self.inventory_slots[index] = None

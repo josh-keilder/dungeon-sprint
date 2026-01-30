@@ -21,8 +21,8 @@ class MovementComponent(Component):
         elif self.behavior == 'wander_chase' and self.player:
             self.wander_chase_behavior(dt)
         else:
-            if hasattr(self.node, 'input_vector') and hasattr(self.node, 'walking'):
-                dir_vector = self.node.input_vector
+            if hasattr(self.node, 'input_vector'):
+                dir_vector = self.node.input_vector * self.speed * dt
                 wall_tiles = getattr(self.node, 'wall_tiles', [])
                 self.move(dir_vector, wall_tiles)
 

@@ -3,14 +3,17 @@ import pygame
 # Game Settings
 SCREENWIDTH = 1280
 SCREENHEIGHT = 720
-FRAMERATE = 1000
+FRAMERATE = 165
 TILESIZE = 16
 PLAYER_SPRITESIZE = 64
-ZOOM = 4
 
 # Random Values
 UNLOCK_DOOR_DIST = 32
-PICK_UP_KEY_DIST = 20
+PICK_UP_ITEM_DIST = 24
+OPEN_CHEST_DIST = 24
+
+# Item Values
+SMALL_HEALTH_POTION_VALUE = 70
 
 # Debug
 DEBUG_HITBOXES = False
@@ -50,6 +53,7 @@ BACK_BUTTON_IMAGE = pygame.image.load('Assets/Menu-Assets/back-button.png')
 FPS_BUTTON_ON_IMAGE = pygame.image.load('Assets/Menu-Assets/Fps_On.png')
 FPS_BUTTON_OFF_IMAGE = pygame.image.load('Assets/Menu-Assets/Fps_Off.png')
 
+CHEST_IMAGE = pygame.image.load('Assets/Objects/chest_1.png')
 
 # Dungeon Level Maps
 DUNGEON_LEVEL_ONE = "Assets/Maps/Dungeon_Level_One.tmx"

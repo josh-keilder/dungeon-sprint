@@ -25,7 +25,7 @@ class Player(Node):
 
         # --- VISUALS ---
         self.animations = AnimationComponent(self, animations, 'player_idle_down')
-        self.image = self.animations.controller.play_animation(loop=True)
+        self.image = animations['player_idle_down'][0]
         self.rect = self.image.get_frect()
         self.rect.center = pos
         
@@ -35,12 +35,14 @@ class Player(Node):
         self.hitbox = Hitbox(self)
         self.input = InputComponent(self, map=map)
         self.inventory = InventoryComponent(self, size=20)
-        self.movement = MovementComponent(self, speed=1)
-        self.roll = RollComponent(self, roll_speed=3)
+        self.movement = MovementComponent(self, speed=70)
+        self.roll = RollComponent(self, roll_speed=300)
 
     def update(self, dt):
         super().update(dt)
         
+        self.dt = dt
+
         # Update components
         self.input.update(dt)
         self.movement.update(dt)

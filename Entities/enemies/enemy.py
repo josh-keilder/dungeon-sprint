@@ -28,7 +28,7 @@ def gen_enemy_textures(texture_data) -> dict:
 
 # Base Enemy class
 class Enemy(Node):
-    def __init__(self, animations, pos=(0,0), max_health=100, attack_damage=5, movement_behavior=None, player= None):
+    def __init__(self, animations, pos=(0,0), max_health=100, attack_damage=5, movement_behavior=None, player= None, start_anim = None):
         super().__init__()
         self.max_health = max_health
         self.attack_damage = attack_damage
@@ -36,8 +36,8 @@ class Enemy(Node):
         self.wall_tiles = None 
 
         # --- VISUALS / STATE ---
-        self.animations = AnimationComponent(self, animations, 'skull_idle')
-        self.image = self.animations.controller.play_animation(loop=True)
+        self.animations = AnimationComponent(self, animations, start_anim=start_anim)
+        self.image = animations[start_anim][0]
         self.pos = pygame.math.Vector2(pos)
         self.rect = self.image.get_frect(topleft=self.pos)
 
@@ -79,14 +79,14 @@ class Enemy(Node):
 # Skeleton Enemy
 class Skeleton(Enemy):
     def __init__(self, pos=(0,0), player=None):
-        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=3, movement_behavior='wander_chase',player=player)
+        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=3, movement_behavior='wander_chase',player=player, start_anim='skull_idle')
 
         self.movement_component.speed = 40
 
 # Skull Enemy
 class Skull_Enemy(Enemy):
     def __init__(self, pos=(0,0), player=None):
-        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=5, movement_behavior='fly', player=player)
+        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=5, movement_behavior='fly', player=player, start_anim='skull_idle')
 
         
         self.movement_component.flying = True
