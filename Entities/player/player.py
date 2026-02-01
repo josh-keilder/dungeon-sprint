@@ -16,12 +16,23 @@ class Player(Node):
 
         # --- ATTRIBUTES ---
         self.name = 'player'
-        self.max_health = 500
         self.last_direction = 'down'
         self.input_vector = pygame.Vector2(0,0)
-        self.walking = False
-        self.wall_tiles = None  
+        self.walking = False 
         self.pos = pygame.math.Vector2(pos)
+        self.inventory_size = 20
+        self.base_stats = {
+            'attack': 5,
+            'defense': 0,
+            'speed': 70,
+            'health': 500,
+            'roll_speed': 300,
+            'speed_multiplier': 1
+
+        }
+
+        # --- Random ---
+        self.wall_tiles = None 
 
         # --- VISUALS ---
         self.animations = AnimationComponent(self, animations, 'player_idle_down')
@@ -30,18 +41,41 @@ class Player(Node):
         self.rect.center = pos
         
         # --- COMPONENTS ---
-        self.health = Health(self, self.max_health)
-        self.health_bar = HealthBar(self, self.max_health, width=200, height=10, is_player=True, shrink_speed=5)
+        self.health = Health(self, self.base_stats['health'])
+        self.health_bar = HealthBar(self, self.base_stats['health'], width=200, height=10, is_player=True, shrink_speed=5)
         self.hitbox = Hitbox(self)
         self.input = InputComponent(self, map=map)
-        self.inventory = InventoryComponent(self, size=20)
-        self.movement = MovementComponent(self, speed=70)
-        self.roll = RollComponent(self, roll_speed=300)
+        self.inventory = InventoryComponent(self, size=self.inventory_size)
+        self.movement = MovementComponent(self, self.base_stats['speed'])
+        self.roll = RollComponent(self, roll_speed=self.base_stats['roll_speed'])
+
+    @property
+    def stats(self):
+        final_stats = self.base_stats.copy()
+        bonuses = self.inventory.get_equipment_bonuses()
+        
+        for stat, value in bonuses.items():
+            if stat in final_stats:
+                final_stats[stat] += value
+                
+        return final_stats
 
     def update(self, dt):
         super().update(dt)
-        
-        self.dt = dt
+
+        if self.walking and self.inventory.equipment_slots.get('boots'):
+            self.stats['speed'] += 1
+        if not self.walking and self.base_stats['speed'] > 70:
+            self.base_stats['speed']-= 5
+
+        print(self.stats['speed'])
+
+        self.movement.max_speed = self.stats['speed']
+        self.movement.speed_multiplier = self.stats['speed_multiplier']
+        self.roll.roll_speed = self.base_stats['roll_speed']
+
+        if self.health.max_health != self.stats['health']:
+            self.health.max_health = self.stats['health']
 
         # Update components
         self.input.update(dt)

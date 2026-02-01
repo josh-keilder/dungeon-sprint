@@ -2,6 +2,7 @@ import pygame
 import globals
 from globals import *
 from Components.component import Component
+from Controllers.sound import SoundController
 from ui_objects.text_loader import Text_Loader
 
 class InputComponent(Component):
@@ -37,6 +38,9 @@ class InputComponent(Component):
             globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
             self.interact_cooldown = 0.5
 
+        if keys[pygame.K_z]:
+            SoundController.stop_music(self)
+
         # Use health potion
         if keys[pygame.K_q] and self.healing_cooldown <= 0 and self.node.health.current < self.node.health.max_health:
             if self.node.inventory.has_item('small_health_potion'):
@@ -59,13 +63,13 @@ class InputComponent(Component):
 
         # Movement checks
         if keys[pygame.K_a]:
-            dir_x -= self.node.movement.speed; self.node.last_direction = 'left'; walking = True
+            dir_x -= self.node.movement.max_speed; self.node.last_direction = 'left'; walking = True
         if keys[pygame.K_d]:
-            dir_x += self.node.movement.speed; self.node.last_direction = 'right'; walking = True
+            dir_x += self.node.movement.max_speed; self.node.last_direction = 'right'; walking = True
         if keys[pygame.K_w]:
-            dir_y -= self.node.movement.speed; self.node.last_direction = 'up'; walking = True
+            dir_y -= self.node.movement.max_speed; self.node.last_direction = 'up'; walking = True
         if keys[pygame.K_s]:
-            dir_y += self.node.movement.speed; self.node.last_direction = 'down'; walking = True
+            dir_y += self.node.movement.max_speed; self.node.last_direction = 'down'; walking = True
 
         input_vector = pygame.math.Vector2(dir_x, dir_y)
         if input_vector.length() > 0:

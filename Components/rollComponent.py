@@ -21,7 +21,17 @@ class RollComponent(Component):
             self.is_rolling = True
             self.is_invincible = True
             self.last_roll_time = current_time
-            self.roll_direction = dir_vector
+
+            # --- MOMENTUM CAPTURE ---
+            current_vel = self.node.movement.velocity.length()
+
+            if dir_vector.length() == 0:
+                self.roll_direction = pygame.Vector2(0,0) # Or a default vector
+            else:
+                self.roll_direction = dir_vector.normalize()
+
+
+            self.current_roll_velocity = max(current_vel * 1.5, 300)
 
             # --- VISUALS ---
             self.roll_anim = f'{self.node.name}_roll_{last_direction}'

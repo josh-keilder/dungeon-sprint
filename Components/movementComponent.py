@@ -7,7 +7,13 @@ class MovementComponent(Component):
         super().__init__(node)
         # --- ATTRIBUTES ---
         self.node = node
-        self.speed = speed
+        self.max_speed = speed
+
+        self.velocity = pygame.math.Vector2(0,0)
+        self.acceleration = 2400
+        self.friction = 3000
+        self.speed_multiplier = 1.0
+
         self.flying = False
         self.behavior = behavior
         self.player = player
@@ -22,9 +28,33 @@ class MovementComponent(Component):
             self.wander_chase_behavior(dt)
         else:
             if hasattr(self.node, 'input_vector'):
-                dir_vector = self.node.input_vector * self.speed * dt
+                target_dir = self.node.input_vector
+
+                if target_dir.length() > 0:
+                    if target_dir.length() > 1:
+                        target_dir.normalize()
+                    
+                    if self.velocity.length() > 0 and target_dir.dot(self.velocity.normalize()) < -0.5:
+                        self.velocity -= self.velocity * self.friction * 0.01 * dt
+
+                    self.velocity += target_dir * self.acceleration * dt
+
+                else:
+                    if self.velocity.length() > 0:
+                        drag_multiplier = 1.2
+                        friction_vec = self.velocity.normalize() * (self.friction * drag_multiplier) * dt
+                        if self.velocity.length() < friction_vec.length():
+                            self.velocity = pygame.math.Vector2(0,0)
+                        else:
+                            self.velocity -= friction_vec
+
+                current_limit = self.max_speed * self.speed_multiplier
+
+                if self.velocity.length() > current_limit:
+                    self.velocity.scale_to_length(current_limit)
+
                 wall_tiles = getattr(self.node, 'wall_tiles', [])
-                self.move(dir_vector, wall_tiles)
+                self.move(self.velocity * dt, wall_tiles)
 
     def fly_behavior(self, dt):
         distance = self.node.pos.distance_to(self.player.pos)
@@ -84,13 +114,17 @@ class MovementComponent(Component):
         if wall_tiles and not self.flying:
             for wall in wall_tiles:
                 if self.node.rect.colliderect(wall.rect):
-                    self.node.rect.x -= dir_vector.x 
+                    if dir_vector.x > 0: self.node.rect.right = wall.rect.left
+                    if dir_vector.x < 0: self.node.rect.left = wall.rect.right
+                    self.velocity.x = 0
                     break
         self.node.rect.y += dir_vector.y 
         if wall_tiles and not self.flying:
             for wall in wall_tiles:
                 if self.node.rect.colliderect(wall.rect):
-                    self.node.rect.y -= dir_vector.y 
+                    if dir_vector.y > 0: self.node.rect.bottom = wall.rect.top
+                    if dir_vector.y < 0: self.node.rect.top = wall.rect.bottom
+                    self.velocity.y = 0
                     break
         
         self.node.pos = pygame.math.Vector2(self.node.rect.topleft)

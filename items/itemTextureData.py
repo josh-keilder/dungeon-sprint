@@ -21,6 +21,15 @@ health_potions = {
         },
 }
 
+speed_boots = {
+    'speed_boots':{
+        'type':'equipment',
+        'size':(TILESIZE,TILESIZE), 
+        'position':(0,0),
+        'frames':1,
+        'file_path':'Assets/Items/Speed_Boots_placeholder.png'
+        },
+}
 
 
 

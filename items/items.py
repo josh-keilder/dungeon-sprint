@@ -3,7 +3,7 @@ import pygame, copy, random
 from Components.animationComponent import AnimationComponent
 
 class Item:
-    def __init__(self, id, type = None, name=None, animations= None, desc = None, quantity = 1, max_stack= 99, anim_speed = 4, value = None):
+    def __init__(self, id:str, type:str = None, name:str=None, animations:dict= None, desc:str = None, quantity:int = 1, max_stack:int = 99, anim_speed:int = 4, value:str = None):
         self.id = id
         self.type = type
         self.name = name
@@ -20,7 +20,7 @@ class Item:
         return copy.copy(self)
     
     @staticmethod
-    def gen_item_textures(texture_data, item_name) -> dict:
+    def gen_item_textures(texture_data: dict, item_name:str) -> dict:
         textures = {}
         for name, data in texture_data.items():
             if name == item_name:
@@ -36,6 +36,27 @@ class Item:
                     textures[name].append(frame)
         return textures
     
+
+class EquipmentItem(Item):
+    def __init__(self, id: str, name: str = None, animations: dict = None, 
+                 desc: str = None, slot: str = None, stats: dict = None, 
+                 ability: str = None, value: str = None):
+        super().__init__(id=id, 
+            type='equipment', 
+            name=name, 
+            animations=animations, 
+            desc=desc, 
+            quantity=1, 
+            max_stack=1, 
+            value=value)
+
+        self.slot = slot
+        self.stats= stats
+        self.ability = ability
+
+
+        self.image = animations.get('idle', [None])[0]
+        
 class WorldItem(pygame.sprite.Sprite):
     def __init__(self, groups, pos, item_data):
         super().__init__(groups)
@@ -79,6 +100,8 @@ class Chest(pygame.sprite.Sprite):
             drops.append('gold_key')
         if random.random() < 0.9:
             drops.append('small_health_potion')
+
+        drops.append('speed_boots')
 
         return drops
     

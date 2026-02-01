@@ -2,7 +2,7 @@ import pygame
 import sys
 from globals import *
 from ui_objects.button import Button
-from states.map.dungeon_level_one import Dungeon_Level_One
+from Controllers.sound import SoundController
 
 
 # Start menu
@@ -21,14 +21,9 @@ class Start:
         self.options_button_img = OPTIONS_BUTTON_IMAGE.convert_alpha()
         self.options_button =  Button(self.screen, pygame.transform.scale_by(self.options_button_img, 0.5), pos=(985, 650))
         
-        # Loads the music and plays it infinitely on the start menu
-        try:
-            pygame.mixer.music.load("Assets/Music/Starscape.ogg")
-        except pygame.error:
-            print("Music file not found or could not be loaded.")
-        pygame.mixer.music.set_volume(0.01)
-        pygame.mixer.music.play(-1)
-        
+        sound_controller = SoundController()
+        sound_controller.play_music("JuiceWrldChasingTheDragon", loops=0, volume=.25)
+
     def draw(self):
         # Draws the background image
         self.screen.blit(self.image, (0,0))
@@ -41,13 +36,11 @@ class Start:
         self.start_button.update()
         self.exit_button.update()
         self.options_button.update()
+
         # If the start button was clicked, it sets the state to the level screen, if the exit button was clicked, it closes the game 
         if self.start_button.is_clicked():
-            # Stops the start menu music and creates the dungeon level. Adds it to our states dictionary
-            pygame.mixer.music.stop()
-            self.dungeon_level_one = Dungeon_Level_One(self.screen, self.gameStateManager, self.cursor)
-            self.gameStateManager.add_state('dungeon_level_one', self.dungeon_level_one)
-            self.gameStateManager.set_state('dungeon_level_one')
+            #pygame.mixer.music.stop()
+            self.gameStateManager.set_state('dungeon')
 
         elif self.options_button.is_clicked():
             self.gameStateManager.set_state('options')

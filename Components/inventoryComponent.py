@@ -2,6 +2,7 @@ import pygame
 from globals import *
 from Components.component import Component
 from ui_objects.text_loader import Text_Loader
+from items.items import EquipmentItem
 
 class InventoryComponent(Component):
     def __init__(self, node, size, cols = 10):
@@ -11,6 +12,14 @@ class InventoryComponent(Component):
         self.inventory_slots = [None] * size
         self.slot_size = 48 # Adjust for inventory size on screen
         self.padding = 2
+
+        self.equipment_slots = {
+            'head': None,
+            'chest': None,
+            'boots': None,
+            'ability_1': None,
+            'ability_2': None
+        }
 
         # Quantity attributes
         self.quantity_label = Text_Loader(text="", screen=None, font_name='Arial', font_size=10, color=WHITE)
@@ -24,6 +33,8 @@ class InventoryComponent(Component):
         self.held_item = None
 
         self.start_x, self.start_y = SCREENWIDTH - 780 - self.slot_size * self.cols, 610
+
+        self.equip_start_x, self.equip_start_y = self.start_x + 1200, self.start_y - 150
         
     def add_item(self, item):
         for slot in self.inventory_slots:
@@ -92,6 +103,7 @@ class InventoryComponent(Component):
     
     def draw(self, screen):
         
+        # Inventory Slots
         for i, slot in enumerate(self.inventory_slots):
             x = self.start_x + (i % self.cols) * self.slot_size
             y = self.start_y + (i // self.cols) * self.slot_size
@@ -116,6 +128,19 @@ class InventoryComponent(Component):
                     # We offset it to the bottom-right of the current slot depending on the quantity
                     screen.blit(self.quantity_label.text_surface, text_pos)
 
+
+        # Equipment Slots
+        for i, (slot_name, item) in enumerate(self.equipment_slots.items()):
+            ex = self.equip_start_x
+            ey = self.equip_start_y + i * (self.slot_size + 5)
+
+            pygame.draw.rect(screen, GRAY, (ex, ey, self.slot_size, self.slot_size))
+            pygame.draw.rect(screen, WHITE, (ex, ey, self.slot_size, self.slot_size), 1)
+
+            if item and item.image:
+                scaled_img = pygame.transform.scale(item.image, (self.slot_size - 10, self.slot_size - 10))
+                screen.blit(scaled_img, (ex + 5, ey + 5))
+
         # Draw the held item at the mouse position
         if self.held_item:
             m_x, m_y = pygame.mouse.get_pos()
@@ -138,6 +163,10 @@ class InventoryComponent(Component):
                 hovered_item = self.inventory_slots[hover_idx]
                 if hovered_item:
                     self.draw_tooltip(screen, hovered_item, mouse_pos)
+
+            hover_equip = self.get_equip_slot_at_mouse(mouse_pos)
+            if hover_equip is not None and self.equipment_slots[hover_equip]:
+                self.draw_tooltip(screen, self.equipment_slots[hover_equip], mouse_pos)
 
     def draw_tooltip(self, screen, item, mouse_pos):
         if not item: 
@@ -197,9 +226,29 @@ class InventoryComponent(Component):
                 return index
         return None
     
+    def get_equip_slot_at_mouse(self, mouse_pos):
+        mx, my = mouse_pos
+    
+        # Iterate through the keys (head, chest, etc.) and their index
+        for i, slot_name in enumerate(self.equipment_slots.keys()):
+            # Calculate the exact box for THIS specific equipment slot
+            # This MUST match the math used in the draw() method
+            ex = self.equip_start_x
+            ey = self.equip_start_y + i * (self.slot_size + 5)
+        
+            # Create a temporary rect to check collision
+            slot_rect = pygame.Rect(ex, ey, self.slot_size, self.slot_size)
+        
+            if slot_rect.collidepoint(mx, my):
+                return slot_name # Returns 'head', 'chest', etc.
+            
+        return None
+    
     def handle_click(self, mouse_pos):
         index = self.get_slot_at_mouse(mouse_pos)
-    
+
+        equip_key = self.get_equip_slot_at_mouse(mouse_pos)
+
         if index is not None:
         # If we are holding an item
             if self.held_item:
@@ -211,3 +260,26 @@ class InventoryComponent(Component):
                 # If not holding anything, pick up the item in the slot
                 self.held_item = self.inventory_slots[index]
                 self.inventory_slots[index] = None
+
+
+        elif equip_key is not None:
+            if self.held_item:
+                if hasattr(self.held_item, 'slot') and self.held_item.slot == equip_key:
+                    temp = self.equipment_slots[equip_key]
+                    self.equipment_slots[equip_key] = self.held_item
+                    self.held_item = temp
+
+            else:
+                # If not holding anything, pick up the item in the slot
+                self.held_item = self.equipment_slots[equip_key]
+                self.equipment_slots[equip_key] = None
+
+    def get_equipment_bonuses(self):
+        bonuses = {'attack': 0, 'defense': 0, 'speed': 0, 'health': 0, 'speed_multiplier': 0}
+        
+        for item in self.equipment_slots.values():
+            if item and item.stats:
+                for stat, value in item.stats.items():
+                    if stat in bonuses:
+                        bonuses[stat] += value
+        return bonuses
