@@ -3,7 +3,7 @@
  <editorsettings>
   <export format="csv"/>
  </editorsettings>
- <tileset firstgid="1" source="../../../../../Desktop/Python Projects/Tiled Projects/Dungeon.tsx"/>
+ <tileset firstgid="1" source="Dungeon.tsx"/>
  <tileset firstgid="101" source="Logic_Tile.tsx"/>
  <tileset firstgid="102" source="Logic_Tiles.tsx"/>
  <layer id="1" name="Floor" width="160" height="112">

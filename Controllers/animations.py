@@ -1,37 +1,45 @@
 import pygame
 from globals import *
 
+
 class AnimationController:
     def __init__(self, animations, start_anim, animation_speed):
-        self.animations = animations 
+        self.animations = animations
         self.current_anim = start_anim
         self.frame_index = 0
         self.animation_speed = animation_speed
         self.frame_timer = 0
-        
+
     def set_animation(self, anim_name):
         if anim_name != self.current_anim:
-            self.current_anim = anim_name
-            self.frame_index = 0
+            if anim_name not in self.animations and anim_name.endswith("_left"):
+                right_key = anim_name.replace("_left", "_right")
+                if right_key in self.animations:
+                    self.animations[anim_name] = [
+                        pygame.transform.flip(f, True, False)
+                        for f in self.animations[right_key]
+                    ]
 
-    def play_animation(self, dt, loop = False):
+            if anim_name in self.animations:
+                self.current_anim = anim_name
+                self.frame_index = 0
+                self.frame_timer = 0
+
+    def play_animation(self, dt, loop=True):
         self.frame_timer += self.animation_speed * dt
+
         if self.frame_timer >= 1:
             self.frame_timer = 0
             self.frame_index += 1
 
-            # Handle flipped animations (Will remove when future assets are changed and they automatically are made with left AND right sprites)
-            if self.current_anim.endswith("_left"):
-                right_key = self.current_anim.replace("left", "right")
-                right_frames = self.animations[right_key]
-                frames = [pygame.transform.flip(f, True, False) for f in right_frames]
-            else:
-                frames = self.animations[self.current_anim]
+        frames = self.animations.get(self.current_anim)
 
-            if loop:
-                self.frame_index %= len(frames)
-            else:
-                if self.frame_index >= len(frames):
-                    self.frame_index = len(frames) - 1
-        frames = [pygame.transform.flip(f, True, False) for f in self.animations[self.current_anim]] if self.current_anim.endswith("_left") else self.animations[self.current_anim]
+        if not frames:
+            frames = list(self.animations.values())[0]
+
+        if loop:
+            self.frame_index %= len(frames)
+        else:
+            self.frame_index = min(self.frame_index, len(frames) - 1)
+
         return frames[self.frame_index]

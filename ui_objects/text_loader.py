@@ -1,8 +1,17 @@
 import pygame
 from globals import *
 
+
 class Text_Loader:
-    def __init__(self, text, screen, font_name = 'Comic Sans MS', font_size=30, color= BLACK, pos=(0,0)):
+    def __init__(
+        self,
+        text,
+        screen,
+        font_name="Comic Sans MS",
+        font_size=30,
+        color=BLACK,
+        pos=(0, 0),
+    ):
         pygame.font.init()
         self.font = pygame.font.SysFont(font_name, font_size)
         self.screen = screen
@@ -11,7 +20,7 @@ class Text_Loader:
         self.text = text
         self.text_surface = self.font.render(self.text, False, self.color)
 
-    def draw(self, specifc_pos = None):
+    def draw(self, specifc_pos=None):
         pos_to_use = specifc_pos if specifc_pos else self.pos
         self.screen.blit(self.text_surface, pos_to_use)
 
