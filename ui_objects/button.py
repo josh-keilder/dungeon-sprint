@@ -5,15 +5,16 @@ from Controllers.sound import SoundController
 
 pygame.mixer.init()
 
-class Button():
-    def __init__(self, screen, image, pos =(0,0)):
+
+class Button:
+    def __init__(self, screen, image, pos=(0, 0)):
         self.image = image
         self.rect = self.image.get_frect()
         self.rect.topleft = pos
         self.screen = screen
         self.hovered = False
         self.clicked = False
-        
+
         self.sound_controller = SoundController()
 
     def draw(self):
@@ -29,7 +30,7 @@ class Button():
         if self.rect.collidepoint(mouse_pos):
             # play hover sound only once when the mouse enters the button area
             if not self.hovered:
-                self.sound_controller.play_sfx("Button_Hover", volume=0.3)   
+                self.sound_controller.play_sfx("Button_Hover", volume=0.3)
                 self.hovered = True
         else:
             # reset hover state and cursor when mouse leaves
@@ -42,9 +43,9 @@ class Button():
             if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
                 self.clicked = True
                 action = True
-                self.sound_controller.play_sfx("Button_Click", volume=0.3)    
+                self.sound_controller.play_sfx("Button_Click", volume=0.3)
 
-        # Resets our clicked state        
+        # Resets our clicked state
         if pygame.mouse.get_pressed()[0] == 0:
             self.clicked = False
 

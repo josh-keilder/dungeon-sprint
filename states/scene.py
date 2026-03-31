@@ -2,6 +2,7 @@ from node import Node
 from Entities.enemies.enemy import Enemy
 import pygame
 
+
 class Scene(Node):
     def __init__(self):
         super().__init__()
@@ -15,13 +16,13 @@ class Scene(Node):
         self.wall_tiles = wall_tiles
         # Set wall_tiles on all nodes that need it
         for child in self.children:
-            if hasattr(child, 'wall_tiles'):
+            if hasattr(child, "wall_tiles"):
                 child.wall_tiles = wall_tiles
 
     def add_child(self, child):
         super().add_child(child)
         # Sort them as they come in, not every frame
-        if hasattr(child, 'name') and child.name == 'player':
+        if hasattr(child, "name") and child.name == "player":
             self.player = child
         elif isinstance(child, Enemy):
             self.enemies.append(child)
@@ -35,7 +36,7 @@ class Scene(Node):
 
     def update(self, dt=0):
         super().update(dt)
-        
+
         if self.player:
             for enemy in self.enemies:
                 if self.player.pos.distance_to(enemy.pos) < 100:

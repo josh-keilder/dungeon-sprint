@@ -14,8 +14,9 @@ from items.itemDataBase import initialize_item_database
 
 pygame.mixer.init()
 
+
 class Dungeon_Level_One:
-    def __init__(self, screen, gameStateManager, file_path = None):
+    def __init__(self, screen, gameStateManager, file_path=None):
         self.screen = screen
         self.gameStateManager = gameStateManager
 
@@ -36,22 +37,20 @@ class Dungeon_Level_One:
 
         # Loads our items
         self.ITEM_DATABASE = initialize_item_database()
-        
 
         # Loads our map
-        self.load_map(file_path = self.file_path)
+        self.load_map(file_path=self.file_path)
 
         # Loads our player
-        self.player = load_player(map = self)
+        self.player = load_player(map=self)
         self.scene.add_child(self.player)
         self.interact_cooldown = 0
-
 
         # Loads all of our enemies
         self.enemies = load_enemies(player=self.player, file_path=self.file_path)
         for enemy in self.enemies:
             self.scene.add_child(enemy)
-        
+
         # Set wall tiles in scene
         self.scene.set_wall_tiles(list(self.wall_tiles) + list(self.door_tiles))
 
@@ -69,14 +68,14 @@ class Dungeon_Level_One:
 
         self.sprites.update(dt)
 
-        # Keeps the camera on the player       
+        # Keeps the camera on the player
         camera_update(self.player)
 
     def draw(self):
         # The floor texture as one big surface
         self.screen.blit(self.map_surface, (-camera.x, -camera.y))
 
-        # Draws our sprites, tiles and objects to the screen 
+        # Draws our sprites, tiles and objects to the screen
         for sprite in self.sprites:
             if is_on_screen(sprite.rect):
                 sprite.draw(self.screen)
@@ -87,7 +86,9 @@ class Dungeon_Level_One:
             if is_on_screen(door.rect):
                 door.draw(self.screen)
                 if door.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DIST:
-                    door.hitbox.draw(self.screen, camera=camera, color= WHITE, skip_debug = True)
+                    door.hitbox.draw(
+                        self.screen, camera=camera, color=WHITE, skip_debug=True
+                    )
 
         for item in self.items:
             if is_on_screen(item.rect):
@@ -111,40 +112,42 @@ class Dungeon_Level_One:
         self.map_surface = pygame.Surface((map_width, map_height)).convert()
 
         layer_names = [
-            'Floor', 
-            'Walls', 
-            'Wall_Decor',
-            'Floor_Decor',
-            'Door_Tiles',
-            'Items',
-            'Chests'
-            ]
-        
-        logic_layer = tmx_data.get_layer_by_name('Logic_Layer')
-        
+            "Floor",
+            "Walls",
+            "Wall_Decor",
+            "Floor_Decor",
+            "Door_Tiles",
+            "Items",
+            "Chests",
+        ]
+
+        logic_layer = tmx_data.get_layer_by_name("Logic_Layer")
+
         for layer in tmx_data.visible_layers:
-            if layer.name in layer_names: 
-                if layer.name == 'Walls':
+            if layer.name in layer_names:
+                if layer.name == "Walls":
                     for x, y, surf in layer.tiles():
                         pos = (x * TILESIZE, y * TILESIZE)
-                        WallTile(groups= self.wall_tiles, image=surf, pos= pos)
+                        WallTile(groups=self.wall_tiles, image=surf, pos=pos)
 
-                if layer.name == 'Floor':
+                if layer.name == "Floor":
                     for x, y, surf in layer.tiles():
                         self.map_surface.blit(surf, (x * TILESIZE, y * TILESIZE))
 
-                if layer.name == 'Wall_Decor' or layer.name == 'Floor_Decor':
+                if layer.name == "Wall_Decor" or layer.name == "Floor_Decor":
                     for x, y, surf in layer.tiles():
                         pos = (x * TILESIZE, y * TILESIZE)
-                        DecorTile(groups= self.sprites, image=surf, pos= pos)
+                        DecorTile(groups=self.sprites, image=surf, pos=pos)
 
-                if layer.name == 'Door_Tiles':
+                if layer.name == "Door_Tiles":
                     for x, y, surf in layer.tiles():
                         pos = (x * TILESIZE, y * TILESIZE)
-                        door_tile = Door(groups= self.door_tiles, image=surf, pos= pos)
-                        logic_props = tmx_data.get_tile_properties(x,y, tmx_data.layers.index(logic_layer))
+                        door_tile = Door(groups=self.door_tiles, image=surf, pos=pos)
+                        logic_props = tmx_data.get_tile_properties(
+                            x, y, tmx_data.layers.index(logic_layer)
+                        )
                         if logic_props:
-                            door_tile.door_id = logic_props.get('door_id')
+                            door_tile.door_id = logic_props.get("door_id")
 
                 # For testing items
                 # if layer.name == 'Items':
@@ -155,7 +158,7 @@ class Dungeon_Level_One:
                 #             WorldItem(pos=(obj.x, obj.y), groups = self.items, item_data = item_data)
 
                 # Items will spawn from chests
-                if layer.name == 'Chests':
+                if layer.name == "Chests":
                     for obj in layer:
-                        if obj.name.lower() == 'chest':
+                        if obj.name.lower() == "chest":
                             Chest(pos=(obj.x, obj.y), groups=self.chests, map=self)

@@ -1,6 +1,7 @@
 import pygame, os
 from globals import *
 
+
 class SoundController:
     _instance = None  # This stores the "one and only" version
 
@@ -11,7 +12,7 @@ class SoundController:
             # Put your initialization logic here so it only runs ONCE
             cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
@@ -26,10 +27,9 @@ class SoundController:
 
         self.MUSIC_ENDED = pygame.USEREVENT + 1
         pygame.mixer.music.set_endevent(self.MUSIC_ENDED)
-        
+
         self._load_sfx("Assets/Sounds")
         self._load_bg_music("Assets/Music")
-
 
         self.music_queue = list(self.bg_music.keys())
 
@@ -41,7 +41,7 @@ class SoundController:
                 if file.endswith((".wav", ".ogg")):
                     name = os.path.splitext(file)[0]
                     self.sfx[name] = pygame.mixer.Sound(os.path.join(directory, file))
-    
+
     def _load_bg_music(self, directory):
         if os.path.exists(directory):
             for file in os.listdir(directory):
@@ -49,7 +49,7 @@ class SoundController:
                     name = os.path.splitext(file)[0]
                     self.bg_music[name] = os.path.join(directory, file)
 
-    def play_sfx(self, name, volume = 0.5):
+    def play_sfx(self, name, volume=0.5):
         if name in self.sfx:
             sound = self.sfx[name]
             sound.set_volume(volume)
@@ -57,7 +57,7 @@ class SoundController:
         else:
             print(f"Sound '{name}' not found")
 
-    def play_music(self, name, loops=0, volume = 0.5):
+    def play_music(self, name, loops=0, volume=0.5):
         # If name is None, it plays the current track in the cue
         if name is None and self.music_queue:
             name = self.music_queue[self.current_track_index]
@@ -70,10 +70,12 @@ class SoundController:
             print(f"Music track '{name}' not found")
 
     def play_next_track(self):
-        if not self.music_queue: 
+        if not self.music_queue:
             return
-        
-        self.current_track_index = (self.current_track_index + 1) % len(self.music_queue)
+
+        self.current_track_index = (self.current_track_index + 1) % len(
+            self.music_queue
+        )
         new_track = self.music_queue[self.current_track_index]
         self.play_music(new_track, loops=0, volume=0.2)
 

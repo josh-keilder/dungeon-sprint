@@ -7,39 +7,36 @@ def initialize_item_database():
     ITEM_DATABASE = {}
 
     # Load Textures
-    gold_key_frames = Item.gen_item_textures(keys, 'gold_key')
-    small_health_potion_frames = Item.gen_item_textures(health_potions, 'health_potion')
-    speed_boots_frames = EquipmentItem.gen_item_textures(speed_boots, 'speed_boots')
-
+    gold_key_frames = Item.gen_item_textures(keys, "gold_key")
+    small_health_potion_frames = Item.gen_item_textures(health_potions, "health_potion")
+    speed_boots_frames = EquipmentItem.gen_item_textures(speed_boots, "speed_boots")
 
     # Basic Items
-    ITEM_DATABASE['gold_key'] = Item(id='gold_key',
-                                    type='key',
-                                    name='Gold Key',
-                                    animations={'idle': gold_key_frames['gold_key']},
-                                    desc='Unlocks Doors')
-    ITEM_DATABASE['small_health_potion'] = Item(id='small_health_potion',
-                                        name='Small Health Potion',
-                                        type='small_potion',
-                                        animations={'idle': small_health_potion_frames['health_potion']},
-                                        desc='Heals Player',
-                                        value='Value: ' + str(SMALL_HEALTH_POTION_VALUE) + ' HP'
-                                        )
-    
+    ITEM_DATABASE["gold_key"] = Item(
+        id="gold_key",
+        type="key",
+        name="Gold Key",
+        animations={"idle": gold_key_frames["gold_key"]},
+        desc="Unlocks Doors",
+    )
+    ITEM_DATABASE["small_health_potion"] = Item(
+        id="small_health_potion",
+        name="Small Health Potion",
+        type="small_potion",
+        animations={"idle": small_health_potion_frames["health_potion"]},
+        desc="Heals Player",
+        value="Value: " + str(SMALL_HEALTH_POTION_VALUE) + " HP",
+    )
 
     # Equipment
-    ITEM_DATABASE['speed_boots'] = EquipmentItem(id='speed_boots',
-                                        name='Speed boots',
-                                        animations ={'idle': speed_boots_frames['speed_boots']},
-                                        desc = 'Run faster',
-                                        slot='boots',
-                                        stats={
-                                            'speed': 10,
-                                            'defense': 3,
-                                            'speed_multiplier': 1.1,
-                                            'health': 10
-                                            },
-                                        ability = None
-                                        )
-    
+    ITEM_DATABASE["speed_boots"] = EquipmentItem(
+        id="speed_boots",
+        name="Speed boots",
+        animations={"idle": speed_boots_frames["speed_boots"]},
+        desc="Run faster",
+        slot="boots",
+        stats={"speed": 10, "defense": 3, "speed_multiplier": 1.1, "health": 10},
+        ability=None,
+    )
+
     return ITEM_DATABASE

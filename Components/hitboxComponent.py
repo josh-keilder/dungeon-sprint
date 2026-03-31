@@ -6,6 +6,7 @@ from Components.component import Component
 
 MASK_CACHE = {}
 
+
 class Hitbox(Component):
     def __init__(self, node):
         super().__init__(node)
@@ -27,8 +28,7 @@ class Hitbox(Component):
 
     def collides_with(self, other_hitbox):
         # Standard mask overlap check
-        offset = (other_hitbox.rect.x - self.rect.x,
-                  other_hitbox.rect.y - self.rect.y)
+        offset = (other_hitbox.rect.x - self.rect.x, other_hitbox.rect.y - self.rect.y)
         return self.mask.overlap(other_hitbox.mask, offset) is not None
 
     def draw(self, screen, camera=None, color=RED, skip_debug=False):
@@ -39,7 +39,6 @@ class Hitbox(Component):
                 draw_rect.x -= camera.x
                 draw_rect.y -= camera.y
 
-         
             outline = self.mask.outline()
             for p in outline:
                 screen.set_at((int(draw_rect.x + p[0]), int(draw_rect.y + p[1])), color)

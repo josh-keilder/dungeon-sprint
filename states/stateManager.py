@@ -1,5 +1,6 @@
 from globals import *
 
+
 # Change between screens
 class GameStateManager:
     def __init__(self, currentState):
@@ -17,7 +18,7 @@ class GameStateManager:
 
     def get_state(self) -> str:
         return self.active_state_object
-    
+
     def set_state(self, new_state):
         if new_state not in self.states:
             print(f"Error, State {new_state} does not exist")
@@ -37,13 +38,12 @@ class GameStateManager:
         if self.state_history:
             return self.state_history[-1]
         return None
-        
-    
+
     def go_back(self):
         # Pop the last state if available
         if self.state_history:
             self.currentState = self.state_history.pop()
             self.active_state_object = self.states[self.currentState]
 
-    def all_states(self) -> list: # Returns all states currently in the dict
+    def all_states(self) -> list:  # Returns all states currently in the dict
         return list(self.states.keys())
