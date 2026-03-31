@@ -3,15 +3,6 @@ from globals import *
 from ui_objects.camera import camera
 from Components.hitboxComponent import Hitbox
 
-class FloorTile(pygame.sprite.Sprite):
-    def __init__(self, groups, image, pos):
-        super().__init__(groups)
-        self.image = image
-        self.rect = self.image.get_frect(topleft = pos)
-    def draw(self, screen):
-        # Draws the tiles based on the camera offset
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y)) 
-
 class WallTile(pygame.sprite.Sprite):
     def __init__(self, groups, image, pos):
         super().__init__(groups)

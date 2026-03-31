@@ -22,7 +22,13 @@ def get_player_pos(file_path) -> tuple:
         
     return player_pos
 
+
+_PLAYER_CACHE = None
+
 def gen_player_textures() -> dict:
+    global _PLAYER_CACHE
+    if _PLAYER_CACHE is not None:
+        return _PLAYER_CACHE
     textures = {}
 
     for name, data in player_texture_data.items():
@@ -45,4 +51,5 @@ def gen_player_textures() -> dict:
 
             textures[name].append(cropped_frame)
             
-    return textures
+    _PLAYER_CACHE = textures
+    return _PLAYER_CACHE

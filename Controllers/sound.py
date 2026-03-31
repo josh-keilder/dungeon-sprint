@@ -75,7 +75,7 @@ class SoundController:
         
         self.current_track_index = (self.current_track_index + 1) % len(self.music_queue)
         new_track = self.music_queue[self.current_track_index]
-        self.play_music(new_track, loops=0, volume=-0.5)
+        self.play_music(new_track, loops=0, volume=0.2)
 
     def stop_music(self):
         pygame.mixer.music.stop()

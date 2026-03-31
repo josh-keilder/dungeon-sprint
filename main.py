@@ -59,13 +59,12 @@ class Game:
 
         pygame.display.update()
 
-        self.fps = self.clock.get_fps()
-        self.fps_text.update_text(f'FPS: {int(self.fps)}')
+        # Only update FPS text every 30 frames
+        if pygame.time.get_ticks() % 500 < 20:
+            self.fps = self.clock.get_fps()
+            self.fps_text.update_text(f'FPS: {int(self.fps)}')
 
     def draw(self):
-        # Clears the screen so theres no duplicate sprites
-        self.screen.fill(BLACK)
-
         # Draws the current state
         self.gameStateManager.get_state().draw()
 

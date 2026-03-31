@@ -102,71 +102,44 @@ class InventoryComponent(Component):
         return False
     
     def draw(self, screen):
-        
-        # Inventory Slots
-        for i, slot in enumerate(self.inventory_slots):
+        for i, item in enumerate(self.inventory_slots):
             x = self.start_x + (i % self.cols) * self.slot_size
             y = self.start_y + (i // self.cols) * self.slot_size
             
-            pygame.draw.rect(screen, DARK_GRAY, (x, y, self.slot_size, self.slot_size), 2)
+            # Slot Backdrop
+            pygame.draw.rect(screen, DARK_GRAY, (x, y, self.slot_size, self.slot_size), 1)
             
-            if slot:
-                if slot.image:
-                    scaled_image = pygame.transform.scale(slot.image, (self.slot_size - 10, self.slot_size - 10))
-                    screen.blit(scaled_image, (x + 5, y + 5))
+            if item:
+                icon = self._get_icon(item)
+                if icon:
+                    screen.blit(icon, (x + 5, y + 5))
                 
-                if slot.quantity < 10:
-                    text_pos = (x + self.slot_size - 10, y + self.slot_size - 16)
-                else:
-                    text_pos = (x + self.slot_size - 12, y + self.slot_size - 16)
-                
-                if slot.quantity >= 1:
-                    # Update the loader's internal state
-                    self.quantity_label.update_text(str(slot.quantity))
-                    
-                    # Manual blit using the loader's surface at the calculated grid position
-                    # We offset it to the bottom-right of the current slot depending on the quantity
-                    screen.blit(self.quantity_label.text_surface, text_pos)
+                # Quantity Text
+                if item.quantity > 1:
+                    self.quantity_label.update_text(str(item.quantity))
+                    screen.blit(self.quantity_label.text_surface, (x + self.slot_size - 15, y + self.slot_size - 15))
 
-
-        # Equipment Slots
+        # Draw Equipment
         for i, (slot_name, item) in enumerate(self.equipment_slots.items()):
-            ex = self.equip_start_x
-            ey = self.equip_start_y + i * (self.slot_size + 5)
+            ex, ey = self.equip_start_x, self.equip_start_y + i * (self.slot_size + 5)
+            pygame.draw.rect(screen, (40, 40, 50), (ex, ey, self.slot_size, self.slot_size))
+            
+            if item:
+                icon = self._get_icon(item)
+                screen.blit(icon, (ex + 5, ey + 5))
 
-            pygame.draw.rect(screen, GRAY, (ex, ey, self.slot_size, self.slot_size))
-            pygame.draw.rect(screen, WHITE, (ex, ey, self.slot_size, self.slot_size), 1)
-
-            if item and item.image:
-                scaled_img = pygame.transform.scale(item.image, (self.slot_size - 10, self.slot_size - 10))
-                screen.blit(scaled_img, (ex + 5, ey + 5))
-
-        # Draw the held item at the mouse position
+        # Draw Held Item (Drag and Drop)
         if self.held_item:
-            m_x, m_y = pygame.mouse.get_pos()
-            # Center the item on the cursor
-            img_pos = (m_x - self.slot_size // 2, m_y - self.slot_size // 2)
-            if self.held_item.image:
-                scaled_image = pygame.transform.scale(self.held_item.image, (self.slot_size - 10, self.slot_size - 10))
-                screen.blit(scaled_image, img_pos)
-        
-            # Draw quantity for held item
-            if self.held_item.quantity >= 1:
-                self.quantity_label.update_text(str(self.held_item.quantity))
-                screen.blit(self.quantity_label.text_surface, (m_x + 10, m_y + 10))
+            mx, my = pygame.mouse.get_pos()
+            icon = self._get_icon(self.held_item)
+            screen.blit(icon, (mx - self.slot_size // 2, my - self.slot_size // 2))
 
-        # Tooltip logic
+        # Tooltips (Only if not dragging)
         if not self.held_item:
-            mouse_pos = pygame.mouse.get_pos()
-            hover_idx = self.get_slot_at_mouse(mouse_pos)
-            if hover_idx is not None:
-                hovered_item = self.inventory_slots[hover_idx]
-                if hovered_item:
-                    self.draw_tooltip(screen, hovered_item, mouse_pos)
-
-            hover_equip = self.get_equip_slot_at_mouse(mouse_pos)
-            if hover_equip is not None and self.equipment_slots[hover_equip]:
-                self.draw_tooltip(screen, self.equipment_slots[hover_equip], mouse_pos)
+            m_pos = pygame.mouse.get_pos()
+            idx = self.get_slot_at_mouse(m_pos)
+            if idx is not None and self.inventory_slots[idx]:
+                self.draw_tooltip(screen, self.inventory_slots[idx], m_pos)
 
     def draw_tooltip(self, screen, item, mouse_pos):
         if not item: 
@@ -283,3 +256,13 @@ class InventoryComponent(Component):
                     if stat in bonuses:
                         bonuses[stat] += value
         return bonuses
+    
+    def _get_icon(self, item):
+        if not item or not item.image: return None
+        
+        # Check if the item already has a cached UI icon
+        if not hasattr(item, 'ui_icon') or item.ui_icon is None:
+            # Scale once and store it on the item instance
+            size = self.slot_size - 10
+            item.ui_icon = pygame.transform.scale(item.image, (size, size))
+        return item.ui_icon

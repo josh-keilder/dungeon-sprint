@@ -7,10 +7,16 @@ from Components.hitboxComponent import Hitbox
 from Components.animationComponent import AnimationComponent
 from Components.movementComponent import MovementComponent
 
+ENEMY_CACHE = {}
+
 # Texture loader
 def gen_enemy_textures(texture_data) -> dict:
-        textures = {}
+        cache_key = list(texture_data.values())[0]['file_path']
 
+        if cache_key in ENEMY_CACHE:
+            return ENEMY_CACHE[cache_key]
+        
+        textures = {}
         for name, data in texture_data.items():
             enemy_img = pygame.image.load(data['file_path']).convert_alpha()
             w, h = data['size'] # unpacks the size tuple
@@ -24,30 +30,35 @@ def gen_enemy_textures(texture_data) -> dict:
                 frame = enemy_img.subsurface(pygame.Rect(x, y, w, h))
 
                 textures[name].append(frame)
+
+        ENEMY_CACHE[cache_key] = textures
         return textures
 
 # Base Enemy class
 class Enemy(Node):
-    def __init__(self, animations, pos=(0,0), max_health=100, attack_damage=5, movement_behavior=None, player= None, start_anim = None):
+    def __init__(self, animations, pos=(0,0), max_health=100, attack_damage=5, movement_behavior=None, player= None, start_anim = None, speed=50):
         super().__init__()
         self.max_health = max_health
         self.attack_damage = attack_damage
-        self.pos = pos
-        self.wall_tiles = None 
+        self.pos = pygame.math.Vector2(pos)
+        self.wall_tiles = None
+        
 
         # --- VISUALS / STATE ---
         self.animations = AnimationComponent(self, animations, start_anim=start_anim)
         self.image = animations[start_anim][0]
-        self.pos = pygame.math.Vector2(pos)
         self.rect = self.image.get_frect(topleft=self.pos)
 
         # --- COMPONENTS ---
         self.health = Health(self, self.max_health)
         self.health_bar = HealthBar(self, self.max_health)
         self.hitbox = Hitbox(self)
-        self.movement_component = MovementComponent(self, speed=1, behavior=movement_behavior, player=player)
+        self.movement_component = MovementComponent(self, speed=speed, behavior=movement_behavior, player=player)
 
     def update(self, dt=0):
+        if not self.active: 
+            return
+
         super().update(dt)
         # Animation
         self.animations.update(dt)
@@ -60,13 +71,18 @@ class Enemy(Node):
 
         self.movement_component.update(dt)
 
-        self.pos = pygame.math.Vector2(self.rect.topleft)
+        self.pos.xy = self.rect.topleft
 
     def draw(self, screen, camera=None):
+        if not self.active: 
+            return
+        
+        draw_pos = self.rect.topleft
+
         if camera:
-            screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-        else:
-            screen.blit(self.image, self.rect.topleft)
+            draw_pos = (self.rect.x - camera.x, self.rect.y - camera.y)
+
+        screen.blit(self.image, draw_pos)
 
         # Health Bar
         self.health_bar.draw(screen, camera)
@@ -79,15 +95,13 @@ class Enemy(Node):
 # Skeleton Enemy
 class Skeleton(Enemy):
     def __init__(self, pos=(0,0), player=None):
-        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=3, movement_behavior='wander_chase',player=player, start_anim='skull_idle')
-
-        self.movement_component.speed = 40
+        textures = gen_enemy_textures(skull_enemy_texture_data)
+        super().__init__(textures, pos, max_health=100, attack_damage=3, movement_behavior='wander_chase',player=player, start_anim='skull_idle', speed=40)
 
 # Skull Enemy
 class Skull_Enemy(Enemy):
     def __init__(self, pos=(0,0), player=None):
-        super().__init__(gen_enemy_textures(skull_enemy_texture_data), pos, max_health=100, attack_damage=5, movement_behavior='fly', player=player, start_anim='skull_idle')
-
-        
+        textures = gen_enemy_textures(skull_enemy_texture_data)
+        super().__init__(textures, pos, max_health=100, attack_damage=5, movement_behavior='fly', player=player, start_anim='skull_idle', speed=50)
         self.movement_component.flying = True
-        self.movement_component.speed = 50
+        

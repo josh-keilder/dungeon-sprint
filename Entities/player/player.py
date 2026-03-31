@@ -26,7 +26,7 @@ class Player(Node):
             'defense': 0,
             'speed': 70,
             'health': 500,
-            'roll_speed': 300,
+            'roll_speed': 200,
             'speed_multiplier': 1
 
         }
@@ -66,9 +66,7 @@ class Player(Node):
         if self.walking and self.inventory.equipment_slots.get('boots'):
             self.stats['speed'] += 1
         if not self.walking and self.base_stats['speed'] > 70:
-            self.base_stats['speed']-= 5
-
-        print(self.stats['speed'])
+            self.base_stats['speed'] -= 5
 
         self.movement.max_speed = self.stats['speed']
         self.movement.speed_multiplier = self.stats['speed_multiplier']
@@ -81,15 +79,12 @@ class Player(Node):
         self.input.update(dt)
         self.movement.update(dt)
         self.roll.update(dt)
+        self.handle_animation_state()
         self.animations.update(dt)
         self.health_bar.update(dt)
         self.hitbox.update(dt)
 
         self.pos = pygame.math.Vector2(self.rect.topleft)
-
-        # Constantly updates the camera position to follow the player
-        camera.y = self.rect.y - camera.height/2 + self.image.get_height()/2
-        camera.x = self.rect.x - camera.height/2 + self.image.get_height()/2
 
     def draw(self, screen, camera=None):
         # Player
@@ -108,3 +103,14 @@ class Player(Node):
         self.hitbox.draw(screen, camera, color=GREEN)
 
         super().draw(screen, camera)
+
+    def handle_animation_state(self):
+        if getattr(self.roll, 'is_rolling', False):
+            action = 'roll'
+        elif self.walking:
+            action = 'walk'
+        else:
+            action = 'idle'
+
+        anim_name = f'player_{action}_{self.last_direction}'
+        self.animations.change_anim(anim_name)

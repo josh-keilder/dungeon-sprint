@@ -20,3 +20,6 @@ def camera_update(target):
     else:
         target_x, target_y = target
     camera.center = (target_x, target_y)
+
+def is_on_screen(target_rect):
+    return camera.colliderect(target_rect)

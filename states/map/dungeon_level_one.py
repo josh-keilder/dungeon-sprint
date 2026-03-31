@@ -1,12 +1,11 @@
-import pygame, random
+import pygame
 from globals import *
 
 from pytmx.util_pygame import load_pygame
-from states.map.tiles import FloorTile, WallTile, DecorTile, Door
+from states.map.tiles import WallTile, DecorTile, Door
 
 from Entities.player.load_player import load_player
-from ui_objects.camera import camera_update, camera
-from ui_objects.create_outline import create_outline
+from ui_objects.camera import camera_update, camera, is_on_screen
 from Entities.enemies.load_enemies import load_enemies
 from states.scene import Scene
 
@@ -68,33 +67,48 @@ class Dungeon_Level_One:
 
         self.items.update(dt)
 
+        self.sprites.update(dt)
+
         # Keeps the camera on the player       
         camera_update(self.player)
 
     def draw(self):
+        # The floor texture as one big surface
+        self.screen.blit(self.map_surface, (-camera.x, -camera.y))
+
         # Draws our sprites, tiles and objects to the screen 
         for sprite in self.sprites:
-            sprite.draw(self.screen)
+            if is_on_screen(sprite.rect):
+                sprite.draw(self.screen)
         for wall in self.wall_tiles:
-            wall.draw(self.screen)
+            if is_on_screen(wall.rect):
+                wall.draw(self.screen)
         for door in self.door_tiles:
-            door.draw(self.screen)
-            if door.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DIST:
-                door.hitbox.draw(self.screen, camera=camera, color= WHITE, skip_debug = True)
+            if is_on_screen(door.rect):
+                door.draw(self.screen)
+                if door.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DIST:
+                    door.hitbox.draw(self.screen, camera=camera, color= WHITE, skip_debug = True)
 
         for item in self.items:
-            item.draw(self.screen, camera)
+            if is_on_screen(item.rect):
+                item.draw(self.screen, camera)
 
         for chest in self.chests:
-            chest.draw(self.screen, camera)
-            # if chest.pos.distance_to(self.player.pos) < OPEN_CHEST_DIST:
-            #     chest.hitbox.draw(self.screen, camera=camera, color= WHITE, skip_debug = True)
+            if is_on_screen(chest.rect):
+                chest.draw(self.screen, camera)
+                # if chest.pos.distance_to(self.player.pos) < OPEN_CHEST_DIST:
+                #     chest.hitbox.draw(self.screen, camera=camera, color= WHITE, skip_debug = True)
 
         # Draw the scene
         self.scene.draw(self.screen, camera)
 
     def load_map(self, file_path):
         tmx_data = load_pygame(file_path)
+
+        # Initiliaze the map surface (floor)
+        map_width = tmx_data.width * TILESIZE
+        map_height = tmx_data.height * TILESIZE
+        self.map_surface = pygame.Surface((map_width, map_height)).convert()
 
         layer_names = [
             'Floor', 
@@ -117,8 +131,7 @@ class Dungeon_Level_One:
 
                 if layer.name == 'Floor':
                     for x, y, surf in layer.tiles():
-                        pos = (x * TILESIZE, y * TILESIZE)
-                        FloorTile(groups= self.sprites, image=surf, pos= pos)
+                        self.map_surface.blit(surf, (x * TILESIZE, y * TILESIZE))
 
                 if layer.name == 'Wall_Decor' or layer.name == 'Floor_Decor':
                     for x, y, surf in layer.tiles():

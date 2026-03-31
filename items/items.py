@@ -3,6 +3,9 @@ import pygame, copy, random
 from Components.animationComponent import AnimationComponent
 
 class Item:
+
+    _image_cache = {}
+
     def __init__(self, id:str, type:str = None, name:str=None, animations:dict= None, desc:str = None, quantity:int = 1, max_stack:int = 99, anim_speed:int = 4, value:str = None):
         self.id = id
         self.type = type
@@ -15,25 +18,31 @@ class Item:
         self.value = value
 
         self.image = animations.get('idle', [None])[0]
+        self.ui_icon = None
 
     def clone(self):
-        return copy.copy(self)
+        return copy.deepcopy(self)
     
     @staticmethod
     def gen_item_textures(texture_data: dict, item_name:str) -> dict:
         textures = {}
-        for name, data in texture_data.items():
-            if name == item_name:
-                item_img = pygame.image.load(data['file_path']).convert_alpha()
-                w, h = data['size']
-                frames = data['frames']
-                row = data['position'][1]
-                textures[name] = []
-                for i in range(frames):
-                    x = i * w
-                    y = row * h
-                    frame = item_img.subsurface(pygame.Rect(x, y, w, h))
-                    textures[name].append(frame)
+        data = texture_data.get(item_name)
+        if not data: return textures
+
+        path = data['file_path']
+        if path not in Item._image_cache:
+            Item._image_cache[path] = pygame.image.load(path).convert_alpha() 
+
+        sheet = Item._image_cache[path]
+        w, h = data['size']
+        frames = data['frames']
+        row = data['position'][1]
+        
+        textures[item_name] = []
+        for i in range(frames):
+            rect = pygame.Rect(i * w, row * h, w, h)
+            textures[item_name].append(sheet.subsurface(rect))
+            
         return textures
     
 
@@ -113,6 +122,7 @@ class Chest(pygame.sprite.Sprite):
         cx, cy = self.rect.center
         for item_id in self.roll_loot():
             item_data = self.map.ITEM_DATABASE.get(item_id)
-            offset_x = random.randint(-10, 10)
-            offset_y = random.randint(-5, 5)
-            WorldItem(pos=(cx + offset_x, cy + offset_y), groups=self.map.items, item_data=item_data)
+            if item_data:
+                offset_x = random.randint(-10, 10)
+                offset_y = random.randint(-5, 5)
+                WorldItem(groups=self.map.items, pos=(cx + offset_x, cy + offset_y), item_data=item_data)

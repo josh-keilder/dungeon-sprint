@@ -13,7 +13,6 @@ class Button():
         self.screen = screen
         self.hovered = False
         self.clicked = False
-        self.mask = pygame.mask.from_surface(self.image)
         
         self.sound_controller = SoundController()
 
@@ -26,7 +25,8 @@ class Button():
             create_outline(self.screen, self, WHITE, (self.rect.x, self.rect.y))
 
     def update(self):
-        if self.rect.collidepoint(pygame.mouse.get_pos()):
+        mouse_pos = pygame.mouse.get_pos()
+        if self.rect.collidepoint(mouse_pos):
             # play hover sound only once when the mouse enters the button area
             if not self.hovered:
                 self.sound_controller.play_sfx("Button_Hover", volume=0.3)   
@@ -38,7 +38,7 @@ class Button():
     def is_clicked(self) -> bool:
         action = False
         # # checks if mouse is over the button, draws the outline and checks if player clicked the button
-        if self.rect.collidepoint(pygame.mouse.get_pos()):
+        if self.hovered:
             if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
                 self.clicked = True
                 action = True

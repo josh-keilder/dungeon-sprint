@@ -19,8 +19,15 @@ class Options:
         self.fps_button_on_img = pygame.transform.scale_by(FPS_BUTTON_ON_IMAGE.convert_alpha(), 0.5)
         self.fps_button = Button(self.screen, self.fps_button_off_img, pos=(450, 200))
 
+        # self.bg_music_button_off_img = 1
+        # self.bg_music_button_on_img = 2
+        # self.bg_music_button = Button(self.screen, self.bg_music_button_off_img, pos=(450, 300))
+
+
+
         # Toggles
         self.fps_toggle = False
+        self.bg_music_toggle = False
 
         # Loads unpausing sound
         try:
@@ -35,9 +42,10 @@ class Options:
         if self.gameStateManager.currentState == 'options':
             self.main_menu_button.draw()
             self.fps_button.draw()
+            # self.bg_music_button.draw()
 
             # The back button loads ONLY if the previous state was the gameplay dungeon level
-            if self.gameStateManager.get_previous_state().startswith('dungeon_level'):
+            if self.gameStateManager.get_previous_state().startswith('dungeon'):
                   self.back_button.draw()
 
     def update(self, dt):
@@ -54,16 +62,24 @@ class Options:
                 self.fps_button.image = self.fps_button_on_img
             else:
                 self.fps_button.image = self.fps_button_off_img
+        
+        # if self.bg_music_button.is_clicked():
+        #     self.bg_music_toggle = not self.bg_music_toggle # Flips toggle
+        #     if self.bg_music_toggle == True:
+        #         self.bg_music_button.image = self.bg_music_on_img
+        #     else:
+        #         self.bg_music_button.image = self.fps_button_off_img
 
         
         # If the previous screen was the gameplay dungeon, it also adds a back button to return to the game
-        if self.gameStateManager.get_previous_state().startswith('dungeon_level'):
+        if self.gameStateManager.get_previous_state().startswith('dungeon'):
                 self.back_button.update()
                 if self.back_button.is_clicked():
                     self.gameStateManager.go_back()
 
 
         self.fps_button.update()
+        # self.bg_music_button.update()
 
     def fps_check(self):
          self.fps_check = True
