@@ -1,6 +1,7 @@
 import pygame
 from globals import *
 from ui_objects.button import Button
+from states.menus.settings_manager import SettingsManager
 
 
 class Options:
@@ -9,6 +10,12 @@ class Options:
         self.gameStateManager = gameStateManager
         self.cursor = cursor
         self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
+
+        self.settings_manager = SettingsManager()
+
+        # Toggles
+        self.fps_toggle = self.settings_manager.get("fps_enabled")
+        self.bg_music_toggle = self.settings_manager.get("bg_music_enabled")
 
         # Create option menu buttons
         self.main_menu_button_img = MAIN_MENU_BUTTON_IMAGE.convert_alpha()
@@ -30,15 +37,14 @@ class Options:
         self.fps_button_on_img = pygame.transform.scale_by(
             FPS_BUTTON_ON_IMAGE.convert_alpha(), 0.5
         )
-        self.fps_button = Button(self.screen, self.fps_button_off_img, pos=(450, 200))
+        initial_fps_button_img = (
+            self.fps_button_on_img if self.fps_toggle else self.fps_button_off_img
+        )
+        self.fps_button = Button(self.screen, initial_fps_button_img, pos=(450, 200))
 
         # self.bg_music_button_off_img = 1
         # self.bg_music_button_on_img = 2
         # self.bg_music_button = Button(self.screen, self.bg_music_button_off_img, pos=(450, 300))
-
-        # Toggles
-        self.fps_toggle = False
-        self.bg_music_toggle = False
 
         # Loads unpausing sound
         try:
@@ -69,6 +75,9 @@ class Options:
         # Checks for fps toggle button clicks
         if self.fps_button.is_clicked():
             self.fps_toggle = not self.fps_toggle  # Flips toggle
+
+            self.settings_manager.set("fps_enabled", self.fps_toggle)
+
             if self.fps_toggle == True:
                 self.fps_button.image = self.fps_button_on_img
             else:

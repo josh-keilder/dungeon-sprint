@@ -27,7 +27,7 @@ class HealthBar(Component):
         max_health,
         width=TILESIZE,
         height=4,
-        shrink_speed=50,
+        shrink_speed=10000,
         is_player=False,
         pos=(20, 20),
     ):
@@ -48,18 +48,7 @@ class HealthBar(Component):
         if not health_comp:
             return
 
-        target_health = health_comp.current
-
-        # Smoothly move display_health towards the current health
-        if self.display_health != target_health:
-            diff = target_health - self.display_health
-            # Move display_health by shrink_speed per second
-            step = self.shrink_speed * dt
-
-            if abs(diff) < step:
-                self.display_health = target_health
-            else:
-                self.display_health += step if diff > 0 else -step
+        self.display_health = health_comp.current
 
     def draw(self, screen, camera=None):
         health_comp = getattr(self.node, "health", None)
@@ -90,5 +79,5 @@ class HealthBar(Component):
         if ratio > 0:
             fg_rect = pygame.Rect(x, y, self.width * ratio, self.height)
             # Change color based on health percentage
-            color = GREEN if ratio > 0.5 else RED
+            color = GREEN if ratio > 0.3 else RED
             pygame.draw.rect(screen, color, fg_rect)

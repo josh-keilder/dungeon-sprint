@@ -9,6 +9,7 @@ from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
 from Controllers.sound import SoundController
+from states.menus.settings_manager import SettingsManager
 
 
 class Game:
@@ -25,6 +26,8 @@ class Game:
         )
         self.cursor = Cursor(self.screen, self.cursor_img)
 
+        self.settings_manager = SettingsManager()
+
         # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first and creates the start and options screen right away
         self.gameStateManager = GameStateManager("start")
         self.start = Start(self.screen, self.gameStateManager, self.cursor)
@@ -39,7 +42,7 @@ class Game:
         # Showing FPS
         self.fps = None
         self.fps_text = Text_Loader(
-            self.fps, self.screen, font_size=15, pos=(1220, 10), color=WHITE
+            self.fps, self.screen, font_size=15, pos=(1215, 0), color=WHITE
         )
 
         self.sound_controller = SoundController()
@@ -76,7 +79,7 @@ class Game:
         self.gameStateManager.get_state().draw()
 
         # Only show FPS if the toggle is ON in options
-        if hasattr(self.options, "fps_toggle") and self.options.fps_toggle:
+        if self.settings_manager.get("fps_enabled"):
             self.fps_text.draw()
 
         self.cursor.draw()
