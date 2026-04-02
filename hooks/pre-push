@@ -7,7 +7,13 @@ return_error() {
 
 python -m black . || return_error "Code formatting failed."
 
-python -m pylint --errors-only $(git diff --name-only --cached | grep '\.py$') || return_error "Pylint checks failed."
+FILES=$(git diff --name-only --cached | grep '\.py$')
+
+if [ -n "$FILES" ]; then
+    python -m pylint --errors-only $FILES || return_error "Pylint found errors."
+else
+    echo "No Python files changed, skipping Pylint."
+fi
 
 python line_counter.py || return_error "Counting lines failed"
 
