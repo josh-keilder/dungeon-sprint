@@ -1,12 +1,22 @@
 import pygame
 from globals import *
+from settings_manager import SettingsManager
+
+settings_manager = SettingsManager()
 
 camera = pygame.Rect(0, 0, 0, 0)
 
 
 def create_screen(width, height, title):
     pygame.display.set_caption(title)
-    screen = pygame.display.set_mode((width, height), pygame.SCALED | pygame.FULLSCREEN)
+
+    flags = pygame.SCALED
+
+    if settings_manager.get("full_screen_enabled"):
+        flags |= pygame.FULLSCREEN
+    
+    screen = pygame.display.set_mode((width, height), flags)
+
     camera.width = width
     camera.height = height
     return screen
@@ -27,3 +37,10 @@ def camera_update(target):
 
 def is_on_screen(target_rect):
     return camera.colliderect(target_rect)
+
+
+def toggle_fullscreen():
+    current = settings_manager.get("full_screen_enabled")
+    settings_manager.set("full_screen_enabled", not current)
+    
+    return create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")

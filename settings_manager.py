@@ -20,6 +20,7 @@ class SettingsManager:
 
         self.settings = {
             "fps_enabled": False,
+            "full_screen_enabled": False,
             "bg_music_enabled": True,
             "bg_music_volume": 0.5,
             "game_sfx_volume": 0.5,

@@ -5,6 +5,7 @@ from settings_manager import SettingsManager
 from Controllers.sound import SoundController
 from ui_objects.slider import Slider
 from ui_objects.text_loader import Text_Loader
+from ui_objects.camera import toggle_fullscreen
 
 
 class Options:
@@ -20,6 +21,7 @@ class Options:
         # Settings
         self.fps_toggle = self.settings_manager.get("fps_enabled")
         self.bg_music_toggle = self.settings_manager.get("bg_music_enabled")
+        self.full_screen_toggle = self.settings_manager.get("full_screen_enabled")
 
         self.bg_music_volume = (
             self.settings_manager.get("bg_music_volume") * 100
@@ -86,6 +88,10 @@ class Options:
         self.bg_music_button_on_img = TEMP_BUTTON_IMAGE
         self.bg_music_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(450, 300))
 
+        self.full_screen_button_off_img =  TEMP_BUTTON_IMAGE
+        self.full_screen_button_on_img = TEMP_BUTTON_IMAGE
+        self.full_screen_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(100,300))
+
         # Option Menu Sounds
         try:
             self.unpause_sound = pygame.mixer.Sound("Assets/Sounds/Pause.wav")
@@ -97,6 +103,7 @@ class Options:
 
         if self.gameStateManager.currentState == "options":
             self.main_menu_button.draw()
+            self.full_screen_button.draw()
             self.fps_button.draw()
             self.bg_music_button.draw()
 
@@ -112,6 +119,7 @@ class Options:
     def update(self, dt):
         self.main_menu_button.update()
         self.fps_button.update()
+        self.full_screen_button.update()
         self.bg_music_button.update()
 
         self.bg_music_volume_slider.update()
@@ -129,6 +137,21 @@ class Options:
                 self.fps_button.image = self.fps_button_on_img
             else:
                 self.fps_button.image = self.fps_button_off_img
+
+        if self.full_screen_button.is_clicked():
+            self.full_screen_toggle = not self.full_screen_toggle
+
+            new_screen = toggle_fullscreen()
+
+            self.screen = new_screen
+
+            self.gameStateManager.update_screen_reference(new_screen)
+            self.cursor.screen = new_screen
+
+            if self.full_screen_toggle == True:
+                self.full_screen_button.image = self.full_screen_button_on_img
+            else:
+                self.full_screen_button.image = self.full_screen_button_off_img
 
         if self.bg_music_button.is_clicked():
             self.bg_music_toggle = not self.bg_music_toggle

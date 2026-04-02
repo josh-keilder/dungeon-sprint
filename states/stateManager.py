@@ -47,3 +47,7 @@ class GameStateManager:
 
     def all_states(self) -> list:  # Returns all states currently in the dict
         return list(self.states.keys())
+    
+    def update_screen_reference(self, new_screen):
+        for state in self.states.values():
+            state.screen = new_screen
