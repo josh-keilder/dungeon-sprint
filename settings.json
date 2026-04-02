@@ -1,7 +1,7 @@
 {
     "fps_enabled": true,
     "full_screen_enabled": true,
-    "bg_music_enabled": false,
+    "bg_music_enabled": true,
     "bg_music_volume": 0.33,
     "game_sfx_volume": 0.5,
     "menu_sfx_volume": 0.27,

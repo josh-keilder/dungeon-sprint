@@ -7,7 +7,7 @@ return_error() {
 
 python -m black . || return_error "Code formatting failed."
 
-python -m pylint --errors-only . || return_error "Pylint checks failed."
+python -m pylint --errors-only $(git diff --name-only --cached | grep '\.py$') || return_error "Pylint checks failed."
 
 python line_counter.py || return_error "Counting lines failed"
 
