@@ -1,25 +1,33 @@
 #!/bin/sh
 
 return_error() {
-    echo "Error: $1. Fix before pushing."
+    echo "❌ Error: $1. Fix before committing."
     exit 1
 }
 
-python -m black . || return_error "Code formatting failed."
+echo "--- Running Pre-Commit Hooks ---"
+
+python -m black . || return_error "Black formatting failed"
+git add . 
 
 FILES=$(git diff --name-only --cached | grep '\.py$')
 
 if [ -n "$FILES" ]; then
+    echo "Checking for Pylint errors..."
     python -m pylint --errors-only $FILES || return_error "Pylint found errors."
 else
-    echo "No Python files changed, skipping Pylint."
+    echo "No Python files staged; skipping Pylint."
 fi
 
-python line_counter.py || return_error "Counting lines failed"
+if [ -f "line_counter.py" ]; then
+    python line_counter.py || return_error "Line counting script failed"
+else
+    return_error "line_counter.py not found"
+fi
 
 if [ -f "README.md" ]; then
     git add README.md
-    echo "README.md stats updated and staged."
+    echo "✅ README.md updated and included in this commit."
 fi
 
 exit 0

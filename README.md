@@ -81,3 +81,6 @@ The game currently includes:
 - Saving and loading
 - Expanded UI and menus
 - More items, equipment, and progression systems
+## 📊 Project Statistics
+- **Total Files:** 36
+- **Total Lines of Code:** 2864
