@@ -24,7 +24,7 @@ class SettingsManager:
             "bg_music_enabled": True,
             "bg_music_volume": 0.5,
             "game_sfx_volume": 0.5,
-            "menu_sfx_volume": 0.5
+            "menu_sfx_volume": 0.5,
         }
 
         self.load_settings()

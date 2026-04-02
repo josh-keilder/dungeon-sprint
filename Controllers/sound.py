@@ -43,7 +43,9 @@ class SoundController:
             for file in os.listdir(directory):
                 if file.endswith((".wav", ".ogg")):
                     name = os.path.splitext(file)[0]
-                    target_dict[name] = pygame.mixer.Sound(os.path.join(directory, file))
+                    target_dict[name] = pygame.mixer.Sound(
+                        os.path.join(directory, file)
+                    )
 
     def _load_bg_music(self, directory):
         if os.path.exists(directory):

@@ -4,7 +4,17 @@ from Controllers.sound import SoundController
 
 
 class Slider:
-    def __init__(self, screen, pos, size, initial_value, min_val, max_val, track_color, knob_color):
+    def __init__(
+        self,
+        screen,
+        pos,
+        size,
+        initial_value,
+        min_val,
+        max_val,
+        track_color,
+        knob_color,
+    ):
         self.screen = screen
         self.pos = pos  # (x, y) center of the slider
         self.size = size  # (width, height)

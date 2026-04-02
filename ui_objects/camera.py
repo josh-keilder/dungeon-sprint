@@ -14,7 +14,7 @@ def create_screen(width, height, title):
 
     if settings_manager.get("full_screen_enabled"):
         flags |= pygame.FULLSCREEN
-    
+
     screen = pygame.display.set_mode((width, height), flags)
 
     camera.width = width
@@ -27,7 +27,7 @@ def camera_start(pos):
 
 
 def camera_update(target):
-    # Center the camera on the target (sprite or (x,y)) each frame
+    # Center the camera on the target each frame
     if hasattr(target, "rect"):
         target_x, target_y = target.rect.center
     else:
@@ -42,5 +42,5 @@ def is_on_screen(target_rect):
 def toggle_fullscreen():
     current = settings_manager.get("full_screen_enabled")
     settings_manager.set("full_screen_enabled", not current)
-    
+
     return create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")

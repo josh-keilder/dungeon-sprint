@@ -37,7 +37,7 @@ class Options:
             min_val=0,
             max_val=100,
             track_color=OPTION_MENU_BUTTON_BG,
-            knob_color=LIGHT_GRAY
+            knob_color=LIGHT_GRAY,
         )
         self.bg_music_volume_text = Text_Loader(
             f"Music Volume: {int(self.bg_music_volume)}",
@@ -47,16 +47,19 @@ class Options:
         )
         self.menu_sfx_volume_slider = Slider(
             self.screen,
-            pos=(640, 475), # Adjusted Y pos to be above the music slider
+            pos=(640, 475),  # Adjusted Y pos to be above the music slider
             size=(300, 20),
             initial_value=self.menu_sfx_volume,
             min_val=0,
             max_val=100,
             track_color=OPTION_MENU_BUTTON_BG,
-            knob_color=LIGHT_GRAY
+            knob_color=LIGHT_GRAY,
         )
         self.menu_sfx_volume_text = Text_Loader(
-            f"Menu SFX Volume: {int(self.menu_sfx_volume)}", self.screen, pos=(500, 415), color=WHITE
+            f"Menu SFX Volume: {int(self.menu_sfx_volume)}",
+            self.screen,
+            pos=(500, 415),
+            color=OPTION_MENU_BUTTON_BG,
         )
 
         # Option menu buttons
@@ -88,15 +91,9 @@ class Options:
         self.bg_music_button_on_img = TEMP_BUTTON_IMAGE
         self.bg_music_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(450, 300))
 
-        self.full_screen_button_off_img =  TEMP_BUTTON_IMAGE
+        self.full_screen_button_off_img = TEMP_BUTTON_IMAGE
         self.full_screen_button_on_img = TEMP_BUTTON_IMAGE
-        self.full_screen_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(100,300))
-
-        # Option Menu Sounds
-        try:
-            self.unpause_sound = pygame.mixer.Sound("Assets/Sounds/Pause.wav")
-        except Exception:
-            self.unpause_sound = None
+        self.full_screen_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(100, 300))
 
     def draw(self):
         self.screen.blit(self.image, (0, 0))
@@ -159,7 +156,7 @@ class Options:
             self.settings_manager.set("bg_music_enabled", self.bg_music_toggle)
             if self.bg_music_toggle == True:
                 self.bg_music_button.image = self.bg_music_button_on_img
-                self.sound_controller.play_music(volume=self.bg_music_volume)
+                self.sound_controller.play_music()
             else:
                 self.sound_controller.stop_music()
                 self.bg_music_button.image = self.bg_music_button_off_img
@@ -181,11 +178,13 @@ class Options:
         # Update SFX Slider
         self.menu_sfx_volume_slider.update()
         new_menu_sfx_val = self.menu_sfx_volume_slider.get_current_value()
-        
+
         if new_menu_sfx_val != self.menu_sfx_volume:
             self.menu_sfx_volume = new_menu_sfx_val
-            self.menu_sfx_volume_text.update_text(f"Menu SFX Volume: {self.menu_sfx_volume}")
-            
+            self.menu_sfx_volume_text.update_text(
+                f"Menu SFX Volume: {self.menu_sfx_volume}"
+            )
+
             normalized_sfx = self.menu_sfx_volume / 100.0
             self.sound_controller.set_menu_sfx_volume(normalized_sfx)
             self.settings_manager.set("menu_sfx_volume", normalized_sfx)
