@@ -26,7 +26,7 @@ def count_lines_in_project(
 
 
 def update_readme(lines, files, readme_path="README.md"):
-    stats_header = "\n## 📊 Project Statistics\n"
+    stats_header = "\n## Project Statistics\n"
     stats_content = f"- **Total Files:** {files}\n- **Total Lines of Code:** {lines}\n"
 
     # Read existing content to check if stats already exist
