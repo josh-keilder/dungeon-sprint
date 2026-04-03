@@ -1,15 +1,14 @@
 import pygame, os
 from globals import *
+from settings_manager import SettingsManager
 
 
 class SoundController:
-    _instance = None  # This stores the "one and only" version
+    _instance = None
 
     def __new__(cls):
-        # If an instance doesn't exist yet, create it
         if cls._instance is None:
             cls._instance = super(SoundController, cls).__new__(cls)
-            # Put your initialization logic here so it only runs ONCE
             cls._instance._initialized = False
         return cls._instance
 
@@ -20,7 +19,8 @@ class SoundController:
         if not pygame.mixer.get_init():
             pygame.mixer.init()
 
-        self.sfx = {}
+        self.sfx_game = {}
+        self.sfx_menu = {}
         self.bg_music = {}
         self.music_queue = []
         self.current_track_index = 0
@@ -28,19 +28,24 @@ class SoundController:
         self.MUSIC_ENDED = pygame.USEREVENT + 1
         pygame.mixer.music.set_endevent(self.MUSIC_ENDED)
 
-        self._load_sfx("Assets/Sounds")
+        self._load_sfx("Assets/Sounds/Game", self.sfx_game)
+        self._load_sfx("Assets/Sounds/Menu", self.sfx_menu)
         self._load_bg_music("Assets/Music")
 
         self.music_queue = list(self.bg_music.keys())
 
         self._initialized = True
 
-    def _load_sfx(self, directory):
+        self.settings_manager = SettingsManager()
+
+    def _load_sfx(self, directory, target_dict):
         if os.path.exists(directory):
             for file in os.listdir(directory):
                 if file.endswith((".wav", ".ogg")):
                     name = os.path.splitext(file)[0]
-                    self.sfx[name] = pygame.mixer.Sound(os.path.join(directory, file))
+                    target_dict[name] = pygame.mixer.Sound(
+                        os.path.join(directory, file)
+                    )
 
     def _load_bg_music(self, directory):
         if os.path.exists(directory):
@@ -49,19 +54,39 @@ class SoundController:
                     name = os.path.splitext(file)[0]
                     self.bg_music[name] = os.path.join(directory, file)
 
-    def play_sfx(self, name, volume=0.5):
-        if name in self.sfx:
-            sound = self.sfx[name]
+    def play_sfx(self, name, volume=None):
+        if name in self.sfx_game:
+            if volume is None:
+                volume = self.settings_manager.get("game_sfx_volume")
+            sound = self.sfx_game[name]
             sound.set_volume(volume)
             sound.play()
+
+        elif name in self.sfx_menu:
+            if volume is None:
+                volume = self.settings_manager.get("menu_sfx_volume")
+            sound = self.sfx_menu[name]
+            sound.set_volume(volume)
+            sound.play()
+
         else:
             print(f"Sound '{name}' not found")
 
-    def play_music(self, name, loops=0, volume=0.5):
-        # If name is None, it plays the current track in the cue
+    def play_music(self, name=None, loops=0, volume=None):
+
+        if not self.settings_manager.get("bg_music_enabled"):
+            return
+
+        if pygame.mixer_music.get_busy():
+            return
+
+        if volume is None:
+            volume = self.settings_manager.get("bg_music_volume")
+
         if name is None and self.music_queue:
             name = self.music_queue[self.current_track_index]
 
+        # Play specific music
         if name in self.bg_music:
             pygame.mixer.music.load(self.bg_music[name])
             pygame.mixer.music.set_volume(volume)
@@ -85,3 +110,19 @@ class SoundController:
     def handle_events(self, event):
         if event.type == self.MUSIC_ENDED:
             self.play_next_track()
+
+    def set_music_volume(self, volume):
+        volume = max(0.0, min(1.0, volume))
+        pygame.mixer.music.set_volume(volume)
+
+    def set_game_sfx_volume(self, volume):
+        volume = max(0.0, min(1.0, volume))
+        for sound in self.sfx_game.values():
+            sound.set_volume(volume)
+        self.settings_manager.set("game_sfx_volume", volume)
+
+    def set_menu_sfx_volume(self, volume):
+        volume = max(0.0, min(1.0, volume))
+        for sound in self.sfx_menu.values():
+            sound.set_volume(volume)
+        self.settings_manager.set("menu_sfx_volume", volume)

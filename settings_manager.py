@@ -4,6 +4,7 @@ import json
 
 class SettingsManager:
     _instance = None
+
     def __new__(cls):
         if not cls._instance:
             cls._instance = super(SettingsManager, cls).__new__(cls)
@@ -18,9 +19,12 @@ class SettingsManager:
         self.filename = filename
 
         self.settings = {
-            "fps_enabled": False, 
-            "bg_music_enabled": True, 
-            "volume": 0.5
+            "fps_enabled": False,
+            "full_screen_enabled": False,
+            "bg_music_enabled": True,
+            "bg_music_volume": 0.5,
+            "game_sfx_volume": 0.5,
+            "menu_sfx_volume": 0.5,
         }
 
         self.load_settings()

@@ -26,7 +26,7 @@ class Start:
         )
 
         sound_controller = SoundController()
-        sound_controller.play_music("JuiceWrldChasingTheDragon", loops=0, volume=0.25)
+        sound_controller.play_music("JuiceWrldChasingTheDragon")
 
     def draw(self):
         # Draws the background image

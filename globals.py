@@ -35,6 +35,9 @@ GRAY = (128, 128, 128)
 LIGHT_GRAY = (192, 192, 192)
 DARK_GRAY = (64, 64, 64)
 
+OPTION_MENU_BUTTON_BG = (110, 74, 72)
+OPTION_MENU_BUTTON_FG = (37, 19, 26)
+
 
 # --- Images ---
 """ All images are stored in the globals file to allow for easier locating when changes are needed."""
@@ -46,6 +49,7 @@ EXIT_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/exit-button.png")
 OPTIONS_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/options-button.png")
 
 # Options Screen images
+TEMP_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/temp_button.png")
 OPTIONS_SCREEN_IMAGE = pygame.image.load("Assets/Menu-Assets/options-screen.png")
 MAIN_MENU_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/main-menu-button.png")
 BACK_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/back-button.png")

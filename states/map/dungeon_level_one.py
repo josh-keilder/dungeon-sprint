@@ -54,12 +54,6 @@ class Dungeon_Level_One:
         # Set wall tiles in scene
         self.scene.set_wall_tiles(list(self.wall_tiles) + list(self.door_tiles))
 
-        # Load the pause sound
-        try:
-            self.pause_sound = pygame.mixer.Sound("Assets/Sounds/Pause.wav")
-        except Exception:
-            self.pause_sound = None
-
     def update(self, dt):
         # Update the scene
         self.scene.update(dt)

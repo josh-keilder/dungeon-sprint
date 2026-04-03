@@ -11,6 +11,8 @@ class InputComponent(Component):
         self.node = node
         self.map = map
 
+        self.sound_controller = SoundController()
+
         # --- COOLDOWNS ---
         self.interact_cooldown = 0
         self.pick_up_item_cooldown = 0
@@ -24,9 +26,7 @@ class InputComponent(Component):
         # System Inputs
         if keys[pygame.K_ESCAPE]:
             self.map.gameStateManager.set_state("options")
-            if hasattr(self.map, "pause_sound"):
-                self.map.pause_sound.play()
-
+            self.sound_controller.play_sfx("Pause")
         # Debug Hitboxes
         if keys[pygame.K_p] and self.interact_cooldown <= 0:
             globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
