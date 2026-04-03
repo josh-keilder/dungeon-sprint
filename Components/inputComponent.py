@@ -1,38 +1,56 @@
+"""
+System: Input Management
+-------------------------
+A component-based input handler that maps keyboard and mouse events to game actions.
+It processes movement, interaction (chests, doors, pickups), and inventory management,
+utilizing independent cooldown timers to prevent input spamming.
+
+Classes:
+    InputComponent: Bridges Pygame event polling with entity-specific logic.
+"""
+
 import pygame
 import globals
 from globals import *
 from Components.component import Component
 from Controllers.sound import SoundController
+from typing import Any, Dict, Optional
 
 
 class InputComponent(Component):
-    def __init__(self, node, map):
+    def __init__(self, node: Any, map: Any) -> None:
+        """Initializes input state, sound references, and interaction cooldowns."""
         super().__init__(node)
         self.node = node
-        self.map = map
-
+        self.map = map  # Reference to the current level/map context
         self.sound_controller = SoundController()
 
-        # --- COOLDOWNS ---
-        self.interact_cooldown = 0
-        self.pick_up_item_cooldown = 0
-        self.healing_cooldown = 0
-        self.inventory_cooldown = 0
+        # --- COOLDOWNS (Seconds) ---
+        self.interact_cooldown = 0.0
+        self.pick_up_item_cooldown = 0.0
+        self.healing_cooldown = 0.0
+        self.inventory_cooldown = 0.0
+
         self.show_inventory = False
 
-    def update(self, dt):
+    def update(self, dt: float) -> None:
+        """
+        Polls for active keys and executes relevant logic branches.
+        Handles high-level system inputs and updates cooldown timers.
+        """
         keys = pygame.key.get_pressed()
 
-        # System Inputs
+        # System / Menu Inputs
         if keys[pygame.K_ESCAPE]:
             self.map.gameStateManager.set_state("options")
             self.sound_controller.play_sfx("Pause")
-        # Debug Hitboxes
+
+        # Debug Toggles
         if keys[pygame.K_p] and self.interact_cooldown <= 0:
             globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
             self.interact_cooldown = 0.5
 
-        # Healing Logic
+        # Quick-use Healing Logic
         if keys[pygame.K_q] and self.healing_cooldown <= 0:
             health = getattr(self.node, "health", None)
             inv = getattr(self.node, "inventory", None)
@@ -42,22 +60,19 @@ class InputComponent(Component):
                     inv.remove_item("small_health_potion")
                     self.healing_cooldown = 1.0
 
-        # Run Input Methods
+        # Run Specialized Input Handlers
         self.movement_input(keys)
         self.interact_input(keys)
-        self.inventory_input(keys)
+        self.inventory_input(keys, dt)
 
         # Global Cooldown Decay
-        if self.healing_cooldown > 0:
-            self.healing_cooldown -= dt
-        if self.interact_cooldown > 0:
-            self.interact_cooldown -= dt
-        if self.pick_up_item_cooldown > 0:
-            self.pick_up_item_cooldown -= dt
-        if self.inventory_cooldown > 0:
-            self.inventory_cooldown -= dt
+        self.healing_cooldown = max(0, self.healing_cooldown - dt)
+        self.interact_cooldown = max(0, self.interact_cooldown - dt)
+        self.pick_up_item_cooldown = max(0, self.pick_up_item_cooldown - dt)
+        self.inventory_cooldown = max(0, self.inventory_cooldown - dt)
 
-    def movement_input(self, keys):
+    def movement_input(self, keys: pygame.key.ScancodeWrapper) -> None:
+        """Translates WASD input into a normalized velocity vector."""
         walking = False
         dir_x, dir_y = 0, 0
 
@@ -82,7 +97,7 @@ class InputComponent(Component):
         if input_vector.length_squared() > 0:
             input_vector.normalize_ip()
 
-        # Roll Trigger
+        # Check for Dodge-Roll Trigger
         if keys[pygame.K_SPACE] and walking:
             roll = getattr(self.node, "roll", None)
             if roll and not roll.is_rolling:
@@ -91,11 +106,12 @@ class InputComponent(Component):
         self.node.input_vector = input_vector
         self.node.walking = walking
 
-    def interact_input(self, keys):
+    def interact_input(self, keys: pygame.key.ScancodeWrapper) -> None:
+        """Handles context-sensitive interactions with world objects (Chests, Doors, Items)."""
         if not keys[pygame.K_f]:
             return
 
-        # Create a search area around the player to avoid looping through everything
+        # Inflate rect to create a localized interaction 'reach' zone
         search_rect = self.node.rect.inflate(15, 15)
 
         # Chest Interaction
@@ -107,17 +123,18 @@ class InputComponent(Component):
                     self.interact_cooldown = 0.5
                     return
 
-            # Door Interaction
+            # Door/Key Interaction
             inv = getattr(self.node, "inventory", None)
             if inv and inv.has_item("gold_key"):
                 for door in list(self.map.door_tiles):
                     if search_rect.colliderect(door.rect):
-                        # Unlock all doors with the same ID
-                        id_to_remove = door.door_id
+                        # Unlock all linked door segments
+                        target_id = door.door_id
                         self.map.door_tiles = [
-                            d for d in self.map.door_tiles if d.door_id != id_to_remove
+                            d for d in self.map.door_tiles if d.door_id != target_id
                         ]
-                        # Refresh physics tiles in scene
+
+                        # Update physics engine to reflect removed walls
                         self.map.scene.set_wall_tiles(
                             list(self.map.wall_tiles.sprites()) + self.map.door_tiles
                         )
@@ -125,18 +142,18 @@ class InputComponent(Component):
                         self.interact_cooldown = 0.5
                         return
 
-        # Item Pickup
+        # Item Ground Pickup
         if self.pick_up_item_cooldown <= 0 and self.interact_cooldown <= 0:
             inv = getattr(self.node, "inventory", None)
             for item in list(self.map.items):
                 if search_rect.colliderect(item.rect):
-                    if inv:
-                        inv.add_item(item.item_data.clone())
+                    if inv and inv.add_item(item.item_data.clone()):
                         self.map.items.remove(item)
                         self.pick_up_item_cooldown = 0.2
                         return
 
-    def inventory_input(self, keys):
+    def inventory_input(self, keys: pygame.key.ScancodeWrapper, dt: float) -> None:
+        """Manages inventory visibility and internal click handling."""
         if keys[pygame.K_e] and self.inventory_cooldown <= 0:
             self.show_inventory = not self.show_inventory
             self.inventory_cooldown = 0.3

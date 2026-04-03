@@ -1,11 +1,24 @@
+"""
+System: Roll Component
+----------------------
+Manages the player's dodge-roll mechanic, including invulnerability frames,
+directional physics, and cooldown management. This component integrates with
+the animation and movement systems to provide a fluid transition between
+rolling and standard locomotion.
+
+Classes:
+    RollComponent: Handles state, timing, and direction for the roll action.
+"""
+
 import pygame
 from Components.component import Component
+from typing import Any, Dict
 
 
 class RollComponent(Component):
-    def __init__(self, node, roll_speed=0, cooldown=800):
+    def __init__(self, node: Any, roll_speed: float = 0.0, cooldown: int = 800) -> None:
+        """Initializes roll attributes, cooldowns, and invincibility flags."""
         super().__init__(node)
-        # --- ATTRIBUTES ---
         self.is_rolling = False
         self.roll_speed = roll_speed
         self.is_invincible = False
@@ -13,7 +26,11 @@ class RollComponent(Component):
         self.roll_cooldown = cooldown
         self.roll_direction = pygame.Vector2(0, 0)
 
-    def start_roll(self, dir_vector, last_direction):
+    def start_roll(self, dir_vector: pygame.Vector2, last_direction: str) -> None:
+        """
+        Initiates a roll if the cooldown has expired. Calculates direction
+        based on current input or the last facing direction.
+        """
         current_time = pygame.time.get_ticks()
         if (
             not self.is_rolling
@@ -23,7 +40,6 @@ class RollComponent(Component):
             self.is_invincible = True
             self.last_roll_time = current_time
 
-            # Capture direction or use default based on facing
             if dir_vector.length_squared() == 0:
                 dir_map = {
                     "right": (1, 0),
@@ -40,14 +56,16 @@ class RollComponent(Component):
             if hasattr(self.node, "animations"):
                 self.node.animations.change_anim(f"player_roll_{last_direction}")
 
-    def update(self, dt):
+    def update(self, dt: float) -> None:
+        """
+        Handles roll physics and animation tracking. Allows for 'animation
+        canceling' near the end of the roll if movement input is detected.
+        """
         if self.is_rolling:
-            # Use shared movement logic for consistent wall collisions
             if hasattr(self.node, "movement"):
                 vel = self.roll_direction * self.roll_speed
                 self.node.movement.move(vel * dt, getattr(self.node, "wall_tiles", []))
 
-            # Handle animation frames and early exit buffer
             if hasattr(self.node, "animations"):
                 controller = self.node.animations.controller
                 frames = controller.animations.get(controller.current_anim, [])
@@ -59,10 +77,11 @@ class RollComponent(Component):
                     if input_vec.length_squared() > 0:
                         self.finish_roll()
 
-                # End roll on last frame
+                # End roll naturally on the final frame
                 if controller.frame_index >= len(frames) - 1:
                     self.finish_roll()
 
-    def finish_roll(self):
+    def finish_roll(self) -> None:
+        """Resets state flags to end the roll and remove invincibility."""
         self.is_rolling = False
         self.is_invincible = False
