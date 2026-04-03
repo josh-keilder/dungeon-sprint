@@ -1,3 +1,14 @@
+"""
+State: Options Menu
+-------------------
+Handles the game settings interface. This state manages all settings. It acts as a bridge
+between the UI components (Sliders/Buttons) and the persistent
+SettingsManager/SoundController.
+
+Classes:
+    Options: The state object for adjusting game configurations.
+"""
+
 import pygame
 from globals import *
 from ui_objects.button import Button
@@ -6,63 +17,78 @@ from Controllers.sound import SoundController
 from ui_objects.slider import Slider
 from ui_objects.text_loader import Text_Loader
 from ui_objects.camera import toggle_fullscreen
+from typing import Any, Tuple, Optional
 
 
 class Options:
-    def __init__(self, screen, gameStateManager, cursor):
+    def __init__(
+        self, screen: pygame.Surface, game_state_manager: Any, cursor: Any
+    ) -> None:
+        """
+        Initializes settings UI elements and loads current values
+        from the SettingsManager.
+
+        Args:
+            screen (pygame.Surface): The main display surface for rendering.
+            game_state_manager (GameStateManager): The manager handling state transitions.
+            cursor (Cursor): The custom cursor instance for visual feedback.
+
+        Returns:
+            None
+        """
         self.screen = screen
-        self.gameStateManager = gameStateManager
+        self.gameStateManager = game_state_manager
         self.cursor = cursor
         self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
 
         self.settings_manager = SettingsManager()
         self.sound_controller = SoundController()
 
-        # Settings
+        # Load current preferences from disk/memory
         self.fps_toggle = self.settings_manager.get("fps_enabled")
         self.bg_music_toggle = self.settings_manager.get("bg_music_enabled")
         self.full_screen_toggle = self.settings_manager.get("full_screen_enabled")
 
-        self.bg_music_volume = (
-            self.settings_manager.get("bg_music_volume") * 100
-        )  # Multiply volume by 100 for the slider to work
-        self.menu_sfx_volume = self.settings_manager.get("menu_sfx_volume") * 100
+        # Slider math: Convert 0.0-1.0 float to 0-100 integer for UI display
+        self.bg_music_volume = int(self.settings_manager.get("bg_music_volume") * 100)
+        self.menu_sfx_volume = int(self.settings_manager.get("menu_sfx_volume") * 100)
 
-        # Sliders
+        # UI Components: Volume Controls
         self.bg_music_volume_slider = Slider(
             self.screen,
             pos=(640, 575),
             size=(300, 20),
-            initial_value=self.bg_music_volume,
-            min_val=0,
-            max_val=100,
+            initial_value=float(self.bg_music_volume),
+            min_val=0.0,
+            max_val=100.0,
             track_color=OPTION_MENU_BUTTON_BG,
             knob_color=LIGHT_GRAY,
         )
         self.bg_music_volume_text = Text_Loader(
-            f"Music Volume: {int(self.bg_music_volume)}",
+            f"Music Volume: {self.bg_music_volume}",
             self.screen,
             pos=(500, 515),
             color=OPTION_MENU_BUTTON_BG,
         )
+
         self.menu_sfx_volume_slider = Slider(
             self.screen,
-            pos=(640, 475),  # Adjusted Y pos to be above the music slider
+            pos=(640, 475),
             size=(300, 20),
-            initial_value=self.menu_sfx_volume,
-            min_val=0,
-            max_val=100,
+            initial_value=float(self.menu_sfx_volume),
+            min_val=0.0,
+            max_val=100.0,
             track_color=OPTION_MENU_BUTTON_BG,
             knob_color=LIGHT_GRAY,
         )
         self.menu_sfx_volume_text = Text_Loader(
-            f"Menu SFX Volume: {int(self.menu_sfx_volume)}",
+            f"Menu SFX Volume: {self.menu_sfx_volume}",
             self.screen,
             pos=(500, 415),
             color=OPTION_MENU_BUTTON_BG,
         )
 
-        # Option menu buttons
+        # Navigation Buttons
         self.main_menu_button_img = MAIN_MENU_BUTTON_IMAGE.convert_alpha()
         self.main_menu_button = Button(
             self.screen,
@@ -76,26 +102,32 @@ class Options:
             pos=(1135, 650),
         )
 
+        # Toggle Buttons (FPS and placeholders for others)
         self.fps_button_off_img = pygame.transform.scale_by(
             FPS_BUTTON_OFF_IMAGE.convert_alpha(), 0.5
         )
         self.fps_button_on_img = pygame.transform.scale_by(
             FPS_BUTTON_ON_IMAGE.convert_alpha(), 0.5
         )
-        initial_fps_button_img = (
+
+        initial_fps_img = (
             self.fps_button_on_img if self.fps_toggle else self.fps_button_off_img
         )
-        self.fps_button = Button(self.screen, initial_fps_button_img, pos=(450, 200))
+        self.fps_button = Button(self.screen, initial_fps_img, pos=(450, 200))
 
-        self.bg_music_button_off_img = TEMP_BUTTON_IMAGE
-        self.bg_music_button_on_img = TEMP_BUTTON_IMAGE
         self.bg_music_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(450, 300))
-
-        self.full_screen_button_off_img = TEMP_BUTTON_IMAGE
-        self.full_screen_button_on_img = TEMP_BUTTON_IMAGE
         self.full_screen_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(100, 300))
 
-    def draw(self):
+    def draw(self) -> None:
+        """
+        Renders all settings UI components to the active screen.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.screen.blit(self.image, (0, 0))
 
         if self.gameStateManager.currentState == "options":
@@ -110,86 +142,77 @@ class Options:
             self.menu_sfx_volume_slider.draw()
             self.menu_sfx_volume_text.draw()
 
-            if self.gameStateManager.get_previous_state().startswith("dungeon"):
+            # Only show 'Back' if we have a gameplay state to return to
+            prev_state = self.gameStateManager.get_previous_state()
+            if prev_state and prev_state.startswith("dungeon"):
                 self.back_button.draw()
 
-    def update(self, dt):
+    def update(self, dt: float) -> None:
+        """
+        Processes settings changes and handles state navigation logic.
+
+        Args:
+            dt (float): Delta time in seconds since the last frame.
+
+        Returns:
+            None
+        """
         self.main_menu_button.update()
         self.fps_button.update()
         self.full_screen_button.update()
         self.bg_music_button.update()
-
         self.bg_music_volume_slider.update()
         self.menu_sfx_volume_slider.update()
 
+        # State Navigation
         if self.main_menu_button.is_clicked():
             self.gameStateManager.set_state("start")
 
+        # Settings Toggles
         if self.fps_button.is_clicked():
             self.fps_toggle = not self.fps_toggle
-
             self.settings_manager.set("fps_enabled", self.fps_toggle)
-
-            if self.fps_toggle == True:
-                self.fps_button.image = self.fps_button_on_img
-            else:
-                self.fps_button.image = self.fps_button_off_img
+            self.fps_button.image = (
+                self.fps_button_on_img if self.fps_toggle else self.fps_button_off_img
+            )
 
         if self.full_screen_button.is_clicked():
             self.full_screen_toggle = not self.full_screen_toggle
-
             new_screen = toggle_fullscreen()
-
             self.screen = new_screen
-
             self.gameStateManager.update_screen_reference(new_screen)
             self.cursor.screen = new_screen
 
-            if self.full_screen_toggle == True:
-                self.full_screen_button.image = self.full_screen_button_on_img
-            else:
-                self.full_screen_button.image = self.full_screen_button_off_img
-
         if self.bg_music_button.is_clicked():
             self.bg_music_toggle = not self.bg_music_toggle
-
             self.settings_manager.set("bg_music_enabled", self.bg_music_toggle)
-            if self.bg_music_toggle == True:
-                self.bg_music_button.image = self.bg_music_button_on_img
+            if self.bg_music_toggle:
                 self.sound_controller.play_music()
             else:
                 self.sound_controller.stop_music()
-                self.bg_music_button.image = self.bg_music_button_off_img
 
-        # Update Music Slider
-        new_bg_volume_val_int = self.bg_music_volume_slider.get_current_value()
-        if new_bg_volume_val_int != self.bg_music_volume:
-            self.bg_music_volume = new_bg_volume_val_int
-
+        # Volume Slider Logic
+        new_bg_vol = self.bg_music_volume_slider.get_current_value()
+        if new_bg_vol != self.bg_music_volume:
+            self.bg_music_volume = new_bg_vol
             self.bg_music_volume_text.update_text(
                 f"Music Volume: {self.bg_music_volume}"
             )
+            self.sound_controller.set_music_volume(self.bg_music_volume / 100.0)
+            self.settings_manager.set("bg_music_volume", self.bg_music_volume / 100.0)
 
-            normalized_vol = self.bg_music_volume / 100.0
-            self.sound_controller.set_music_volume(normalized_vol)
-
-            self.settings_manager.set("bg_music_volume", normalized_vol)
-
-        # Update SFX Slider
-        self.menu_sfx_volume_slider.update()
-        new_menu_sfx_val = self.menu_sfx_volume_slider.get_current_value()
-
-        if new_menu_sfx_val != self.menu_sfx_volume:
-            self.menu_sfx_volume = new_menu_sfx_val
+        new_sfx_vol = self.menu_sfx_volume_slider.get_current_value()
+        if new_sfx_vol != self.menu_sfx_volume:
+            self.menu_sfx_volume = new_sfx_vol
             self.menu_sfx_volume_text.update_text(
                 f"Menu SFX Volume: {self.menu_sfx_volume}"
             )
+            self.sound_controller.set_menu_sfx_volume(self.menu_sfx_volume / 100.0)
+            self.settings_manager.set("menu_sfx_volume", self.menu_sfx_volume / 100.0)
 
-            normalized_sfx = self.menu_sfx_volume / 100.0
-            self.sound_controller.set_menu_sfx_volume(normalized_sfx)
-            self.settings_manager.set("menu_sfx_volume", normalized_sfx)
-
-        if self.gameStateManager.get_previous_state().startswith("dungeon"):
+        # Contextual Back Logic
+        prev_state = self.gameStateManager.get_previous_state()
+        if prev_state and prev_state.startswith("dungeon"):
             self.back_button.update()
             if self.back_button.is_clicked():
                 self.gameStateManager.go_back()

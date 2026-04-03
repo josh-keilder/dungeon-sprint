@@ -1,3 +1,14 @@
+"""
+Data: Enemy Texture Metadata
+-----------------------------
+Defines the spritesheet configurations for the enemies. Each entry
+specifies the frame dimensions, counts, and file paths for animations across
+different states and cardinal directions.
+
+Note: 'Left' animations are typically handled via code-side flipping of 'Right'
+assets to optimize storage and memory.
+"""
+
 from globals import *
 
 skeleton_texture_data = {}

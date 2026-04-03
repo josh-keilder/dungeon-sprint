@@ -1,10 +1,25 @@
+"""
+System: Item and Loot Generation
+-------------------------------
+Defines the data structures and world-space objects for the game's item
+system. Uses a Prototype pattern for item instantiation and a static
+image cache to optimize texture loading for large numbers of world items.
+
+Classes:
+    Item: Base data class for all items.
+    EquipmentItem: Specialized item for wearable gear with stats.
+    WorldItem: The physical Sprite representation of an item on the ground.
+    Chest: An interactable container that rolls loot and spawns WorldItems.
+"""
+
+import pygame
 from globals import *
 import pygame, copy, random
 from Components.animationComponent import AnimationComponent
 
 
 class Item:
-
+    # Shared across all instances to prevent redundant disk I/O
     _image_cache = {}
 
     def __init__(
@@ -19,6 +34,10 @@ class Item:
         anim_speed: int = 4,
         value: str = None,
     ):
+        """
+        Base blueprint for an item.
+        Note: 'animations' expects a dict of frame lists.
+        """
         self.id = id
         self.type = type
         self.name = name
@@ -33,10 +52,15 @@ class Item:
         self.ui_icon = None
 
     def clone(self):
+        """Returns a deep copy of the item for unique instance modification."""
         return copy.deepcopy(self)
 
     @staticmethod
     def gen_item_textures(texture_data: dict, item_name: str) -> dict:
+        """
+        Slices a spritesheet into individual animation frames.
+        Caches the source sheet to ensure each file is loaded only once.
+        """
         textures = {}
         data = texture_data.get(item_name)
         if not data:
@@ -71,6 +95,7 @@ class EquipmentItem(Item):
         ability: str = None,
         value: str = None,
     ):
+        """Specialized Item with slot-specific logic and stat modifiers."""
         super().__init__(
             id=id,
             type="equipment",
@@ -81,16 +106,18 @@ class EquipmentItem(Item):
             max_stack=1,
             value=value,
         )
-
         self.slot = slot
         self.stats = stats
         self.ability = ability
-
         self.image = animations.get("idle", [None])[0]
 
 
 class WorldItem(pygame.sprite.Sprite):
     def __init__(self, groups, pos, item_data):
+        """
+        The physical entity representing an item in the game world.
+        Takes an Item object and wraps it in a Sprite with an AnimationComponent.
+        """
         super().__init__(groups)
         self.item_data = item_data.clone()
         self.animations = AnimationComponent(
@@ -103,19 +130,22 @@ class WorldItem(pygame.sprite.Sprite):
         self.pos = pos
         self.rect = self.image.get_rect(center=self.pos)
 
-        # Specific Item Modifiers
+        # Dynamic Scaling: Adjusts item quantity based on type upon spawning
         if self.item_data.type == "small_potion":
             self.item_data.quantity = random.randint(1, 3)
 
     def draw(self, screen, camera):
+        """Renders the item relative to the camera."""
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
 
     def update(self, dt):
+        """Advances the item's visual animation."""
         self.animations.update(dt)
 
 
 class Chest(pygame.sprite.Sprite):
     def __init__(self, groups, pos, map):
+        """Interactable container that spawns WorldItems when opened."""
         super().__init__(groups)
         self.image = CHEST_IMAGE
         self.rect = self.image.get_frect(topleft=pos)
@@ -124,13 +154,14 @@ class Chest(pygame.sprite.Sprite):
         self.opened = False
 
     def draw(self, screen, camera):
-        # Draws the tiles based on the camera offset
+        """Renders the chest relative to the camera."""
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
 
     def update(self):
         pass
 
     def roll_loot(self):
+        """Determines which item IDs to drop based on weighted probabilities."""
         drops = []
         if random.random() < 0.8:
             drops.append("gold_key")
@@ -138,10 +169,10 @@ class Chest(pygame.sprite.Sprite):
             drops.append("small_health_potion")
 
         drops.append("speed_boots")
-
         return drops
 
     def open(self):
+        """Transitions the chest to opened state and spawns items into the map group."""
         if self.opened:
             return
 
@@ -150,6 +181,7 @@ class Chest(pygame.sprite.Sprite):
         for item_id in self.roll_loot():
             item_data = self.map.ITEM_DATABASE.get(item_id)
             if item_data:
+                # Random scattering to prevent items overlapping perfectly
                 offset_x = random.randint(-10, 10)
                 offset_y = random.randint(-5, 5)
                 WorldItem(

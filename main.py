@@ -1,3 +1,14 @@
+"""
+Main Entry Point: Dungeon Sprint
+-------------------------------
+This module initializes the Pygame environment and manages the high-level
+game loop, including state transitions (menus, levels), event handling,
+and global systems like sound and settings.
+
+Classes:
+    Game: The primary engine class that coordinates updates and rendering.
+"""
+
 import pygame
 from globals import *
 
@@ -15,11 +26,13 @@ from settings_manager import SettingsManager
 class Game:
     def __init__(self):
         pygame.init()
-        # The screen is created within the camera module to allow a player following camera
+
+        # Screen creation is handled by the camera module to support player tracking
         self.screen = create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")
         self.clock = pygame.time.Clock()
         self.running = True
 
+        # Custom cursor setup
         pygame.mouse.set_visible(False)
         self.cursor_img = pygame.transform.scale_by(
             pygame.image.load("Assets/Cursors/01.png").convert_alpha(), 0.5
@@ -29,55 +42,56 @@ class Game:
         self.settings_manager = SettingsManager()
         self.sound_controller = SoundController()
 
-        # Allows the game to change from different states(menus/levels) and automatically sets it to our start screen first and creates the start and options screen right away
+        # FPS UI Setup
+        self.fps = None
+        self.fps_text = Text_Loader(
+            self.fps, self.screen, font_size=15, pos=(1215, 0), color=WHITE
+        )
+
+        # State Machine Setup: Handles transitions between menus and gameplay levels
         self.gameStateManager = GameStateManager("start")
         self.start = Start(self.screen, self.gameStateManager, self.cursor)
         self.options = Options(self.screen, self.gameStateManager, self.cursor)
         self.dungeon_level_one = Dungeon_Level_One(
             self.screen, self.gameStateManager, self.cursor
         )
+
         self.gameStateManager.add_state("dungeon", self.dungeon_level_one)
         self.gameStateManager.add_state("options", self.options)
         self.gameStateManager.add_state("start", self.start)
 
-        # Showing FPS
-        self.fps = None
-        self.fps_text = Text_Loader(
-            self.fps, self.screen, font_size=15, pos=(1215, 0), color=WHITE
-        )
-
     def run(self):
+        """Main game loop."""
         while self.running:
             self.update()
             self.draw()
 
     def update(self):
+        """Processes input events, updates delta time, and updates the active state."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
 
             self.sound_controller.handle_events(event)
 
+        # Calculate Delta Time (seconds)
         self.dt = self.clock.tick(FRAMERATE) / 1000.0
 
-        # Updates current state
+        # Update current active state (Menu/Level)
         self.gameStateManager.get_state().update(self.dt)
-        # print(self.gameStateManager.all_states()) # Check states
-
         self.cursor.update()
 
         pygame.display.update()
 
-        # Only update FPS text every 30 frames
+        # Performance monitoring: Update FPS display approximately every 0.5 seconds
         if pygame.time.get_ticks() % 500 < 20:
             self.fps = self.clock.get_fps()
             self.fps_text.update_text(f"FPS: {int(self.fps)}")
 
     def draw(self):
-        # Draws the current state
+        """Renders the current state and global UI elements to the screen."""
         self.gameStateManager.get_state().draw()
 
-        # Only show FPS if the toggle is ON in options
         if self.settings_manager.get("fps_enabled"):
             self.fps_text.draw()
 
