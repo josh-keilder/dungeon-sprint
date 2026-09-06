@@ -13,8 +13,8 @@ import pygame
 import globals
 from globals import *
 from Components.component import Component
-from Controllers.sound import SoundController
-from typing import Any, Dict, Optional
+from systems import sound
+from typing import Any
 
 
 class InputComponent(Component):
@@ -23,7 +23,6 @@ class InputComponent(Component):
         super().__init__(node)
         self.node = node
         self.map = map  # Reference to the current level/map context
-        self.sound_controller = SoundController()
 
         # --- COOLDOWNS (Seconds) ---
         self.interact_cooldown = 0.0
@@ -43,7 +42,7 @@ class InputComponent(Component):
         # System / Menu Inputs
         if keys[pygame.K_ESCAPE]:
             self.map.gameStateManager.set_state("options")
-            self.sound_controller.play_sfx("Pause")
+            sound.play_sfx("Pause")
 
         # Debug Toggles
         if keys[pygame.K_p] and self.interact_cooldown <= 0:

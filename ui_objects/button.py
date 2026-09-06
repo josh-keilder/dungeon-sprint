@@ -12,7 +12,7 @@ Classes:
 import pygame
 from globals import *
 from ui_objects.create_outline import create_outline
-from Controllers.sound import SoundController
+from systems import sound
 
 
 class Button:
@@ -32,8 +32,6 @@ class Button:
         self.hovered = False
         self.clicked = False
 
-        self.sound_controller = SoundController()
-
     def draw(self):
         """Renders the button and its hover outline to the screen."""
         self.screen.blit(self.image, (self.rect.x, self.rect.y))
@@ -47,7 +45,7 @@ class Button:
 
         if self.rect.collidepoint(mouse_pos):
             if not self.hovered:
-                self.sound_controller.play_sfx("Button_Hover")
+                sound.play_sfx("Button_Hover")
                 self.hovered = True
         else:
             self.hovered = False
@@ -66,7 +64,7 @@ class Button:
             if pygame.mouse.get_pressed()[0] == 1 and not self.clicked:
                 self.clicked = True
                 action = True
-                self.sound_controller.play_sfx("Button_Click")
+                sound.play_sfx("Button_Click")
 
         # Reset 'clicked' state once the mouse button is released
         if pygame.mouse.get_pressed()[0] == 0:

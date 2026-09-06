@@ -11,7 +11,7 @@ Classes:
 
 import pygame
 from globals import *
-from Controllers.sound import SoundController
+from systems import sound
 
 
 class Slider:
@@ -64,7 +64,6 @@ class Slider:
 
         self.dragging = False
         self.hovered = False
-        self.sound_controller = SoundController()
 
     def set_knob_pos_from_value(self, val):
         """Maps a numerical value (e.g., 0-100) to a pixel position on the track."""
@@ -86,7 +85,7 @@ class Slider:
             mouse_pos
         ):
             if not self.hovered:
-                self.sound_controller.play_sfx("Button_Hover")
+                sound.play_sfx("Button_Hover")
             self.hovered = True
         else:
             self.hovered = False

@@ -19,7 +19,7 @@ from states.map.dungeon_level_one import Dungeon_Level_One
 from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
-from Controllers.sound import SoundController
+from systems import sound
 from settings_manager import SettingsManager
 
 
@@ -40,7 +40,9 @@ class Game:
         self.cursor = Cursor(self.screen, self.cursor_img)
 
         self.settings_manager = SettingsManager()
-        self.sound_controller = SoundController()
+
+        sound.load_sfx()
+        sound.load_music()
 
         # FPS UI Setup
         self.fps = None
@@ -71,8 +73,6 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-
-            self.sound_controller.handle_events(event)
 
         # Calculate Delta Time (seconds)
         self.dt = self.clock.tick(FRAMERATE) / 1000.0

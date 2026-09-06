@@ -13,7 +13,7 @@ import pygame
 import sys
 from globals import *
 from ui_objects.button import Button
-from Controllers.sound import SoundController
+from systems import sound
 
 
 class Start:
@@ -41,8 +41,7 @@ class Start:
         )
 
         # Title Music
-        sound_controller = SoundController()
-        sound_controller.play_music("JuiceWrldChasingTheDragon")
+        sound.play_music("JuiceWrldChasingTheDragon")
 
     def draw(self):
         """Renders the background image and all menu buttons."""
