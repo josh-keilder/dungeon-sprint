@@ -4,6 +4,8 @@ from typing import Optional
 
 SFX = {}
 MUSIC = {}
+_current_sfx_volume = 0.5
+_current_music_volume = 0.5
 
 
 def load_sfx() -> None:
@@ -28,8 +30,7 @@ def play_sfx(name: str, volume: Optional[float] = None) -> None:
     if name in SFX:
         sound = SFX[name]
         if volume is None:
-            # TODO: Get volume from settings when implemented
-            volume = 0.5
+            volume = _current_sfx_volume
 
         sound.set_volume(volume)
         sound.play()
@@ -40,15 +41,12 @@ def play_sfx(name: str, volume: Optional[float] = None) -> None:
 def play_music(
     name: str = None, loops: int = 0, volume: Optional[float] = None
 ) -> None:
-    # TODO: Add check for if music is enabled in settings. Return if not
-
     if pygame.mixer.music.get_busy() and name is None:
         return
 
     if name in MUSIC:
         if volume is None:
-            # TODO: Get volume from settings when implemented
-            volume = 0.5
+            volume = _current_music_volume
 
         pygame.mixer.music.load(MUSIC[name])
         pygame.mixer.music.set_volume(volume)
@@ -62,14 +60,15 @@ def stop_music() -> None:
 
 
 def set_music_volume(volume: float) -> None:
+    global _current_music_volume
     volume = max(0.0, min(1.0, volume))
+    _current_music_volume = volume
     pygame.mixer.music.set_volume(volume)
 
 
-def set_game_sfx_volume(volume: float) -> None:
+def set_sfx_volume(volume: float) -> None:
+    global _current_sfx_volume
     volume = max(0.0, min(1.0, volume))
+    _current_sfx_volume = volume
     for sound in SFX.values():
         sound.set_volume(volume)
-
-    # TODO: Set the SFX volume in settings
-    # self.settings_manager.set("game_sfx_volume", volume) - OLD CODE

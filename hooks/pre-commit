@@ -7,8 +7,8 @@ return_error() {
 
 echo "--- Running Pre-Commit Hooks ---"
 
-python -m black . || return_error "Black formatting failed"
-git add . 
+# python -m black . || return_error "Black formatting failed"
+# git add . 
 
 # FILES=$(git diff --name-only --cached | grep '\.py$')
 

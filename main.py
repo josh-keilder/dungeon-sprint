@@ -1,14 +1,3 @@
-"""
-Main Entry Point: Dungeon Sprint
--------------------------------
-This module initializes the Pygame environment and manages the high-level
-game loop, including state transitions (menus, levels), event handling,
-and global systems like sound and settings.
-
-Classes:
-    Game: The primary engine class that coordinates updates and rendering.
-"""
-
 import pygame
 from globals import *
 
@@ -19,8 +8,7 @@ from states.map.dungeon_level_one import Dungeon_Level_One
 from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
-from systems import sound
-from settings_manager import SettingsManager
+from systems import sound, settings
 
 
 class Game:
@@ -39,10 +27,14 @@ class Game:
         )
         self.cursor = Cursor(self.screen, self.cursor_img)
 
-        self.settings_manager = SettingsManager()
-
+        # Load settings and set initial sound volumes
+        settings.load_settings()
+        music_volume = settings.get_setting("music_volume")
+        sfx_volume = settings.get_setting("sfx_volume")
         sound.load_sfx()
         sound.load_music()
+        sound.set_sfx_volume(sfx_volume)
+        sound.set_music_volume(music_volume)
 
         # FPS UI Setup
         self.fps = None
@@ -92,7 +84,7 @@ class Game:
         """Renders the current state and global UI elements to the screen."""
         self.gameStateManager.get_state().draw()
 
-        if self.settings_manager.get("fps_enabled"):
+        if settings.get_setting("fps_enabled"):
             self.fps_text.draw()
 
         self.cursor.draw()

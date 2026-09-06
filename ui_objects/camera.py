@@ -15,9 +15,7 @@ Functions:
 
 import pygame
 from globals import *
-from settings_manager import SettingsManager
-
-settings_manager = SettingsManager()
+from systems import settings
 
 # Global camera Rect used by other modules to calculate draw offsets
 camera = pygame.Rect(0, 0, 0, 0)
@@ -33,7 +31,7 @@ def create_screen(width, height, title):
     # SCALED allows the window to be resized while maintaining aspect ratio
     flags = pygame.SCALED
 
-    if settings_manager.get("full_screen_enabled"):
+    if settings.get_setting("full_screen_enabled"):
         flags |= pygame.FULLSCREEN
 
     screen = pygame.display.set_mode((width, height), flags)
@@ -71,7 +69,7 @@ def toggle_fullscreen():
     Toggles the fullscreen setting and re-initializes the screen
     to apply the change.
     """
-    current = settings_manager.get("full_screen_enabled")
-    settings_manager.set("full_screen_enabled", not current)
+    current = settings.get_setting("full_screen_enabled")
+    settings.set_setting("full_screen_enabled", not current)
 
     return create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")
