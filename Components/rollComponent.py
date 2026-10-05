@@ -12,7 +12,7 @@ Classes:
 
 import pygame
 from Components.component import Component
-from typing import Any, Dict
+from typing import Any
 
 
 class RollComponent(Component):
@@ -54,7 +54,7 @@ class RollComponent(Component):
                 self.roll_direction = dir_vector.normalize()
 
             if hasattr(self.node, "animations"):
-                self.node.animations.change_anim(f"player_roll_{last_direction}")
+                self.node.animations.set_animation(f"player_roll_{last_direction}")
 
     def update(self, dt: float) -> None:
         """
@@ -67,18 +67,18 @@ class RollComponent(Component):
                 self.node.movement.move(vel * dt, getattr(self.node, "wall_tiles", []))
 
             if hasattr(self.node, "animations"):
-                controller = self.node.animations.controller
-                frames = controller.animations.get(controller.current_anim, [])
+                animations = self.node.animations
+                frames = animations.animations.get(animations.current_anim, [])
 
                 # Allow movement keys to break the roll near the end of the animation
-                progress = controller.frame_index / max(1, len(frames) - 1)
+                progress = animations.frame_index / max(1, len(frames) - 1)
                 if progress > 0.8:
                     input_vec = getattr(self.node, "input_vector", pygame.Vector2(0, 0))
                     if input_vec.length_squared() > 0:
                         self.finish_roll()
 
                 # End roll naturally on the final frame
-                if controller.frame_index >= len(frames) - 1:
+                if animations.frame_index >= len(frames) - 1:
                     self.finish_roll()
 
     def finish_roll(self) -> None:

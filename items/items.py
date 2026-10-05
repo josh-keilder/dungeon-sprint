@@ -31,7 +31,7 @@ class Item:
         desc: str = None,
         quantity: int = 1,
         max_stack: int = 99,
-        anim_speed: int = 4,
+        animation_speed: int = 4,
         value: str = None,
     ):
         """
@@ -45,7 +45,7 @@ class Item:
         self.desc = desc
         self.quantity = quantity
         self.max_stack = max_stack
-        self.anim_speed = anim_speed
+        self.animation_speed = animation_speed
         self.value = value
 
         self.image = animations.get("idle", [None])[0]
@@ -123,8 +123,8 @@ class WorldItem(pygame.sprite.Sprite):
         self.animations = AnimationComponent(
             node=self,
             animations=item_data.animations,
-            start_anim="idle",
-            anim_speed=item_data.anim_speed,
+            start_animation="idle",
+            animation_speed=item_data.animation_speed,
         )
         self.image = item_data.image
         self.pos = pos

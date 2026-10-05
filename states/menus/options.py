@@ -1,14 +1,3 @@
-"""
-State: Options Menu
--------------------
-Handles the game settings interface. This state manages all settings. It acts as a bridge
-between the UI components (Sliders/Buttons) and the persistent
-SettingsManager/SoundController.
-
-Classes:
-    Options: The state object for adjusting game configurations.
-"""
-
 import pygame
 from globals import *
 from ui_objects.button import Button
@@ -16,25 +5,13 @@ from systems import sound, settings
 from ui_objects.slider import Slider
 from ui_objects.text_loader import Text_Loader
 from ui_objects.camera import toggle_fullscreen
-from typing import Any, Tuple, Optional
+from typing import Any
 
 
 class Options:
     def __init__(
         self, screen: pygame.Surface, game_state_manager: Any, cursor: Any
     ) -> None:
-        """
-        Initializes settings UI elements and loads current values
-        from the SettingsManager.
-
-        Args:
-            screen (pygame.Surface): The main display surface for rendering.
-            game_state_manager (GameStateManager): The manager handling state transitions.
-            cursor (Cursor): The custom cursor instance for visual feedback.
-
-        Returns:
-            None
-        """
         self.screen = screen
         self.gameStateManager = game_state_manager
         self.cursor = cursor
@@ -113,15 +90,6 @@ class Options:
         self.full_screen_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(100, 300))
 
     def draw(self) -> None:
-        """
-        Renders all settings UI components to the active screen.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
         self.screen.blit(self.image, (0, 0))
 
         if self.gameStateManager.currentState == "options":
@@ -141,15 +109,6 @@ class Options:
                 self.back_button.draw()
 
     def update(self, dt: float) -> None:
-        """
-        Processes settings changes and handles state navigation logic.
-
-        Args:
-            dt (float): Delta time in seconds since the last frame.
-
-        Returns:
-            None
-        """
         self.main_menu_button.update()
         self.fps_button.update()
         self.full_screen_button.update()

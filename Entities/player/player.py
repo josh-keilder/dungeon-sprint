@@ -140,4 +140,4 @@ class Player(Node):
             action = "idle"
 
         anim_name = f"player_{action}_{self.last_direction}"
-        self.animations.change_anim(anim_name)
+        self.animations.set_animation(anim_name)

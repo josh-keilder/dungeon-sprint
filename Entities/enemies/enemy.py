@@ -72,7 +72,7 @@ class Enemy(Node):
         attack_damage: int = 5,
         movement_behavior: Optional[str] = None,
         player: Optional[Any] = None,
-        start_anim: Optional[str] = None,
+        start_animation: Optional[str] = None,
         speed: int = 50,
     ) -> None:
         """
@@ -85,7 +85,7 @@ class Enemy(Node):
             attack_damage (int): Damage dealt to the player on collision.
             movement_behavior (Optional[str]): Key for AI behavior pattern.
             player (Optional[Any]): Reference to the player for tracking.
-            start_anim (Optional[str]): Key for the initial animation state.
+            start_animation (Optional[str]): Key for the initial animation state.
             speed (int): Movement speed in pixels per second.
         """
         super().__init__()
@@ -94,8 +94,8 @@ class Enemy(Node):
         self.pos = pygame.math.Vector2(pos)
         self.wall_tiles = None
 
-        self.animations = AnimationComponent(self, animations, start_anim=start_anim)
-        self.image = animations[start_anim][0]
+        self.animations = AnimationComponent(self, animations, start_animation=start_animation)
+        self.image = animations[start_animation][0]
         self.rect = self.image.get_frect(topleft=self.pos)
 
         self.health = Health(self, self.max_health)
@@ -161,7 +161,7 @@ class Skeleton(Enemy):
             attack_damage=3,
             movement_behavior="wander_chase",
             player=player,
-            start_anim="skull_idle",
+            start_animation="skull_idle",
             speed=40,
         )
 
@@ -179,7 +179,7 @@ class Skull_Enemy(Enemy):
             attack_damage=5,
             movement_behavior="fly",
             player=player,
-            start_anim="skull_idle",
+            start_animation="skull_idle",
             speed=50,
         )
         self.movement_component.flying = True
