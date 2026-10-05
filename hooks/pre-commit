@@ -19,8 +19,8 @@ echo "--- Running Pre-Commit Hooks ---"
 #     echo "No Python files staged; skipping Pylint."
 # fi
 
-if [ -f "line_counter.py" ]; then
-    python line_counter.py || return_error "Line counting script failed"
+if [ -f "tools/line_counter.py" ]; then
+    python tools/line_counter.py || return_error "Line counting script failed"
 else
     return_error "line_counter.py not found"
 fi
