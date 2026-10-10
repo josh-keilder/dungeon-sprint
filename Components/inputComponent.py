@@ -59,39 +59,11 @@ class InputComponent(Component):
         self.inventory_cooldown = max(0, self.inventory_cooldown - dt)
 
     def movement_input(self, keys: pygame.key.ScancodeWrapper) -> None:
-        """Translates WASD input into a normalized velocity vector."""
-        walking = False
-        dir_x, dir_y = 0, 0
-
-        if keys[pygame.K_a]:
-            dir_x -= 1
-            self.node.last_direction = "left"
-            walking = True
-        if keys[pygame.K_d]:
-            dir_x += 1
-            self.node.last_direction = "right"
-            walking = True
-        if keys[pygame.K_w]:
-            dir_y -= 1
-            self.node.last_direction = "up"
-            walking = True
-        if keys[pygame.K_s]:
-            dir_y += 1
-            self.node.last_direction = "down"
-            walking = True
-
-        input_vector = pygame.math.Vector2(dir_x, dir_y)
-        if input_vector.length_squared() > 0:
-            input_vector.normalize_ip()
-
         # Check for Dodge-Roll Trigger
-        if keys[pygame.K_SPACE] and walking:
+        if keys[pygame.K_SPACE] and self.node.walking:
             roll = getattr(self.node, "roll", None)
             if roll and not roll.is_rolling:
-                roll.start_roll(input_vector, self.node.last_direction)
-
-        self.node.input_vector = input_vector
-        self.node.walking = walking
+                roll.start_roll(self.node.intent["move"], self.node.last_direction)
 
     def interact_input(self, keys: pygame.key.ScancodeWrapper) -> None:
         """Handles context-sensitive interactions with world objects (Chests, Doors, Items)."""

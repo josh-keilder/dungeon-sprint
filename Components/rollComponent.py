@@ -73,8 +73,8 @@ class RollComponent(Component):
                 # Allow movement keys to break the roll near the end of the animation
                 progress = animations.frame_index / max(1, len(frames) - 1)
                 if progress > 0.8:
-                    input_vec = getattr(self.node, "input_vector", pygame.Vector2(0, 0))
-                    if input_vec.length_squared() > 0:
+                    move = self.node.intent["move"]
+                    if move.length_squared() > 0:
                         self.finish_roll()
 
                 # End roll naturally on the final frame

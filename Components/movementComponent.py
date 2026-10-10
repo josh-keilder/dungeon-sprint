@@ -54,13 +54,11 @@ class MovementComponent(Component):
         elif self.behavior == "wander_chase" and self.player:
             self.wander_chase_behavior(dt)
         else:
-            if hasattr(self.node, "input_vector"):
-                target_dir = self.node.input_vector
+            intent = getattr(self.node, "intent", None)
+            if intent is not None:
+                target_dir = intent["move"]
 
                 if target_dir.length_squared() > 0:
-                    if target_dir.length_squared() > 1:
-                        target_dir.normalize_ip()
-
                     # Apply extra friction when making sharp turns or reversing
                     if (
                         self.velocity.length_squared() > 0

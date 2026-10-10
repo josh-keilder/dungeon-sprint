@@ -29,12 +29,11 @@ class Player(Node):
         # --- Attributes ---
         self.name = "player"
         self.last_direction = "down"
-        self.input_vector = pygame.Vector2(0, 0)
         self.walking = False
         self.pos = pygame.math.Vector2(pos)
         self.inventory_size = 20
 
-        self.intent = {}
+        self.intent = {"move": pygame.Vector2()}
 
         # Base values before equipment or status modifiers
         self.base_stats = {
@@ -84,6 +83,11 @@ class Player(Node):
     def update(self, dt):
         """Main logic loop: Updates all sub-components and syncs state."""
         super().update(dt)
+
+        move = self.intent["move"]
+        self.walking = move.length_squared() > 0
+        if self.walking:
+            self.update_facing(move)
 
         # Dynamic speed adjustment based on boots/movement state
         if (
@@ -143,3 +147,13 @@ class Player(Node):
 
         anim_name = f"player_{action}_{self.last_direction}"
         self.animations.set_animation(anim_name)
+
+    def update_facing(self, move):
+        if move.y < 0:
+            self.last_direction = "up"
+        elif move.y > 0:
+            self.last_direction = "down"
+        elif move.x < 0:
+            self.last_direction = "left"
+        elif move.x > 0:
+            self.last_direction = "right"
