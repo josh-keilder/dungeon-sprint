@@ -33,7 +33,7 @@ class Player(Node):
         self.pos = pygame.math.Vector2(pos)
         self.inventory_size = 20
 
-        self.intent = {"move": pygame.Vector2()}
+        self.intent = {"move": pygame.Vector2(), "roll": False}
 
         # Base values before equipment or status modifiers
         self.base_stats = {
@@ -109,6 +109,10 @@ class Player(Node):
 
         # Component Updates
         self.input.update(dt)
+
+        if self.intent["roll"]:
+            self.roll.start_roll(move, self.last_direction)
+
         self.movement.update(dt)
         self.roll.update(dt)
         self.handle_animation_state()

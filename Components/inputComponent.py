@@ -48,7 +48,6 @@ class InputComponent(Component):
                     self.healing_cooldown = 1.0
 
         # Run Specialized Input Handlers
-        self.movement_input(keys)
         self.interact_input(keys)
         self.inventory_input(keys, dt)
 
@@ -57,13 +56,6 @@ class InputComponent(Component):
         self.interact_cooldown = max(0, self.interact_cooldown - dt)
         self.pick_up_item_cooldown = max(0, self.pick_up_item_cooldown - dt)
         self.inventory_cooldown = max(0, self.inventory_cooldown - dt)
-
-    def movement_input(self, keys: pygame.key.ScancodeWrapper) -> None:
-        # Check for Dodge-Roll Trigger
-        if keys[pygame.K_SPACE] and self.node.walking:
-            roll = getattr(self.node, "roll", None)
-            if roll and not roll.is_rolling:
-                roll.start_roll(self.node.intent["move"], self.node.last_direction)
 
     def interact_input(self, keys: pygame.key.ScancodeWrapper) -> None:
         """Handles context-sensitive interactions with world objects (Chests, Doors, Items)."""
