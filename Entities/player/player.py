@@ -20,6 +20,7 @@ from Components.rollComponent import RollComponent
 from Components.animationComponent import AnimationComponent
 from Components.inventoryComponent import InventoryComponent
 from ui_objects.camera import camera
+from systems.consumables import use_small_health_potion
 
 
 class Player(Node):
@@ -33,7 +34,7 @@ class Player(Node):
         self.pos = pygame.math.Vector2(pos)
         self.inventory_size = 20
 
-        self.intent = {"move": pygame.Vector2(), "roll": False}
+        self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
 
         # Base values before equipment or status modifiers
         self.base_stats = {
@@ -112,6 +113,9 @@ class Player(Node):
 
         if self.intent["roll"]:
             self.roll.start_roll(move, self.last_direction)
+
+        if self.intent["heal"]:
+            use_small_health_potion(self.health, self.inventory)
 
         self.movement.update(dt)
         self.roll.update(dt)

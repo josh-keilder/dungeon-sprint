@@ -25,7 +25,6 @@ class InputComponent(Component):
         # --- COOLDOWNS (Seconds) ---
         self.interact_cooldown = 0.0
         self.pick_up_item_cooldown = 0.0
-        self.healing_cooldown = 0.0
         self.inventory_cooldown = 0.0
 
         self.show_inventory = False
@@ -37,22 +36,11 @@ class InputComponent(Component):
         """
         keys = pygame.key.get_pressed()
 
-        # Quick-use Healing Logic
-        if keys[pygame.K_q] and self.healing_cooldown <= 0:
-            health = getattr(self.node, "health", None)
-            inv = getattr(self.node, "inventory", None)
-            if health and inv and health.current < health.max_health:
-                if inv.has_item("small_health_potion"):
-                    health.heal(SMALL_HEALTH_POTION_VALUE)
-                    inv.remove_item("small_health_potion")
-                    self.healing_cooldown = 1.0
-
         # Run Specialized Input Handlers
         self.interact_input(keys)
         self.inventory_input(keys, dt)
 
         # Global Cooldown Decay
-        self.healing_cooldown = max(0, self.healing_cooldown - dt)
         self.interact_cooldown = max(0, self.interact_cooldown - dt)
         self.pick_up_item_cooldown = max(0, self.pick_up_item_cooldown - dt)
         self.inventory_cooldown = max(0, self.inventory_cooldown - dt)
