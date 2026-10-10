@@ -20,6 +20,9 @@ from states.scene import Scene
 from items.items import Chest, WorldItem
 from items.itemDataBase import initialize_item_database
 
+
+from systems.input import read_input
+
 pygame.mixer.init()
 
 
@@ -58,6 +61,9 @@ class Dungeon_Level_One:
 
     def update(self, dt):
         """Updates all world entities and syncs the camera focal point."""
+
+        self.player.intent = read_input()
+
         self.scene.update(dt)
         self.items.update(dt)
         self.sprites.update(dt)

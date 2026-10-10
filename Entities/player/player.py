@@ -34,6 +34,8 @@ class Player(Node):
         self.pos = pygame.math.Vector2(pos)
         self.inventory_size = 20
 
+        self.intent = {}
+
         # Base values before equipment or status modifiers
         self.base_stats = {
             "attack": 5,
