@@ -10,21 +10,17 @@ Classes:
 """
 
 import pygame
-from globals import *
 from Components.component import Component
 from typing import Any
 
 
 class InputComponent(Component):
-    def __init__(self, node: Any, map: Any) -> None:
+    def __init__(self, node: Any) -> None:
         """Initializes input state, sound references, and interaction cooldowns."""
         super().__init__(node)
         self.node = node
-        self.map = map  # Reference to the current level/map context
 
         # --- COOLDOWNS (Seconds) ---
-        self.interact_cooldown = 0.0
-        self.pick_up_item_cooldown = 0.0
         self.inventory_cooldown = 0.0
 
         self.show_inventory = False
@@ -37,59 +33,10 @@ class InputComponent(Component):
         keys = pygame.key.get_pressed()
 
         # Run Specialized Input Handlers
-        self.interact_input(keys)
         self.inventory_input(keys, dt)
 
         # Global Cooldown Decay
-        self.interact_cooldown = max(0, self.interact_cooldown - dt)
-        self.pick_up_item_cooldown = max(0, self.pick_up_item_cooldown - dt)
         self.inventory_cooldown = max(0, self.inventory_cooldown - dt)
-
-    def interact_input(self, keys: pygame.key.ScancodeWrapper) -> None:
-        """Handles context-sensitive interactions with world objects (Chests, Doors, Items)."""
-        if not keys[pygame.K_f]:
-            return
-
-        # Inflate rect to create a localized interaction 'reach' zone
-        search_rect = self.node.rect.inflate(15, 15)
-
-        # Chest Interaction
-        if self.interact_cooldown <= 0:
-            for chest in self.map.chests:
-                if search_rect.colliderect(chest.rect):
-                    chest.open()
-                    self.map.chests.remove(chest)
-                    self.interact_cooldown = 0.5
-                    return
-
-            # Door/Key Interaction
-            inv = getattr(self.node, "inventory", None)
-            if inv and inv.has_item("gold_key"):
-                for door in list(self.map.door_tiles):
-                    if search_rect.colliderect(door.rect):
-                        # Unlock all linked door segments
-                        target_id = door.door_id
-                        self.map.door_tiles = [
-                            d for d in self.map.door_tiles if d.door_id != target_id
-                        ]
-
-                        # Update physics engine to reflect removed walls
-                        self.map.scene.set_wall_tiles(
-                            list(self.map.wall_tiles.sprites()) + self.map.door_tiles
-                        )
-                        inv.remove_item("gold_key")
-                        self.interact_cooldown = 0.5
-                        return
-
-        # Item Ground Pickup
-        if self.pick_up_item_cooldown <= 0 and self.interact_cooldown <= 0:
-            inv = getattr(self.node, "inventory", None)
-            for item in list(self.map.items):
-                if search_rect.colliderect(item.rect):
-                    if inv and inv.add_item(item.item_data.clone()):
-                        self.map.items.remove(item)
-                        self.pick_up_item_cooldown = 0.2
-                        return
 
     def inventory_input(self, keys: pygame.key.ScancodeWrapper, dt: float) -> None:
         """Manages inventory visibility and internal click handling."""

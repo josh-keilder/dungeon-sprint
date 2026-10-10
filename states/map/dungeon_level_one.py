@@ -22,7 +22,7 @@ from items.items import Chest, WorldItem
 from items.itemDataBase import initialize_item_database
 
 from systems.input import read_input
-from systems import sound
+from systems import sound, interact
 
 pygame.mixer.init()
 
@@ -50,7 +50,6 @@ class Dungeon_Level_One:
         # Player Setup
         self.player = load_player(map=self)
         self.scene.add_child(self.player)
-        self.interact_cooldown = 0
 
         # Enemy Spawning
         self.enemies = load_enemies(player=self.player, file_path=self.file_path)
@@ -72,6 +71,9 @@ class Dungeon_Level_One:
 
         if self.player.intent["debug"]:
             globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
+
+        if self.player.intent["interact"]:
+            interact.interact(self.player, self)
 
         self.scene.update(dt)
         self.items.update(dt)
@@ -167,3 +169,10 @@ class Dungeon_Level_One:
                 for obj in layer:
                     if obj.name.lower() == "chest":
                         Chest(pos=(obj.x, obj.y), groups=self.chests, map=self)
+
+    def unlock_door(self, door_id):
+        for door in self.door_tiles.sprites():
+            if door.door_id == door_id:
+                door.kill()
+
+        self.scene.set_wall_tiles(list(self.wall_tiles) + list(self.door_tiles))

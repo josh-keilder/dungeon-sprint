@@ -24,7 +24,7 @@ from systems.consumables import use_small_health_potion
 
 
 class Player(Node):
-    def __init__(self, animations, pos=(0, 0), map=None):
+    def __init__(self, animations, pos=(0, 0)):
         super().__init__()
 
         # --- Attributes ---
@@ -65,7 +65,7 @@ class Player(Node):
             shrink_speed=5,
         )
         self.hitbox = Hitbox(self)
-        self.input = InputComponent(self, map=map)
+        self.input = InputComponent(self)
         self.inventory = InventoryComponent(self, size=self.inventory_size)
         self.movement = MovementComponent(self, self.base_stats["speed"])
         self.roll = RollComponent(self, roll_speed=self.base_stats["roll_speed"])
