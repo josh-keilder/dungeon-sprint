@@ -10,10 +10,8 @@ Classes:
 """
 
 import pygame
-import globals
 from globals import *
 from Components.component import Component
-from systems import sound
 from typing import Any
 
 
@@ -38,16 +36,6 @@ class InputComponent(Component):
         Handles high-level system inputs and updates cooldown timers.
         """
         keys = pygame.key.get_pressed()
-
-        # System / Menu Inputs
-        if keys[pygame.K_ESCAPE]:
-            self.map.gameStateManager.set_state("options")
-            sound.play_sfx("Pause")
-
-        # Debug Toggles
-        if keys[pygame.K_p] and self.interact_cooldown <= 0:
-            globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
-            self.interact_cooldown = 0.5
 
         # Quick-use Healing Logic
         if keys[pygame.K_q] and self.healing_cooldown <= 0:

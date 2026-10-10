@@ -11,6 +11,7 @@ Classes:
 
 import pygame
 from globals import *
+import globals
 from pytmx.util_pygame import load_pygame
 from states.map.tiles import WallTile, DecorTile, Door
 from Entities.player.load_player import load_player
@@ -20,8 +21,8 @@ from states.scene import Scene
 from items.items import Chest, WorldItem
 from items.itemDataBase import initialize_item_database
 
-
 from systems.input import read_input
+from systems import sound
 
 pygame.mixer.init()
 
@@ -63,6 +64,14 @@ class Dungeon_Level_One:
         """Updates all world entities and syncs the camera focal point."""
 
         self.player.intent = read_input()
+
+        if self.player.intent["pause"]:
+            self.gameStateManager.set_state("options")
+            sound.play_sfx("Pause")
+            return
+
+        if self.player.intent["debug"]:
+            globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
 
         self.scene.update(dt)
         self.items.update(dt)
