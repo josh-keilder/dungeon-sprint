@@ -15,7 +15,7 @@ import random
 from globals import *
 from Components.component import Component
 from typing import Any, List, Optional
-from systems.movement import move_and_collide
+from systems.movement import move_and_collide, steer
 
 
 class MovementComponent(Component):
@@ -59,35 +59,16 @@ class MovementComponent(Component):
             if intent is not None:
                 target_dir = intent["move"]
 
-                if target_dir.length_squared() > 0:
-                    # Apply extra friction when making sharp turns or reversing
-                    if (
-                        self.velocity.length_squared() > 0
-                        and target_dir.dot(self.velocity.normalize()) < -0.5
-                    ):
-                        self.velocity -= self.velocity * self.friction * 0.01 * dt
+                speed_cap = self.max_speed * self.speed_multiplier
 
-                    self.velocity += target_dir * self.acceleration * dt
-                else:
-                    # Apply friction/drag when no input is provided
-                    if self.velocity.length_squared() > 0:
-                        drag_multiplier = 1.2
-                        friction_vec = (
-                            self.velocity.normalize()
-                            * (self.friction * drag_multiplier)
-                            * dt
-                        )
-                        if (
-                            self.velocity.length_squared()
-                            < friction_vec.length_squared()
-                        ):
-                            self.velocity.update(0, 0)
-                        else:
-                            self.velocity -= friction_vec
-
-                current_limit = self.max_speed * self.speed_multiplier
-                if self.velocity.length_squared() > current_limit**2:
-                    self.velocity.scale_to_length(current_limit)
+                self.velocity = steer(
+                    self.velocity,
+                    target_dir,
+                    self.acceleration,
+                    self.friction,
+                    speed_cap,
+                    dt,
+                )
 
                 wall_tiles = getattr(self.node, "wall_tiles", [])
                 self.move(self.velocity * dt, wall_tiles)
