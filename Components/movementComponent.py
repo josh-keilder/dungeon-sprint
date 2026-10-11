@@ -16,6 +16,7 @@ from globals import *
 from Components.component import Component
 from typing import Any, List, Optional
 from systems.movement import move_and_collide
+from systems.enemy_ai import has_line_of_sight
 
 
 class MovementComponent(Component):
@@ -77,7 +78,7 @@ class MovementComponent(Component):
 
     def wander_chase_behavior(self, dt: float) -> None:
         """AI behavior that chases the player if in sight, otherwise wanders."""
-        if self.has_line_of_sight():
+        if has_line_of_sight(self.node.pos, self.player.pos, self.node.wall_tiles):
             dir_vector = (self.player.pos - self.node.pos).normalize() * self.max_speed
         else:
             if random.random() < 0.01:
@@ -93,28 +94,6 @@ class MovementComponent(Component):
         """Forces the entity into a flee-then-return state cycle."""
         self.flee_timer = 2.0
         self.return_timer = 3.0
-
-    def has_line_of_sight(self) -> bool:
-        """Checks if a direct line exists between entity and player without wall obstruction."""
-        if not self.player or not hasattr(self.node, "wall_tiles"):
-            return False
-
-        start = self.node.pos
-        end = self.player.pos
-
-        search_rect = pygame.Rect(
-            min(start.x, end.x),
-            min(start.y, end.y),
-            abs(start.x - end.x),
-            abs(start.y - end.y),
-        ).inflate(64, 64)
-
-        for wall in self.node.wall_tiles:
-            if not search_rect.colliderect(wall.rect):
-                continue
-            if wall.rect.clipline(start, end):
-                return False
-        return True
 
     def move(self, dir_vector: pygame.math.Vector2, wall_tiles: List[Any]) -> None:
         """Resolves X and Y movement independently with axis-aligned collision detection."""
