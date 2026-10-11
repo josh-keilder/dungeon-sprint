@@ -94,7 +94,6 @@ class Enemy(Node):
         self.max_health = max_health
         self.attack_damage = attack_damage
         self.pos = pygame.math.Vector2(pos)
-        self.wall_tiles = []
 
         self.animations = AnimationComponent(
             self, animations, start_animation=start_animation
@@ -113,7 +112,7 @@ class Enemy(Node):
         self.return_timer = 0.0
         self.idle_direction = random_idle_direction()
 
-    def update(self, dt: float = 0) -> None:
+    def update(self, dt, walls) -> None:
         """
         Updates AI, animation frames, health UI, and physics collisions.
 
@@ -126,19 +125,19 @@ class Enemy(Node):
         super().update(dt)
         self.animations.update(dt)
         self.health_bar.update(dt)
-        self.update_movement(dt)
+        self.update_movement(dt, walls)
         self.pos.xy = self.rect.topleft
         self.hitbox.update(dt)
 
-    def update_movement(self, dt):
+    def update_movement(self, dt, walls):
         if self.behavior == "fly":
             velocity = fly_velocity(self, self.player.pos, dt)
             self.rect.x += velocity.x * dt
             self.rect.y += velocity.y * dt
 
         elif self.behavior == "wander_chase":
-            velocity = wander_chase_velocity(self, self.player.pos, self.wall_tiles)
-            move_and_collide(self.rect, velocity * dt, self.wall_tiles)
+            velocity = wander_chase_velocity(self, self.player.pos, walls)
+            move_and_collide(self.rect, velocity * dt, walls)
 
     def draw(
         self, screen: pygame.Surface, camera: Optional[pygame.Rect] = None

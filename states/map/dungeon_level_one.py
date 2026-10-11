@@ -52,6 +52,7 @@ class Dungeon_Level_One:
         self.enemies = load_enemies(player=self.player, file_path=self.file_path)
 
         # Collision Setup: Combine static walls and interactable doors
+        self.solid_tiles = []
         self.refresh_walls()
 
         self.show_inventory = False
@@ -78,9 +79,9 @@ class Dungeon_Level_One:
         if self.show_inventory and self.player.intent["mouse_left_click"] is not None:
             self.player.inventory.handle_click(self.player.intent["mouse_left_click"])
 
-        self.player.update(dt)
+        self.player.update(dt, self.solid_tiles)
         for enemy in self.enemies:
-            enemy.update(dt)
+            enemy.update(dt, self.solid_tiles)
 
         contacts = find_player_contacts(self.player, self.enemies)
 
@@ -200,9 +201,4 @@ class Dungeon_Level_One:
         self.refresh_walls()
 
     def refresh_walls(self):
-        walls = list(self.wall_tiles) + list(self.door_tiles)
-
-        self.player.wall_tiles = walls
-
-        for enemy in self.enemies:
-            enemy.wall_tiles = walls
+        self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles)

@@ -32,13 +32,11 @@ class RollComponent(Component):
             if hasattr(self.node, "animations"):
                 self.node.animations.set_animation(f"player_roll_{last_direction}")
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, walls) -> None:
         if self.is_rolling:
 
             displacement = self.roll_direction * self.roll_speed * dt
-            hit_x, hit_y = move_and_collide(
-                self.node.rect, displacement, self.node.wall_tiles
-            )
+            hit_x, hit_y = move_and_collide(self.node.rect, displacement, walls)
 
             if hit_x:
                 self.node.velocity.x = 0

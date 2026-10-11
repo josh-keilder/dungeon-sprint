@@ -38,8 +38,6 @@ class Player(Node):
             "friction": 3000,
         }
 
-        self.wall_tiles = []
-
         # --- Visuals & Animation ---
         self.animations = AnimationComponent(self, animations, "player_idle_down")
         self.image = animations["player_idle_down"][0]
@@ -71,7 +69,7 @@ class Player(Node):
                 final_stats[stat] += value
         return final_stats
 
-    def update(self, dt):
+    def update(self, dt, walls):
         """Main logic loop: Updates all sub-components and syncs state."""
         super().update(dt)
 
@@ -103,9 +101,9 @@ class Player(Node):
         if self.intent["heal"]:
             use_small_health_potion(self.health, self.inventory)
 
-        self.update_movement(dt)
+        self.update_movement(dt, walls)
 
-        self.roll.update(dt)
+        self.roll.update(dt, walls)
         self.handle_animation_state()
         self.animations.update(dt)
         self.health_bar.update(dt)
@@ -150,7 +148,7 @@ class Player(Node):
         elif move.x > 0:
             self.last_direction = "right"
 
-    def update_movement(self, dt):
+    def update_movement(self, dt, walls):
         stats = self.stats
 
         speed_cap = stats["speed"] * stats["speed_multiplier"]
@@ -164,7 +162,7 @@ class Player(Node):
             dt,
         )
 
-        hit_x, hit_y = move_and_collide(self.rect, self.velocity * dt, self.wall_tiles)
+        hit_x, hit_y = move_and_collide(self.rect, self.velocity * dt, walls)
 
         if hit_x:
             self.velocity.x = 0
