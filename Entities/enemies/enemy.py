@@ -126,10 +126,9 @@ class Enemy(Node):
         super().update(dt)
         self.animations.update(dt)
         self.health_bar.update(dt)
-        self.hitbox.update(dt)
         self.update_movement(dt)
-
         self.pos.xy = self.rect.topleft
+        self.hitbox.update(dt)
 
     def update_movement(self, dt):
         if self.behavior == "fly":
