@@ -1,20 +1,3 @@
-"""
-System: Enemy Base and Entities
--------------------------------
-Defines the base Enemy class and specific enemy implementations. Includes
-a texture caching system to prevent redundant surface loading and
-integrates multiple components for health, hitboxes, animation, and AI-driven
-movement.
-
-Functions:
-    gen_enemy_textures: Loads, slices, and caches sprite sheets based on texture data.
-
-Classes:
-    Enemy: The abstract base class for all hostile NPCs.
-    Skeleton: A specific enemy type with ground-based movement behaviors.
-    Skull_Enemy: A specific enemy type with flying movement behaviors.
-"""
-
 import pygame
 from globals import *
 from node import Node
@@ -32,16 +15,6 @@ ENEMY_CACHE = {}
 
 
 def gen_enemy_textures(texture_data: Dict[str, Any]) -> Dict[str, List[pygame.Surface]]:
-    """
-    Loads an enemy sprite sheet and slices it into a list of animation frames.
-    Uses a global cache to avoid reloading the same file multiple times.
-
-    Args:
-        texture_data (Dict[str, Any]): Dictionary containing file paths, sizes, and frames.
-
-    Returns:
-        Dict[str, List[pygame.Surface]]: A dictionary mapping animation names to frame lists.
-    """
     cache_key = list(texture_data.values())[0]["file_path"]
 
     if cache_key in ENEMY_CACHE:
@@ -73,23 +46,9 @@ class Enemy(Node):
         max_health: int = 100,
         attack_damage: int = 5,
         movement_behavior: Optional[str] = None,
-        player: Optional[Any] = None,
         start_animation: Optional[str] = None,
         speed: int = 50,
     ) -> None:
-        """
-        Initializes the base enemy with necessary components and visual data.
-
-        Args:
-            animations (Dict[str, List[pygame.Surface]]): Sliced texture frames.
-            pos (Tuple[float, float]): Initial world position.
-            max_health (int): Maximum health points.
-            attack_damage (int): Damage dealt to the player on collision.
-            movement_behavior (Optional[str]): Key for AI behavior pattern.
-            player (Optional[Any]): Reference to the player for tracking.
-            start_animation (Optional[str]): Key for the initial animation state.
-            speed (int): Movement speed in pixels per second.
-        """
         super().__init__()
         self.max_health = max_health
         self.attack_damage = attack_damage
@@ -107,48 +66,34 @@ class Enemy(Node):
 
         self.speed = speed
         self.behavior = movement_behavior
-        self.player = player
         self.flee_timer = 0.0
         self.return_timer = 0.0
         self.idle_direction = random_idle_direction()
 
-    def update(self, dt, walls) -> None:
-        """
-        Updates AI, animation frames, health UI, and physics collisions.
-
-        Args:
-            dt (float): Delta time since the last frame.
-        """
+    def update(self, dt, walls, target_pos) -> None:
         if not self.active:
             return
 
         super().update(dt)
         self.animations.update(dt)
         self.health_bar.update(dt)
-        self.update_movement(dt, walls)
+        self.update_movement(dt, walls, target_pos)
         self.pos.xy = self.rect.topleft
         self.hitbox.update(dt)
 
-    def update_movement(self, dt, walls):
+    def update_movement(self, dt, walls, target_pos):
         if self.behavior == "fly":
-            velocity = fly_velocity(self, self.player.pos, dt)
+            velocity = fly_velocity(self, target_pos, dt)
             self.rect.x += velocity.x * dt
             self.rect.y += velocity.y * dt
 
         elif self.behavior == "wander_chase":
-            velocity = wander_chase_velocity(self, self.player.pos, walls)
+            velocity = wander_chase_velocity(self, target_pos, walls)
             move_and_collide(self.rect, velocity * dt, walls)
 
     def draw(
         self, screen: pygame.Surface, camera: Optional[pygame.Rect] = None
     ) -> None:
-        """
-        Renders the enemy sprite and associated UI components to the screen.
-
-        Args:
-            screen (pygame.Surface): Surface to render on.
-            camera (Optional[pygame.Rect]): Camera rect for world-to-screen conversion.
-        """
         if not self.active:
             return
 
@@ -165,10 +110,7 @@ class Enemy(Node):
 
 
 class Skeleton(Enemy):
-    def __init__(
-        self, pos: Tuple[float, float] = (0, 0), player: Optional[Any] = None
-    ) -> None:
-        """Initializes a Skeleton enemy with ground-based wander/chase behavior."""
+    def __init__(self, pos: Tuple[float, float] = (0, 0)) -> None:
         textures = gen_enemy_textures(skull_enemy_texture_data)
         super().__init__(
             textures,
@@ -176,17 +118,13 @@ class Skeleton(Enemy):
             max_health=100,
             attack_damage=3,
             movement_behavior="wander_chase",
-            player=player,
             start_animation="skull_idle",
             speed=40,
         )
 
 
 class Skull_Enemy(Enemy):
-    def __init__(
-        self, pos: Tuple[float, float] = (0, 0), player: Optional[Any] = None
-    ) -> None:
-        """Initializes a flying Skull enemy with specialized flight movement."""
+    def __init__(self, pos: Tuple[float, float] = (0, 0)) -> None:
         textures = gen_enemy_textures(skull_enemy_texture_data)
         super().__init__(
             textures,
@@ -194,7 +132,6 @@ class Skull_Enemy(Enemy):
             max_health=100,
             attack_damage=5,
             movement_behavior="fly",
-            player=player,
             start_animation="skull_idle",
             speed=50,
         )

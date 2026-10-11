@@ -6,7 +6,7 @@ from pytmx.util_pygame import load_pygame
 ENEMY_FACTORY = {"Skull": Skull_Enemy, "Skeleton": Skeleton}
 
 
-def load_enemies(player=None, file_path=None) -> list:
+def load_enemies(file_path=None) -> list:
     """
     Spawns enemies based on coordinates retrieved from the map file.
 
@@ -25,7 +25,7 @@ def load_enemies(player=None, file_path=None) -> list:
 
         if enemy_class:
             for pos in positions:
-                new_enemy = enemy_class(pos=pos, player=player)
+                new_enemy = enemy_class(pos=pos)
                 enemies.append(new_enemy)
 
     return enemies

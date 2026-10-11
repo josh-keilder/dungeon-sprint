@@ -49,7 +49,7 @@ class Dungeon_Level_One:
         self.player = load_player(map=self)
 
         # Enemy Spawning
-        self.enemies = load_enemies(player=self.player, file_path=self.file_path)
+        self.enemies = load_enemies(file_path=self.file_path)
 
         # Collision Setup: Combine static walls and interactable doors
         self.solid_tiles = []
@@ -81,7 +81,7 @@ class Dungeon_Level_One:
 
         self.player.update(dt, self.solid_tiles)
         for enemy in self.enemies:
-            enemy.update(dt, self.solid_tiles)
+            enemy.update(dt, self.solid_tiles, self.player.pos)
 
         contacts = find_player_contacts(self.player, self.enemies)
 
