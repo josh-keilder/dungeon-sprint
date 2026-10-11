@@ -15,6 +15,7 @@ import random
 from globals import *
 from Components.component import Component
 from typing import Any, List, Optional
+from systems.movement import move_and_collide
 
 
 class MovementComponent(Component):
@@ -160,32 +161,14 @@ class MovementComponent(Component):
         if dir_vector.x == 0 and dir_vector.y == 0:
             return
 
-        # X-Axis movement and collision
-        self.node.rect.x += dir_vector.x
-        if wall_tiles and not self.flying:
-            for wall in wall_tiles:
-                if abs(self.node.pos.x - wall.rect.centerx) > 64:
-                    continue
-                if self.node.rect.colliderect(wall.rect):
-                    if dir_vector.x > 0:
-                        self.node.rect.right = wall.rect.left
-                    if dir_vector.x < 0:
-                        self.node.rect.left = wall.rect.right
-                    self.velocity.x = 0
-                    break
-
-        # Y-Axis movement and collision
-        self.node.rect.y += dir_vector.y
-        if wall_tiles and not self.flying:
-            for wall in wall_tiles:
-                if abs(self.node.pos.y - wall.rect.centery) > 64:
-                    continue
-                if self.node.rect.colliderect(wall.rect):
-                    if dir_vector.y > 0:
-                        self.node.rect.bottom = wall.rect.top
-                    if dir_vector.y < 0:
-                        self.node.rect.top = wall.rect.bottom
-                    self.velocity.y = 0
-                    break
+        if self.flying:
+            self.node.rect.x += dir_vector.x
+            self.node.rect.y += dir_vector.y
+        else:
+            hit_x, hit_y = move_and_collide(self.node.rect, dir_vector, wall_tiles)
+            if hit_x:
+                self.velocity.x = 0
+            if hit_y:
+                self.velocity.y = 0
 
         self.node.pos.xy = self.node.rect.topleft

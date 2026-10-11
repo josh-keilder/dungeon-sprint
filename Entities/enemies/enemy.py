@@ -92,9 +92,11 @@ class Enemy(Node):
         self.max_health = max_health
         self.attack_damage = attack_damage
         self.pos = pygame.math.Vector2(pos)
-        self.wall_tiles = None
+        self.wall_tiles = []
 
-        self.animations = AnimationComponent(self, animations, start_animation=start_animation)
+        self.animations = AnimationComponent(
+            self, animations, start_animation=start_animation
+        )
         self.image = animations[start_animation][0]
         self.rect = self.image.get_frect(topleft=self.pos)
 

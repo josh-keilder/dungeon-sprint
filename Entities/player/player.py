@@ -45,7 +45,7 @@ class Player(Node):
             "speed_multiplier": 1,
         }
 
-        self.wall_tiles = None
+        self.wall_tiles = []
 
         # --- Visuals & Animation ---
         self.animations = AnimationComponent(self, animations, "player_idle_down")
