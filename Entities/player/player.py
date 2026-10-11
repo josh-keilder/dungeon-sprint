@@ -9,6 +9,7 @@ from ui_objects.camera import camera
 from systems.consumables import use_small_health_potion
 from systems.movement import steer, move_and_collide
 from systems.roll import try_start_roll, advance_roll
+from systems.stats import compute_stats
 
 
 class Player(Node):
@@ -64,16 +65,9 @@ class Player(Node):
         self.hitbox = Hitbox(self)
         self.inventory = InventoryComponent(self, size=self.inventory_size)
 
-    @property
-    def stats(self):
-        """Calculates final stats by merging base_stats with equipment bonuses."""
-        final_stats = self.base_stats.copy()
-        bonuses = self.inventory.get_equipment_bonuses()
-
-        for stat, value in bonuses.items():
-            if stat in final_stats:
-                final_stats[stat] += value
-        return final_stats
+        self.stats = compute_stats(
+            self.base_stats, self.inventory.equipment_slots.values()
+        )
 
     def update(self, dt, walls):
         """Main logic loop: Updates all sub-components and syncs state."""
@@ -93,6 +87,10 @@ class Player(Node):
             self.base_stats["speed"] += 1
         if not self.walking and self.base_stats["speed"] > 70:
             self.base_stats["speed"] -= 5
+
+        self.stats = compute_stats(
+            self.base_stats, self.inventory.equipment_slots.values()
+        )
 
         if self.health.max_health != self.stats["health"]:
             self.health.max_health = self.stats["health"]
@@ -152,15 +150,14 @@ class Player(Node):
             self.last_direction = "right"
 
     def update_movement(self, dt, walls):
-        stats = self.stats
 
-        speed_cap = stats["speed"] * stats["speed_multiplier"]
+        speed_cap = self.stats["speed"] * self.stats["speed_multiplier"]
 
         self.velocity = steer(
             self.velocity,
             self.intent["move"],
-            stats["acceleration"],
-            stats["friction"],
+            self.stats["acceleration"],
+            self.stats["friction"],
             speed_cap,
             dt,
         )

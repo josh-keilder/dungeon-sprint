@@ -250,22 +250,6 @@ class InventoryComponent(Component):
                 self.held_item = self.equipment_slots[equip_key]
                 self.equipment_slots[equip_key] = None
 
-    def get_equipment_bonuses(self) -> Dict[str, float]:
-        """Aggregates all stat modifiers provided by currently equipped items."""
-        bonuses = {
-            "attack": 0,
-            "defense": 0,
-            "speed": 0,
-            "health": 0,
-            "speed_multiplier": 0,
-        }
-        for item in self.equipment_slots.values():
-            if item and item.stats:
-                for stat, value in item.stats.items():
-                    if stat in bonuses:
-                        bonuses[stat] += value
-        return bonuses
-
     def _get_icon(self, item: Any) -> Optional[pygame.Surface]:
         """Retrieves or generates a scaled UI icon for the specified item."""
         if not item or not item.image:
