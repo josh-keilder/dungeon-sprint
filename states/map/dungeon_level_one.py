@@ -23,6 +23,8 @@ from items.itemDataBase import initialize_item_database
 
 from systems.input import read_input
 from systems import sound, interact
+from systems.collision import find_player_contacts
+from systems.combat import resolve_contact
 
 pygame.mixer.init()
 
@@ -83,7 +85,18 @@ class Dungeon_Level_One:
         if self.show_inventory and self.player.intent["mouse_left_click"] is not None:
             self.player.inventory.handle_click(self.player.intent["mouse_left_click"])
 
-        self.scene.update(dt)
+        self.player.update(dt)
+        for enemy in self.enemies:
+            enemy.update(dt)
+
+        contacts = find_player_contacts(self.player, self.enemies)
+
+        for enemy in contacts:
+            resolve_contact(self.player, enemy)
+
+            if enemy.health.is_dead():
+                self.enemies.remove(enemy)
+
         self.items.update(dt)
         self.sprites.update(dt)
         camera_update(self.player)
@@ -112,8 +125,13 @@ class Dungeon_Level_One:
                 if is_on_screen(obj.rect):
                     obj.draw(self.screen, camera)
 
-        # Dynamic Entities (Actors, Particles, etc. via Scene)
-        self.scene.draw(self.screen, camera)
+        # Dynamic Entities (Actors, Particles, etc.)
+        actors = [self.player] + self.enemies
+        actors = sorted(actors, key=lambda actor: actor.rect.y)
+
+        for actor in actors:
+            if is_on_screen(actor.rect):
+                actor.draw(self.screen, camera)
 
         if self.show_inventory:
             self.player.inventory.draw(self.screen)
