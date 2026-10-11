@@ -57,7 +57,7 @@ class Dungeon_Level_One:
             self.scene.add_child(enemy)
 
         # Collision Setup: Combine static walls and interactable doors
-        self.scene.set_wall_tiles(list(self.wall_tiles) + list(self.door_tiles))
+        self.refresh_walls()
 
         self.show_inventory = False
 
@@ -186,4 +186,12 @@ class Dungeon_Level_One:
             if door.door_id == door_id:
                 door.kill()
 
-        self.scene.set_wall_tiles(list(self.wall_tiles) + list(self.door_tiles))
+        self.refresh_walls()
+
+    def refresh_walls(self):
+        walls = list(self.wall_tiles) + list(self.door_tiles)
+
+        self.player.wall_tiles = walls
+
+        for enemy in self.enemies:
+            enemy.wall_tiles = walls

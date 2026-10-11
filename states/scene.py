@@ -22,19 +22,8 @@ class Scene(Node):
         """Initializes the scene with categorized lists for optimized access."""
         super().__init__()
         self.active = True
-        self.wall_tiles = []
         self.player = None
         self.enemies = []
-
-    def set_wall_tiles(self, wall_tiles):
-        """
-        Assigns collision tiles to the scene and propagates them to all
-        relevant child nodes (like players or NPCs).
-        """
-        self.wall_tiles = wall_tiles
-        for child in self.children:
-            if hasattr(child, "wall_tiles"):
-                child.wall_tiles = wall_tiles
 
     def add_child(self, child):
         """
