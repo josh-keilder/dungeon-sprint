@@ -59,6 +59,8 @@ class Dungeon_Level_One:
         # Collision Setup: Combine static walls and interactable doors
         self.scene.set_wall_tiles(list(self.wall_tiles) + list(self.door_tiles))
 
+        self.show_inventory = False
+
     def update(self, dt):
         """Updates all world entities and syncs the camera focal point."""
 
@@ -74,6 +76,12 @@ class Dungeon_Level_One:
 
         if self.player.intent["interact"]:
             interact.interact(self.player, self)
+
+        if self.player.intent["inventory"]:
+            self.show_inventory = not self.show_inventory
+
+        if self.show_inventory and self.player.intent["mouse_left_click"] is not None:
+            self.player.inventory.handle_click(self.player.intent["mouse_left_click"])
 
         self.scene.update(dt)
         self.items.update(dt)
@@ -106,6 +114,9 @@ class Dungeon_Level_One:
 
         # Dynamic Entities (Actors, Particles, etc. via Scene)
         self.scene.draw(self.screen, camera)
+
+        if self.show_inventory:
+            self.player.inventory.draw(self.screen)
 
     def load_map(self, file_path):
         """Parses the .tmx file and populates sprite groups based on layer names."""

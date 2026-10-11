@@ -25,7 +25,7 @@ def load_player(map) -> object:
     player_textures = gen_player_textures()
     player_pos = get_player_pos(file_path=map.file_path)
 
-    player = Player(animations=player_textures, pos=player_pos, map=map)
+    player = Player(animations=player_textures, pos=player_pos)
 
     # Snap camera to player immediately to avoid frame-one sliding
     camera_start(player.rect.center)

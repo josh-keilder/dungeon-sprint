@@ -14,7 +14,6 @@ from globals import *
 from node import Node
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
-from Components.inputComponent import InputComponent
 from Components.movementComponent import MovementComponent
 from Components.rollComponent import RollComponent
 from Components.animationComponent import AnimationComponent
@@ -65,7 +64,6 @@ class Player(Node):
             shrink_speed=5,
         )
         self.hitbox = Hitbox(self)
-        self.input = InputComponent(self)
         self.inventory = InventoryComponent(self, size=self.inventory_size)
         self.movement = MovementComponent(self, self.base_stats["speed"])
         self.roll = RollComponent(self, roll_speed=self.base_stats["roll_speed"])
@@ -109,8 +107,6 @@ class Player(Node):
             self.health.max_health = self.stats["health"]
 
         # Component Updates
-        self.input.update(dt)
-
         if self.intent["roll"]:
             self.roll.start_roll(move, self.last_direction)
 
@@ -135,9 +131,6 @@ class Player(Node):
             screen.blit(self.image, self.rect.topleft)
 
         self.health_bar.draw(screen, camera)
-
-        if self.input.show_inventory:
-            self.inventory.draw(screen)
 
         # Debug: Collision boundary
         self.hitbox.draw(screen, camera, color=GREEN)
