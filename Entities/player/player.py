@@ -96,7 +96,7 @@ class Player(Node):
 
         # Component Updates
         if self.intent["roll"]:
-            self.roll.start_roll(move, self.last_direction)
+            self.roll.start_roll(move)
 
         if self.intent["heal"]:
             use_small_health_potion(self.health, self.inventory)
