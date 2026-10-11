@@ -3,12 +3,12 @@ from globals import *
 from node import Node
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
-from Components.rollComponent import RollComponent
 from Components.animationComponent import AnimationComponent
 from Components.inventoryComponent import InventoryComponent
 from ui_objects.camera import camera
 from systems.consumables import use_small_health_potion
 from systems.movement import steer, move_and_collide
+from systems.roll import try_start_roll, advance_roll
 
 
 class Player(Node):
@@ -38,6 +38,13 @@ class Player(Node):
             "friction": 3000,
         }
 
+        self.roll = {
+            "active": False,
+            "direction": pygame.Vector2(),
+            "timer": 0.0,
+            "cooldown": 0.0,
+        }
+
         # --- Visuals & Animation ---
         self.animations = AnimationComponent(self, animations, "player_idle_down")
         self.image = animations["player_idle_down"][0]
@@ -56,7 +63,6 @@ class Player(Node):
         )
         self.hitbox = Hitbox(self)
         self.inventory = InventoryComponent(self, size=self.inventory_size)
-        self.roll = RollComponent(self, roll_speed=self.base_stats["roll_speed"])
 
     @property
     def stats(self):
@@ -88,22 +94,19 @@ class Player(Node):
         if not self.walking and self.base_stats["speed"] > 70:
             self.base_stats["speed"] -= 5
 
-        # Sync components with current calculated stats
-        self.roll.roll_speed = self.base_stats["roll_speed"]
-
         if self.health.max_health != self.stats["health"]:
             self.health.max_health = self.stats["health"]
 
         # Component Updates
         if self.intent["roll"]:
-            self.roll.start_roll(move)
+            try_start_roll(self.roll, move)
 
         if self.intent["heal"]:
             use_small_health_potion(self.health, self.inventory)
 
         self.update_movement(dt, walls)
+        self.update_roll(dt, walls)
 
-        self.roll.update(dt, walls)
         self.handle_animation_state()
         self.animations.update(dt)
         self.health_bar.update(dt)
@@ -128,7 +131,7 @@ class Player(Node):
 
     def handle_animation_state(self):
         """Determines the correct animation string based on current movement/action."""
-        if getattr(self.roll, "is_rolling", False):
+        if self.roll["active"]:
             action = "roll"
         elif self.walking:
             action = "walk"
@@ -168,3 +171,16 @@ class Player(Node):
             self.velocity.x = 0
         if hit_y:
             self.velocity.y = 0
+
+    def update_roll(self, dt, walls):
+        if self.roll["active"]:
+            displacement = self.roll["direction"] * self.stats["roll_speed"] * dt
+
+            hit_x, hit_y = move_and_collide(self.rect, displacement, walls)
+
+            if hit_x:
+                self.velocity.x = 0
+            if hit_y:
+                self.velocity.y = 0
+
+        advance_roll(self.roll, dt)
