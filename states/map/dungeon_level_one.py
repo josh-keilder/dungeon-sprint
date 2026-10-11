@@ -17,7 +17,6 @@ from states.map.tiles import WallTile, DecorTile, Door
 from Entities.player.load_player import load_player
 from ui_objects.camera import camera_update, camera, is_on_screen
 from Entities.enemies.load_enemies import load_enemies
-from states.scene import Scene
 from items.items import Chest, WorldItem
 from items.itemDataBase import initialize_item_database
 
@@ -35,15 +34,12 @@ class Dungeon_Level_One:
         self.gameStateManager = gameStateManager
         self.file_path = DUNGEON_LEVEL_ONE
 
-        # Scene and Entity Management
-        self.scene = Scene()
+        # Entity Management
         self.sprites = pygame.sprite.Group()
         self.wall_tiles = pygame.sprite.Group()
         self.door_tiles = pygame.sprite.Group()
         self.items = pygame.sprite.Group()
         self.chests = pygame.sprite.Group()
-        self.player_group = pygame.sprite.GroupSingle()
-        self.enemies_group = pygame.sprite.Group()
 
         # Data Initialization
         self.ITEM_DATABASE = initialize_item_database()
@@ -51,12 +47,9 @@ class Dungeon_Level_One:
 
         # Player Setup
         self.player = load_player(map=self)
-        self.scene.add_child(self.player)
 
         # Enemy Spawning
         self.enemies = load_enemies(player=self.player, file_path=self.file_path)
-        for enemy in self.enemies:
-            self.scene.add_child(enemy)
 
         # Collision Setup: Combine static walls and interactable doors
         self.refresh_walls()

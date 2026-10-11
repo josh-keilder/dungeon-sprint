@@ -1,12 +1,3 @@
-"""
-Module: Enemy Loader
---------------------
-Handles the discovery and instantiation of enemy entities from map data.
-Parses the Tiled (.tmx) Object Layer for markers prefixed with 'Enemy_',
-extracts the specific type (e.g., 'Skull', 'Skeleton'), and returns a
-list of initialized enemy objects ready for the scene.
-"""
-
 import pygame
 from globals import *
 from Entities.enemies.enemy import Skeleton, Skull_Enemy
