@@ -22,8 +22,10 @@ from Entities.enemies.enemyTextureData import skull_enemy_texture_data
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
 from Components.animationComponent import AnimationComponent
-from Components.movementComponent import MovementComponent
 from typing import Dict, List, Any, Tuple, Optional
+
+from systems.enemy_ai import fly_velocity, wander_chase_velocity, random_idle_direction
+from systems.movement import move_and_collide
 
 # Global cache for storing surface lists to optimize memory and performance
 ENEMY_CACHE = {}
@@ -103,9 +105,13 @@ class Enemy(Node):
         self.health = Health(self, self.max_health)
         self.health_bar = HealthBar(self, self.max_health)
         self.hitbox = Hitbox(self)
-        self.movement_component = MovementComponent(
-            self, speed=speed, behavior=movement_behavior, player=player
-        )
+
+        self.speed = speed
+        self.behavior = movement_behavior
+        self.player = player
+        self.flee_timer = 0.0
+        self.return_timer = 0.0
+        self.idle_direction = random_idle_direction()
 
     def update(self, dt: float = 0) -> None:
         """
@@ -121,9 +127,19 @@ class Enemy(Node):
         self.animations.update(dt)
         self.health_bar.update(dt)
         self.hitbox.update(dt)
-        self.movement_component.update(dt)
+        self.update_movement(dt)
 
         self.pos.xy = self.rect.topleft
+
+    def update_movement(self, dt):
+        if self.behavior == "fly":
+            velocity = fly_velocity(self, self.player.pos, dt)
+            self.rect.x += velocity.x * dt
+            self.rect.y += velocity.y * dt
+
+        elif self.behavior == "wander_chase":
+            velocity = wander_chase_velocity(self, self.player.pos, self.wall_tiles)
+            move_and_collide(self.rect, velocity * dt, self.wall_tiles)
 
     def draw(
         self, screen: pygame.Surface, camera: Optional[pygame.Rect] = None
@@ -184,4 +200,3 @@ class Skull_Enemy(Enemy):
             start_animation="skull_idle",
             speed=50,
         )
-        self.movement_component.flying = True
