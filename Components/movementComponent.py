@@ -15,7 +15,7 @@ import random
 from globals import *
 from Components.component import Component
 from typing import Any, List, Optional
-from systems.movement import move_and_collide, steer
+from systems.movement import move_and_collide
 
 
 class MovementComponent(Component):
@@ -32,9 +32,6 @@ class MovementComponent(Component):
         self.max_speed = speed
 
         self.velocity = pygame.math.Vector2(0, 0)
-        self.acceleration = 2400
-        self.friction = 3000
-        self.speed_multiplier = 1.0
 
         self.flying = False
         self.behavior = behavior
@@ -54,24 +51,6 @@ class MovementComponent(Component):
             self.fly_behavior(dt)
         elif self.behavior == "wander_chase" and self.player:
             self.wander_chase_behavior(dt)
-        else:
-            intent = getattr(self.node, "intent", None)
-            if intent is not None:
-                target_dir = intent["move"]
-
-                speed_cap = self.max_speed * self.speed_multiplier
-
-                self.velocity = steer(
-                    self.velocity,
-                    target_dir,
-                    self.acceleration,
-                    self.friction,
-                    speed_cap,
-                    dt,
-                )
-
-                wall_tiles = getattr(self.node, "wall_tiles", [])
-                self.move(self.velocity * dt, wall_tiles)
 
     def fly_behavior(self, dt: float) -> None:
         """AI behavior for flying entities that bypasses wall collision checks."""

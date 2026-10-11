@@ -1,25 +1,14 @@
-"""
-Entity: Player
---------------
-The primary controllable actor. This class coordinates various logic components
-(Input, Movement, Animation, Inventory) and manages the transition between
-different gameplay states like walking, rolling, and idling.
-
-Key Feature: Uses a dynamic 'stats' property to calculate real-time attributes
-by combining base stats with equipment bonuses from the InventoryComponent.
-"""
-
 import pygame
 from globals import *
 from node import Node
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
-from Components.movementComponent import MovementComponent
 from Components.rollComponent import RollComponent
 from Components.animationComponent import AnimationComponent
 from Components.inventoryComponent import InventoryComponent
 from ui_objects.camera import camera
 from systems.consumables import use_small_health_potion
+from systems.movement import steer, move_and_collide
 
 
 class Player(Node):
@@ -33,6 +22,8 @@ class Player(Node):
         self.pos = pygame.math.Vector2(pos)
         self.inventory_size = 20
 
+        self.velocity = pygame.Vector2()
+
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
 
         # Base values before equipment or status modifiers
@@ -43,6 +34,8 @@ class Player(Node):
             "health": 500,
             "roll_speed": 200,
             "speed_multiplier": 1,
+            "acceleration": 2400,
+            "friction": 3000,
         }
 
         self.wall_tiles = []
@@ -65,7 +58,6 @@ class Player(Node):
         )
         self.hitbox = Hitbox(self)
         self.inventory = InventoryComponent(self, size=self.inventory_size)
-        self.movement = MovementComponent(self, self.base_stats["speed"])
         self.roll = RollComponent(self, roll_speed=self.base_stats["roll_speed"])
 
     @property
@@ -99,8 +91,6 @@ class Player(Node):
             self.base_stats["speed"] -= 5
 
         # Sync components with current calculated stats
-        self.movement.max_speed = self.stats["speed"]
-        self.movement.speed_multiplier = self.stats["speed_multiplier"]
         self.roll.roll_speed = self.base_stats["roll_speed"]
 
         if self.health.max_health != self.stats["health"]:
@@ -113,7 +103,8 @@ class Player(Node):
         if self.intent["heal"]:
             use_small_health_potion(self.health, self.inventory)
 
-        self.movement.update(dt)
+        self.update_movement(dt)
+
         self.roll.update(dt)
         self.handle_animation_state()
         self.animations.update(dt)
@@ -158,3 +149,24 @@ class Player(Node):
             self.last_direction = "left"
         elif move.x > 0:
             self.last_direction = "right"
+
+    def update_movement(self, dt):
+        stats = self.stats
+
+        speed_cap = stats["speed"] * stats["speed_multiplier"]
+
+        self.velocity = steer(
+            self.velocity,
+            self.intent["move"],
+            stats["acceleration"],
+            stats["friction"],
+            speed_cap,
+            dt,
+        )
+
+        hit_x, hit_y = move_and_collide(self.rect, self.velocity * dt, self.wall_tiles)
+
+        if hit_x:
+            self.velocity.x = 0
+        if hit_y:
+            self.velocity.y = 0

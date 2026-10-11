@@ -1,6 +1,7 @@
 import pygame
 from Components.component import Component
 from typing import Any
+from systems.movement import move_and_collide
 
 
 class RollComponent(Component):
@@ -33,9 +34,16 @@ class RollComponent(Component):
 
     def update(self, dt: float) -> None:
         if self.is_rolling:
-            if hasattr(self.node, "movement"):
-                vel = self.roll_direction * self.roll_speed
-                self.node.movement.move(vel * dt, getattr(self.node, "wall_tiles", []))
+
+            displacement = self.roll_direction * self.roll_speed * dt
+            hit_x, hit_y = move_and_collide(
+                self.node.rect, displacement, self.node.wall_tiles
+            )
+
+            if hit_x:
+                self.node.velocity.x = 0
+            if hit_y:
+                self.node.velocity.y = 0
 
             if hasattr(self.node, "animations"):
                 animations = self.node.animations
