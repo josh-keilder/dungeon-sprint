@@ -13,6 +13,8 @@ Classes:
 from node import Node
 from Entities.enemies.enemy import Enemy
 import pygame
+from systems.collision import find_player_contacts
+from systems.combat import resolve_contact
 
 
 class Scene(Node):
@@ -61,22 +63,16 @@ class Scene(Node):
         """
         super().update(dt)
 
-        if self.player:
-            for enemy in self.enemies:
-                # Performance Optimization: Distance check before expensive hitbox math
-                if self.player.pos.distance_to(enemy.pos) < 100:
-                    if self.player.hitbox.collides_with(enemy.hitbox):
-                        self.handle_collision(self.player, enemy)
+        if self.player is None:
+            return
 
-    def handle_collision(self, player, enemy):
-        """Resolves the outcome of a player and enemy intersection."""
-        player.health.take_damage(enemy.attack_damage)
-        enemy.health.take_damage(1)
-        enemy.movement_component.trigger_flee()
+        contacts = find_player_contacts(self.player, self.enemies)
 
-        # Cleanup: Remove defeated enemies from the scene
-        if enemy.health.current <= 0:
-            self.remove_child(enemy)
+        for enemy in contacts:
+            resolve_contact(self.player, enemy)
+
+            if enemy.health.is_dead():
+                self.remove_child(enemy)
 
     def draw(self, screen, camera=None):
         """Renders the scene using the base Node's Y-sorting logic."""
