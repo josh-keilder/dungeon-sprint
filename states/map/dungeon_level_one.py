@@ -10,6 +10,7 @@ Classes:
 """
 
 import pygame
+import random
 from globals import *
 import globals
 from pytmx.util_pygame import load_pygame
@@ -25,6 +26,9 @@ from systems import sound, interact
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
 from ui_objects.inventory_ui import InventoryUI
+
+LOOT_SCATTER_X = 10
+LOOT_SCATTER_Y = 5
 
 pygame.mixer.init()
 
@@ -201,7 +205,7 @@ class Dungeon_Level_One:
             elif layer.name == "Chests":
                 for obj in layer:
                     if obj.name.lower() == "chest":
-                        Chest(pos=(obj.x, obj.y), groups=self.chests, map=self)
+                        Chest(pos=(obj.x, obj.y), groups=self.chests)
 
     def unlock_door(self, door_id):
         for door in self.door_tiles.sprites():
@@ -212,3 +216,16 @@ class Dungeon_Level_One:
 
     def refresh_walls(self):
         self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles)
+
+    def spawn_loot(self, drops, center):
+        for item_id, quantity in drops:
+            item_data = self.ITEM_DATABASE[item_id]
+            offset_x = random.randint(-LOOT_SCATTER_X, LOOT_SCATTER_X)
+            offset_y = random.randint(-LOOT_SCATTER_Y, LOOT_SCATTER_Y)
+
+            WorldItem(
+                groups=self.items,
+                pos=(center[0] + offset_x, center[1] + offset_y),
+                item_data=item_data,
+                quantity=quantity,
+            )

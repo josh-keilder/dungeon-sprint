@@ -113,13 +113,14 @@ class EquipmentItem(Item):
 
 
 class WorldItem(pygame.sprite.Sprite):
-    def __init__(self, groups, pos, item_data):
+    def __init__(self, groups, pos, item_data, quantity):
         """
         The physical entity representing an item in the game world.
         Takes an Item object and wraps it in a Sprite with an AnimationComponent.
         """
         super().__init__(groups)
         self.item_data = item_data.clone()
+        self.item_data.quantity = quantity
         self.animations = AnimationComponent(
             node=self,
             animations=item_data.animations,
@@ -129,10 +130,6 @@ class WorldItem(pygame.sprite.Sprite):
         self.image = item_data.image
         self.pos = pos
         self.rect = self.image.get_rect(center=self.pos)
-
-        # Dynamic Scaling: Adjusts item quantity based on type upon spawning
-        if self.item_data.type == "small_potion":
-            self.item_data.quantity = random.randint(1, 3)
 
     def draw(self, screen, camera):
         """Renders the item relative to the camera."""
@@ -144,48 +141,13 @@ class WorldItem(pygame.sprite.Sprite):
 
 
 class Chest(pygame.sprite.Sprite):
-    def __init__(self, groups, pos, map):
+    def __init__(self, groups, pos):
         """Interactable container that spawns WorldItems when opened."""
         super().__init__(groups)
         self.image = CHEST_IMAGE
         self.rect = self.image.get_frect(topleft=pos)
         self.pos = pygame.math.Vector2(pos)
-        self.map = map
-        self.opened = False
 
     def draw(self, screen, camera):
         """Renders the chest relative to the camera."""
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-
-    def update(self):
-        pass
-
-    def roll_loot(self):
-        """Determines which item IDs to drop based on weighted probabilities."""
-        drops = []
-        if random.random() < 0.8:
-            drops.append("gold_key")
-        if random.random() < 0.9:
-            drops.append("small_health_potion")
-
-        drops.append("speed_boots")
-        return drops
-
-    def open(self):
-        """Transitions the chest to opened state and spawns items into the map group."""
-        if self.opened:
-            return
-
-        self.opened = True
-        cx, cy = self.rect.center
-        for item_id in self.roll_loot():
-            item_data = self.map.ITEM_DATABASE.get(item_id)
-            if item_data:
-                # Random scattering to prevent items overlapping perfectly
-                offset_x = random.randint(-10, 10)
-                offset_y = random.randint(-5, 5)
-                WorldItem(
-                    groups=self.map.items,
-                    pos=(cx + offset_x, cy + offset_y),
-                    item_data=item_data,
-                )

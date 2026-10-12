@@ -1,4 +1,6 @@
 from systems.inventory import has_item, remove_item, add_item
+from systems.loot import roll_loot
+from items.lootTableData import CHEST_LOOT
 
 REACH = 15
 
@@ -22,8 +24,9 @@ def find_target(player, level):
     return None
 
 
-def open_chest(chest):
-    chest.open()
+def open_chest(chest, level):
+    drops = roll_loot(CHEST_LOOT)
+    level.spawn_loot(drops, chest.rect.center)
     chest.kill()
 
 
@@ -50,7 +53,7 @@ def interact(player, level):
 
     kind, target = found
     if kind == "chest":
-        open_chest(target)
+        open_chest(target, level)
     elif kind == "door":
         unlock_door(level, target, player.inventory)
     elif kind == "item":
