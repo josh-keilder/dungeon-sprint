@@ -91,7 +91,7 @@ class EquipmentItem(Item):
         animations: dict = None,
         desc: str = None,
         slot: str = None,
-        stats: dict = None,
+        bonuses: dict = None,
         ability: str = None,
         value: str = None,
     ):
@@ -107,7 +107,7 @@ class EquipmentItem(Item):
             value=value,
         )
         self.slot = slot
-        self.stats = stats
+        self.bonuses = bonuses
         self.ability = ability
         self.image = animations.get("idle", [None])[0]
 

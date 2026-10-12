@@ -55,7 +55,7 @@ def initialize_item_database():
         animations={"idle": speed_boots_frames["speed_boots"]},
         desc="Run faster",
         slot="boots",
-        stats={"max_speed": 10, "acceleration": 20, "defense": 3, "health": 10},
+        bonuses={"max_speed": 10, "acceleration": 20, "defense": 3, "health": 10},
         ability=None,
     )
 
