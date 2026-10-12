@@ -1,7 +1,7 @@
 import pygame
 from globals import SCREENWIDTH, WHITE, DARK_GRAY
 from ui_objects.text_loader import Text_Loader
-from systems.inventory import can_equip
+from systems.inventory import can_equip, add_item
 
 
 class InventoryUI:
@@ -148,6 +148,18 @@ class InventoryUI:
             else:
                 self.held_item = inventory["equipment"][equip_key]
                 inventory["equipment"][equip_key] = None
+
+    def return_held_item(self, inventory):
+        if self.held_item is None:
+            return True
+
+        leftover = add_item(inventory, self.held_item)
+
+        if leftover == 0:
+            self.held_item = None
+            return True
+
+        return False
 
     def _get_icon(self, item):
         if not item or not item.image:

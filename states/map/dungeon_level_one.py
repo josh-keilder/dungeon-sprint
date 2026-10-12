@@ -76,7 +76,11 @@ class Dungeon_Level_One:
             interact.interact(self.player, self)
 
         if self.player.intent["inventory"]:
-            self.show_inventory = not self.show_inventory
+            if self.show_inventory:
+                if self.inventory_ui.return_held_item(self.player.inventory):
+                    self.show_inventory = False
+            else:
+                self.show_inventory = True
 
         if self.show_inventory and self.player.intent["mouse_left_click"] is not None:
             self.inventory_ui.handle_click(
