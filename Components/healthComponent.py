@@ -41,7 +41,6 @@ class HealthBar(Component):
     def __init__(
         self,
         node: Any,
-        max_health: float,
         width: int = TILESIZE,
         height: int = 4,
         shrink_speed: float = 10000.0,
@@ -63,8 +62,7 @@ class HealthBar(Component):
         self.pos = pos
 
         self.is_player = is_player
-        self.max_health = max_health
-        self.display_health = max_health
+        self.display_health = node.health.current
         self.shrink_speed = shrink_speed
 
     def update(self, dt: float = 0.0) -> None:
@@ -80,7 +78,7 @@ class HealthBar(Component):
             return
 
         # Optimization: Hide enemy health bars if they are at full health
-        if not self.is_player and self.display_health >= self.max_health:
+        if not self.is_player and self.display_health >= health_comp.max_health:
             return
 
         # Calculate Screen Coordinates
@@ -99,7 +97,7 @@ class HealthBar(Component):
         pygame.draw.rect(screen, GRAY, bg_rect)
 
         # Draw Foreground (The 'Current' Health)
-        ratio = self.display_health / self.max_health
+        ratio = self.display_health / health_comp.max_health
         if ratio > 0:
             fg_width = int(self.width * ratio)
             fg_rect = pygame.Rect(x, y, fg_width, self.height)

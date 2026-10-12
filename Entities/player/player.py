@@ -55,7 +55,6 @@ class Player(Node):
         self.health = Health(self, self.base_stats["health"])
         self.health_bar = HealthBar(
             self,
-            self.base_stats["health"],
             width=200,
             height=10,
             is_player=True,
@@ -83,6 +82,7 @@ class Player(Node):
 
         if self.health.max_health != self.stats["health"]:
             self.health.max_health = self.stats["health"]
+            self.health.current = min(self.health.current, self.health.max_health)
 
         # Component Updates
         if self.intent["roll"]:

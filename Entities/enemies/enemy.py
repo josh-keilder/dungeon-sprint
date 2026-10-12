@@ -61,7 +61,7 @@ class Enemy(Node):
         self.rect = self.image.get_frect(topleft=self.pos)
 
         self.health = Health(self, self.max_health)
-        self.health_bar = HealthBar(self, self.max_health)
+        self.health_bar = HealthBar(self)
         self.hitbox = Hitbox(self)
 
         self.speed = speed
