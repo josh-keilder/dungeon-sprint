@@ -18,15 +18,15 @@ def add_item(inventory, item):
                 item.quantity -= amount_to_add
 
                 if item.quantity <= 0:
-                    return True
+                    return 0
 
     if item.quantity > 0:
         for i in range(len(inventory["slots"])):
             if inventory["slots"][i] is None:
                 inventory["slots"][i] = item.clone()
-                return True
+                return 0
 
-    return False
+    return item.quantity
 
 
 def remove_item(inventory, item_id, quantity=1):
