@@ -4,7 +4,7 @@ from node import Node
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
 from Components.animationComponent import AnimationComponent
-from Components.inventoryComponent import InventoryComponent
+from systems.inventory import new_inventory
 from systems.consumables import use_small_health_potion
 from systems.movement import steer, move_and_collide
 from systems.roll import try_start_roll, advance_roll
@@ -57,10 +57,10 @@ class Player(Node):
             shrink_speed=5,
         )
         self.hitbox = Hitbox(self)
-        self.inventory = InventoryComponent(self, size=20)
+        self.inventory = new_inventory(20)
 
         self.stats = compute_stats(
-            self.base_stats, self.inventory.equipment_slots.values()
+            self.base_stats, self.inventory["equipment"].values()
         )
 
     def update(self, dt, walls):
@@ -73,7 +73,7 @@ class Player(Node):
             self.update_facing(move)
 
         self.stats = compute_stats(
-            self.base_stats, self.inventory.equipment_slots.values()
+            self.base_stats, self.inventory["equipment"].values()
         )
 
         if self.health.max_health != self.stats["health"]:

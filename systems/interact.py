@@ -1,3 +1,5 @@
+from systems.inventory import has_item, remove_item, add_item
+
 REACH = 15
 
 
@@ -8,7 +10,7 @@ def find_target(player, level):
         if reach_box.colliderect(chest.rect):
             return ("chest", chest)
 
-    if player.inventory.has_item("gold_key"):
+    if has_item(player.inventory, "gold_key"):
         for door in level.door_tiles:
             if reach_box.colliderect(door.rect):
                 return ("door", door)
@@ -27,11 +29,11 @@ def open_chest(chest):
 
 def unlock_door(level, door, inventory):
     level.unlock_door(door.door_id)
-    inventory.remove_item("gold_key")
+    remove_item(inventory, "gold_key")
 
 
 def pick_up_item(item, inventory):
-    if inventory.add_item(item.item_data.clone()):
+    if add_item(inventory, item.item_data.clone()):
         item.kill()
         return True
 
