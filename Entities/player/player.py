@@ -69,7 +69,7 @@ class Player(Node):
 
         move = self.intent["move"]
         self.walking = move.length_squared() > 0
-        if self.walking:
+        if self.walking and not self.roll["active"]:
             self.update_facing(move)
 
         self.stats = compute_stats(
