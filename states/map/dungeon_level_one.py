@@ -24,6 +24,7 @@ from systems.input import read_input
 from systems import sound, interact
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
+from ui_objects.inventory_ui import InventoryUI
 
 pygame.mixer.init()
 
@@ -56,6 +57,7 @@ class Dungeon_Level_One:
         self.refresh_walls()
 
         self.show_inventory = False
+        self.inventory_ui = InventoryUI()
 
     def update(self, dt):
         """Updates all world entities and syncs the camera focal point."""
@@ -77,7 +79,9 @@ class Dungeon_Level_One:
             self.show_inventory = not self.show_inventory
 
         if self.show_inventory and self.player.intent["mouse_left_click"] is not None:
-            self.player.inventory.handle_click(self.player.intent["mouse_left_click"])
+            self.inventory_ui.handle_click(
+                self.player.intent["mouse_left_click"], self.player.inventory
+            )
 
         self.player.update(dt, self.solid_tiles)
         for enemy in self.enemies:
@@ -130,7 +134,7 @@ class Dungeon_Level_One:
         self.player.health_bar.draw(self.screen)
 
         if self.show_inventory:
-            self.player.inventory.draw(self.screen)
+            self.inventory_ui.draw(self.screen, self.player.inventory)
 
     def load_map(self, file_path):
         """Parses the .tmx file and populates sprite groups based on layer names."""
