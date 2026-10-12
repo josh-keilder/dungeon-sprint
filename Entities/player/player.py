@@ -109,8 +109,6 @@ class Player(Node):
         else:
             screen.blit(self.image, self.rect.topleft)
 
-        self.health_bar.draw(screen, camera)
-
         # Debug: Collision boundary
         self.hitbox.draw(screen, camera, color=GREEN)
 

@@ -127,6 +127,8 @@ class Dungeon_Level_One:
             if is_on_screen(actor.rect):
                 actor.draw(self.screen, camera)
 
+        self.player.health_bar.draw(self.screen)
+
         if self.show_inventory:
             self.player.inventory.draw(self.screen)
 
