@@ -9,7 +9,7 @@ from ui_objects.camera import camera
 from systems.consumables import use_small_health_potion
 from systems.movement import steer, move_and_collide
 from systems.roll import try_start_roll, advance_roll
-from systems.stats import compute_stats, update_speed_ramp
+from systems.stats import compute_stats
 
 
 class Player(Node):
@@ -24,7 +24,6 @@ class Player(Node):
         self.inventory_size = 20
 
         self.velocity = pygame.Vector2()
-        self.speed_ramp = 0.0
 
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
 
@@ -35,7 +34,7 @@ class Player(Node):
             "max_speed": 70,
             "health": 500,
             "roll_speed": 200,
-            "acceleration": 2400,
+            "acceleration": 47,
             "friction": 3000,
         }
 
@@ -78,16 +77,9 @@ class Player(Node):
         if self.walking:
             self.update_facing(move)
 
-        # Dynamic speed adjustment based on boots/movement state
-        building = (
-            self.walking and self.inventory.equipment_slots.get("boots") is not None
-        )
-        self.speed_ramp = update_speed_ramp(self.speed_ramp, building, dt)
-
         self.stats = compute_stats(
             self.base_stats, self.inventory.equipment_slots.values()
         )
-        self.stats["max_speed"] += self.speed_ramp
 
         if self.health.max_health != self.stats["health"]:
             self.health.max_health = self.stats["health"]
