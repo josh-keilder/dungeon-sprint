@@ -35,7 +35,7 @@ def unlock_door(level, door, inventory):
 def pick_up_item(item, inventory):
     leftover = add_item(inventory, item.item_data.clone())
     if leftover == 0:
-        item.kill
+        item.kill()
         return True
 
     item.item_data.quantity = leftover
