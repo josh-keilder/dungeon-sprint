@@ -17,13 +17,13 @@ from pytmx.util_pygame import load_pygame
 from Entities.player.playerTextureData import player_texture_data
 
 
-def load_player(map) -> object:
+def load_player(map_path) -> object:
     """
     Orchestrates player creation: loads textures, finds spawn point,
     and centers the camera.
     """
     player_textures = gen_player_textures()
-    player_pos = get_player_pos(file_path=map.file_path)
+    player_pos = get_player_pos(map_path)
 
     player = Player(animations=player_textures, pos=player_pos)
 
@@ -33,12 +33,12 @@ def load_player(map) -> object:
     return player
 
 
-def get_player_pos(file_path) -> tuple:
+def get_player_pos(map_path) -> tuple:
     """
     Scans the Tiled map's Object Layer for an object named 'Player'.
     Returns the (x, y) coordinates for spawning.
     """
-    tmx_data = load_pygame(file_path)
+    tmx_data = load_pygame(map_path)
     for obj in tmx_data.objects:
         if obj.name == "Player":
             return (obj.x, obj.y)

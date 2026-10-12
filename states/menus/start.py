@@ -58,7 +58,7 @@ class Start:
 
         # Navigation Logic
         if self.start_button.is_clicked():
-            self.gameStateManager.set_state("dungeon")
+            self.gameStateManager.set_state("level")
 
         elif self.options_button.is_clicked():
             self.gameStateManager.set_state("options")

@@ -105,7 +105,7 @@ class Options:
 
             # Only show 'Back' if we have a gameplay state to return to
             prev_state = self.gameStateManager.get_previous_state()
-            if prev_state and prev_state.startswith("dungeon"):
+            if prev_state and prev_state.startswith("level"):
                 self.back_button.draw()
 
     def update(self, dt: float) -> None:
@@ -139,24 +139,20 @@ class Options:
         new_bg_vol = self.music_volume_slider.get_current_value()
         if new_bg_vol != self.music_volume:
             self.music_volume = new_bg_vol
-            self.music_volume_text.update_text(
-                f"Music Volume: {self.music_volume}"
-            )
+            self.music_volume_text.update_text(f"Music Volume: {self.music_volume}")
             sound.set_music_volume(self.music_volume / 100.0)
             settings.set_setting("music_volume", self.music_volume / 100.0)
 
         new_sfx_vol = self.sfx_volume_slider.get_current_value()
         if new_sfx_vol != self.sfx_volume:
             self.sfx_volume = new_sfx_vol
-            self.sfx_volume_text.update_text(
-                f"SFX Volume: {self.sfx_volume}"
-            )
+            self.sfx_volume_text.update_text(f"SFX Volume: {self.sfx_volume}")
             sound.set_sfx_volume(self.sfx_volume / 100.0)
             settings.set_setting("sfx_volume", self.sfx_volume / 100.0)
 
         # Contextual Back Logic
         prev_state = self.gameStateManager.get_previous_state()
-        if prev_state and prev_state.startswith("dungeon"):
+        if prev_state and prev_state.startswith("level"):
             self.back_button.update()
             if self.back_button.is_clicked():
                 self.gameStateManager.go_back()

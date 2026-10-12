@@ -33,11 +33,11 @@ LOOT_SCATTER_Y = 5
 pygame.mixer.init()
 
 
-class Dungeon_Level_One:
-    def __init__(self, screen, gameStateManager, file_path=None):
+class Level:
+    def __init__(self, screen, gameStateManager, map_path):
         self.screen = screen
         self.gameStateManager = gameStateManager
-        self.file_path = DUNGEON_LEVEL_ONE
+        self.map_path = map_path
 
         # Entity Management
         self.sprites = pygame.sprite.Group()
@@ -48,13 +48,13 @@ class Dungeon_Level_One:
 
         # Data Initialization
         self.ITEM_DATABASE = initialize_item_database()
-        self.load_map(file_path=self.file_path)
+        self.load_map(self.map_path)
 
         # Player Setup
-        self.player = load_player(map=self)
+        self.player = load_player(self.map_path)
 
         # Enemy Spawning
-        self.enemies = load_enemies(file_path=self.file_path)
+        self.enemies = load_enemies(self.map_path)
 
         # Collision Setup: Combine static walls and interactable doors
         self.solid_tiles = []
@@ -144,9 +144,9 @@ class Dungeon_Level_One:
         if self.show_inventory:
             self.inventory_ui.draw(self.screen, self.player.inventory)
 
-    def load_map(self, file_path):
+    def load_map(self, map_path):
         """Parses the .tmx file and populates sprite groups based on layer names."""
-        tmx_data = load_pygame(file_path)
+        tmx_data = load_pygame(map_path)
 
         # Create a static surface for the floor to save draw calls
         map_width = tmx_data.width * TILESIZE

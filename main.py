@@ -4,7 +4,7 @@ from globals import *
 from states.stateManager import GameStateManager
 from states.menus.start import Start
 from states.menus.options import Options
-from states.map.dungeon_level_one import Dungeon_Level_One
+from states.map.level import Level
 from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
@@ -46,11 +46,9 @@ class Game:
         self.gameStateManager = GameStateManager("start")
         self.start = Start(self.screen, self.gameStateManager, self.cursor)
         self.options = Options(self.screen, self.gameStateManager, self.cursor)
-        self.dungeon_level_one = Dungeon_Level_One(
-            self.screen, self.gameStateManager, self.cursor
-        )
+        self.level = Level(self.screen, self.gameStateManager, DUNGEON_LEVEL_ONE)
 
-        self.gameStateManager.add_state("dungeon", self.dungeon_level_one)
+        self.gameStateManager.add_state("level", self.level)
         self.gameStateManager.add_state("options", self.options)
         self.gameStateManager.add_state("start", self.start)
 
