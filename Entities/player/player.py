@@ -32,10 +32,9 @@ class Player(Node):
         self.base_stats = {
             "attack": 5,
             "defense": 0,
-            "speed": 70,
+            "max_speed": 70,
             "health": 500,
             "roll_speed": 200,
-            "speed_multiplier": 1,
             "acceleration": 2400,
             "friction": 3000,
         }
@@ -88,7 +87,7 @@ class Player(Node):
         self.stats = compute_stats(
             self.base_stats, self.inventory.equipment_slots.values()
         )
-        self.stats["speed"] += self.speed_ramp
+        self.stats["max_speed"] += self.speed_ramp
 
         if self.health.max_health != self.stats["health"]:
             self.health.max_health = self.stats["health"]
@@ -148,15 +147,12 @@ class Player(Node):
             self.last_direction = "right"
 
     def update_movement(self, dt, walls):
-
-        speed_cap = self.stats["speed"] * self.stats["speed_multiplier"]
-
         self.velocity = steer(
             self.velocity,
             self.intent["move"],
             self.stats["acceleration"],
             self.stats["friction"],
-            speed_cap,
+            self.stats["max_speed"],
             dt,
         )
 
