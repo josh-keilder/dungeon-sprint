@@ -30,9 +30,7 @@ def add_item(inventory, item):
 
 
 def remove_item(inventory, item_id, quantity=1):
-    total_found = sum(
-        slot.quantity for slot in inventory["slots"] if slot and slot.id == item_id
-    )
+    total_found = count_item(inventory, item_id)
 
     if total_found < quantity:
         return False
@@ -56,16 +54,14 @@ def remove_item(inventory, item_id, quantity=1):
     return True
 
 
-def get_item(inventory, item_id):
-    for slot in inventory["slots"]:
-        if slot and slot.id == item_id:
-            return slot
-    return None
-
-
 def has_item(inventory, item_id, quantity=1):
-    item = get_item(inventory, item_id)
-    return item is not None and item.quantity >= quantity
+    return count_item(inventory, item_id) >= quantity
+
+
+def count_item(inventory, item_id):
+    return sum(
+        slot.quantity for slot in inventory["slots"] if slot and slot.id == item_id
+    )
 
 
 def can_equip(item, slot_name):
