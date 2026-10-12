@@ -1,11 +1,10 @@
 import pygame
 from globals import *
 from node import Node
-from Entities.enemies.enemyTextureData import skull_enemy_texture_data
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
 from Components.animationComponent import AnimationComponent
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Optional
 
 from systems.enemy_ai import fly_velocity, wander_chase_velocity, random_idle_direction
 from systems.movement import move_and_collide
@@ -39,19 +38,13 @@ def gen_enemy_textures(texture_data: Dict[str, Any]) -> Dict[str, List[pygame.Su
 
 
 class Enemy(Node):
-    def __init__(
-        self,
-        animations: Dict[str, List[pygame.Surface]],
-        pos: Tuple[float, float] = (0, 0),
-        max_health: int = 100,
-        attack_damage: int = 5,
-        movement_behavior: Optional[str] = None,
-        start_animation: Optional[str] = None,
-        speed: int = 50,
-    ) -> None:
+    def __init__(self, type_data, pos) -> None:
         super().__init__()
-        self.max_health = max_health
-        self.attack_damage = attack_damage
+        animations = gen_enemy_textures(type_data["texture_data"])
+        start_animation = type_data["start_animation"]
+        self.attack_damage = type_data["attack_damage"]
+        self.speed = type_data["speed"]
+        self.behavior = type_data["behavior"]
         self.pos = pygame.math.Vector2(pos)
 
         self.animations = AnimationComponent(
@@ -60,12 +53,10 @@ class Enemy(Node):
         self.image = animations[start_animation][0]
         self.rect = self.image.get_frect(topleft=self.pos)
 
-        self.health = Health(self, self.max_health)
+        self.health = Health(self, type_data["max_health"])
         self.health_bar = HealthBar(self)
         self.hitbox = Hitbox(self)
 
-        self.speed = speed
-        self.behavior = movement_behavior
         self.flee_timer = 0.0
         self.return_timer = 0.0
         self.idle_direction = random_idle_direction()
@@ -107,31 +98,3 @@ class Enemy(Node):
         self.hitbox.draw(screen, camera)
 
         super().draw(screen, camera)
-
-
-class Skeleton(Enemy):
-    def __init__(self, pos: Tuple[float, float] = (0, 0)) -> None:
-        textures = gen_enemy_textures(skull_enemy_texture_data)
-        super().__init__(
-            textures,
-            pos,
-            max_health=100,
-            attack_damage=3,
-            movement_behavior="wander_chase",
-            start_animation="skull_idle",
-            speed=40,
-        )
-
-
-class Skull_Enemy(Enemy):
-    def __init__(self, pos: Tuple[float, float] = (0, 0)) -> None:
-        textures = gen_enemy_textures(skull_enemy_texture_data)
-        super().__init__(
-            textures,
-            pos,
-            max_health=100,
-            attack_damage=5,
-            movement_behavior="fly",
-            start_animation="skull_idle",
-            speed=50,
-        )

@@ -1,9 +1,6 @@
-import pygame
-from globals import *
-from Entities.enemies.enemy import Skeleton, Skull_Enemy
+from Entities.enemies.enemy import Enemy
+from Entities.enemies.enemyTypeData import ENEMY_TYPES
 from pytmx.util_pygame import load_pygame
-
-ENEMY_FACTORY = {"Skull": Skull_Enemy, "Skeleton": Skeleton}
 
 
 def load_enemies(file_path=None) -> list:
@@ -21,11 +18,11 @@ def load_enemies(file_path=None) -> list:
     enemy_data = get_enemy_pos(file_path=file_path)
 
     for enemy_type, positions in enemy_data.items():
-        enemy_class = ENEMY_FACTORY.get(enemy_type)
+        type_data = ENEMY_TYPES.get(enemy_type)
 
-        if enemy_class:
+        if type_data:
             for pos in positions:
-                new_enemy = enemy_class(pos=pos)
+                new_enemy = Enemy(type_data, pos)
                 enemies.append(new_enemy)
 
     return enemies
