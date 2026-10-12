@@ -5,7 +5,6 @@ from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
 from Components.animationComponent import AnimationComponent
 from Components.inventoryComponent import InventoryComponent
-from ui_objects.camera import camera
 from systems.consumables import use_small_health_potion
 from systems.movement import steer, move_and_collide
 from systems.roll import try_start_roll, advance_roll
@@ -17,12 +16,9 @@ class Player(Node):
         super().__init__()
 
         # --- Attributes ---
-        self.name = "player"
         self.last_direction = "down"
         self.walking = False
         self.pos = pygame.math.Vector2(pos)
-        self.inventory_size = 20
-
         self.velocity = pygame.Vector2()
 
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
@@ -61,7 +57,7 @@ class Player(Node):
             shrink_speed=5,
         )
         self.hitbox = Hitbox(self)
-        self.inventory = InventoryComponent(self, size=self.inventory_size)
+        self.inventory = InventoryComponent(self, size=20)
 
         self.stats = compute_stats(
             self.base_stats, self.inventory.equipment_slots.values()

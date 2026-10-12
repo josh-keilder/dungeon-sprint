@@ -84,4 +84,4 @@ The game currently includes:
 
 ## Project Statistics
 - **Total Files:** 586
-- **Total Lines of Code:** 212920
+- **Total Lines of Code:** 212916
