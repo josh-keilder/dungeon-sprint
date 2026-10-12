@@ -49,11 +49,9 @@ class Item:
         self.value = value
 
         self.image = animations.get("idle", [None])[0]
-        self.ui_icon = None
 
     def clone(self):
-        """Returns a deep copy of the item for unique instance modification."""
-        return copy.deepcopy(self)
+        return copy.copy(self)
 
     @staticmethod
     def gen_item_textures(texture_data: dict, item_name: str) -> dict:
@@ -109,7 +107,6 @@ class EquipmentItem(Item):
         self.slot = slot
         self.bonuses = bonuses
         self.ability = ability
-        self.image = animations.get("idle", [None])[0]
 
 
 class WorldItem(pygame.sprite.Sprite):

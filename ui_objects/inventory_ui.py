@@ -26,6 +26,8 @@ class InventoryUI:
 
         self.held_item = None
 
+        self.icon_cache = {}
+
     def draw(self, screen, inventory):
         for i, item in enumerate(inventory["slots"]):
             x = self.start_x + (i % self.cols) * self.slot_size
@@ -164,7 +166,9 @@ class InventoryUI:
     def _get_icon(self, item):
         if not item or not item.image:
             return None
-        if not hasattr(item, "ui_icon") or item.ui_icon is None:
+
+        if item.id not in self.icon_cache:
             size = self.slot_size - 10
-            item.ui_icon = pygame.transform.scale(item.image, (size, size))
-        return item.ui_icon
+            self.icon_cache[item.id] = pygame.transform.scale(item.image, (size, size))
+
+        return self.icon_cache[item.id]
