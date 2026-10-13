@@ -5,7 +5,7 @@ LOW_HEALTH_RATIO = 0.3
 
 
 def draw_health_bar(screen, health, x, y, width, height):
-    ratio = health.current / health.max_health
+    ratio = health["current"] / health["max_health"]
 
     pygame.draw.rect(screen, GRAY, pygame.Rect(x, y, width, height))
 

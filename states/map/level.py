@@ -25,6 +25,7 @@ from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
 from ui_objects.inventory_ui import InventoryUI
 from ui_objects.health_bar import draw_health_bar
+from systems.health import is_dead
 
 from states.map.map_loader import load_level_data
 
@@ -104,7 +105,7 @@ class Level:
         for enemy in contacts:
             resolve_contact(self.player, enemy)
 
-            if enemy.health.is_dead():
+            if is_dead(enemy.health):
                 self.enemies.remove(enemy)
 
         self.items.update(dt)

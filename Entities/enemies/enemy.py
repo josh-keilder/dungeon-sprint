@@ -1,7 +1,7 @@
 import pygame
 from globals import *
 from node import Node
-from Components.healthComponent import Health
+from systems.health import new_health
 from Components.hitboxComponent import Hitbox
 from typing import Optional
 from ui_objects.health_bar import draw_health_bar
@@ -29,7 +29,7 @@ class Enemy(Node):
         self.image = animations[start_animation][0]
         self.rect = self.image.get_frect(topleft=self.pos)
 
-        self.health = Health(self, type_data["max_health"])
+        self.health = new_health(type_data["max_health"])
         self.hitbox = Hitbox(self)
 
         self.flee_timer = 0.0
@@ -69,7 +69,7 @@ class Enemy(Node):
 
         screen.blit(self.image, draw_pos)
 
-        if self.health.current < self.health.max_health:
+        if self.health["current"] < self.health["max_health"]:
             bar_x = self.rect.centerx - ENEMY_HEALTH_BAR_WIDTH // 2
             bar_y = self.rect.top - ENEMY_HEALTH_BAR_GAP
 

@@ -1,7 +1,7 @@
 import pygame
 from globals import *
 from node import Node
-from Components.healthComponent import Health
+from systems.health import new_health, set_max_health
 from Components.hitboxComponent import Hitbox
 from systems.animation import new_animation, set_animation, advance_animation
 from systems.inventory import new_inventory
@@ -48,7 +48,7 @@ class Player(Node):
         self.rect.center = pos
 
         # --- Component Composition ---
-        self.health = Health(self, self.base_stats["health"])
+        self.health = new_health(self.base_stats["health"])
 
         self.hitbox = Hitbox(self)
         self.inventory = new_inventory(20)
@@ -70,9 +70,8 @@ class Player(Node):
             self.base_stats, self.inventory["equipment"].values()
         )
 
-        if self.health.max_health != self.stats["health"]:
-            self.health.max_health = self.stats["health"]
-            self.health.current = min(self.health.current, self.health.max_health)
+        if self.health["max_health"] != self.stats["health"]:
+            set_max_health(self.health, self.stats["health"])
 
         # Component Updates
         if self.intent["roll"]:
