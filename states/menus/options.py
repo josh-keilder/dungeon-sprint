@@ -7,6 +7,9 @@ from ui_objects.text_loader import Text_Loader
 from typing import Any
 from systems.display import create_window
 
+MUSIC_LABEL = "Music Volume: {}"
+SFX_LABEL = "SFX Volume: {}"
+
 
 class Options:
     def __init__(self, game_state_manager) -> None:
@@ -14,26 +17,22 @@ class Options:
 
         self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
 
-        # Load current preferences from disk/memory
-        self.fps_toggle = settings.get_setting("fps_enabled")
-        self.full_screen_toggle = settings.get_setting("full_screen_enabled")
-
         # Slider math: Convert 0.0-1.0 float to 0-100 integer for UI display
-        self.music_volume = int(settings.get_setting("music_volume") * 100)
-        self.sfx_volume = int(settings.get_setting("sfx_volume") * 100)
+        self.music_slider_value = int(settings.get_setting("music_volume") * 100)
+        self.sfx_slider_value = int(settings.get_setting("sfx_volume") * 100)
 
         # UI Components: Volume Controls
         self.music_volume_slider = Slider(
             pos=(640, 575),
             size=(300, 20),
-            initial_value=float(self.music_volume),
+            initial_value=float(self.music_slider_value),
             min_val=0.0,
             max_val=100.0,
             track_color=OPTION_MENU_BUTTON_BG,
             knob_color=LIGHT_GRAY,
         )
         self.music_volume_text = Text_Loader(
-            f"Music Volume: {self.music_volume}",
+            MUSIC_LABEL.format(self.music_slider_value),
             pos=(500, 515),
             color=OPTION_MENU_BUTTON_BG,
         )
@@ -41,14 +40,14 @@ class Options:
         self.sfx_volume_slider = Slider(
             pos=(640, 475),
             size=(300, 20),
-            initial_value=float(self.sfx_volume),
+            initial_value=float(self.sfx_slider_value),
             min_val=0.0,
             max_val=100.0,
             track_color=OPTION_MENU_BUTTON_BG,
             knob_color=LIGHT_GRAY,
         )
         self.sfx_volume_text = Text_Loader(
-            f"Menu SFX Volume: {self.sfx_volume}",
+            SFX_LABEL.format(self.sfx_slider_value),
             pos=(500, 415),
             color=OPTION_MENU_BUTTON_BG,
         )
@@ -74,30 +73,33 @@ class Options:
         )
 
         initial_fps_img = (
-            self.fps_button_on_img if self.fps_toggle else self.fps_button_off_img
+            self.fps_button_on_img
+            if settings.get_setting("fps_enabled")
+            else self.fps_button_off_img
         )
         self.fps_button = Button(initial_fps_img, pos=(450, 200))
 
         self.full_screen_button = Button(TEMP_BUTTON_IMAGE, pos=(100, 300))
 
+    def can_go_back(self):
+        return self.gameStateManager.get_previous_state() == "level"
+
     def draw(self, screen) -> None:
         screen.blit(self.image, (0, 0))
 
-        if self.gameStateManager.currentState == "options":
-            self.main_menu_button.draw(screen)
-            self.full_screen_button.draw(screen)
-            self.fps_button.draw(screen)
+        self.main_menu_button.draw(screen)
+        self.full_screen_button.draw(screen)
+        self.fps_button.draw(screen)
 
-            self.music_volume_slider.draw(screen)
-            self.music_volume_text.draw(screen)
+        self.music_volume_slider.draw(screen)
+        self.music_volume_text.draw(screen)
 
-            self.sfx_volume_slider.draw(screen)
-            self.sfx_volume_text.draw(screen)
+        self.sfx_volume_slider.draw(screen)
+        self.sfx_volume_text.draw(screen)
 
-            # Only show 'Back' if we have a gameplay state to return to
-            prev_state = self.gameStateManager.get_previous_state()
-            if prev_state and prev_state.startswith("level"):
-                self.back_button.draw(screen)
+        # Only show 'Back' if we have a gameplay state to return to
+        if self.can_go_back():
+            self.back_button.draw(screen)
 
     def update(self, dt: float) -> None:
         self.main_menu_button.update()
@@ -113,36 +115,36 @@ class Options:
 
         # Settings Toggles
         if self.fps_button.is_clicked():
-            self.fps_toggle = not self.fps_toggle
-            settings.set_setting("fps_enabled", self.fps_toggle)
+            fps_enabled = not settings.get_setting("fps_enabled")
+            settings.set_setting("fps_enabled", fps_enabled)
             self.fps_button.image = (
-                self.fps_button_on_img if self.fps_toggle else self.fps_button_off_img
+                self.fps_button_on_img if fps_enabled else self.fps_button_off_img
             )
 
         if self.full_screen_button.is_clicked():
-            self.full_screen_toggle = not self.full_screen_toggle
             fullscreen = not settings.get_setting("full_screen_enabled")
             settings.set_setting("full_screen_enabled", fullscreen)
             create_window(SCREENWIDTH, SCREENHEIGHT, fullscreen)
 
         # Volume Slider Logic
-        new_bg_vol = self.music_volume_slider.get_current_value()
-        if new_bg_vol != self.music_volume:
-            self.music_volume = new_bg_vol
-            self.music_volume_text.update_text(f"Music Volume: {self.music_volume}")
-            sound.set_music_volume(self.music_volume / 100.0)
-            settings.set_setting("music_volume", self.music_volume / 100.0)
+        new_music_value = self.music_volume_slider.get_current_value()
+        if new_music_value != self.music_slider_value:
+            self.music_slider_value = new_music_value
+            self.music_volume_text.update_text(
+                MUSIC_LABEL.format(self.music_slider_value)
+            )
+            sound.set_music_volume(self.music_slider_value / 100.0)
+            settings.set_setting("music_volume", self.music_slider_value / 100.0)
 
-        new_sfx_vol = self.sfx_volume_slider.get_current_value()
-        if new_sfx_vol != self.sfx_volume:
-            self.sfx_volume = new_sfx_vol
-            self.sfx_volume_text.update_text(f"SFX Volume: {self.sfx_volume}")
-            sound.set_sfx_volume(self.sfx_volume / 100.0)
-            settings.set_setting("sfx_volume", self.sfx_volume / 100.0)
+        new_sfx_value = self.sfx_volume_slider.get_current_value()
+        if new_sfx_value != self.sfx_slider_value:
+            self.sfx_slider_value = new_sfx_value
+            self.sfx_volume_text.update_text(SFX_LABEL.format(self.sfx_slider_value))
+            sound.set_sfx_volume(self.sfx_slider_value / 100.0)
+            settings.set_setting("sfx_volume", self.sfx_slider_value / 100.0)
 
         # Contextual Back Logic
-        prev_state = self.gameStateManager.get_previous_state()
-        if prev_state and prev_state.startswith("level"):
+        if self.can_go_back():
             self.back_button.update()
             if self.back_button.is_clicked():
                 self.gameStateManager.go_back()
