@@ -4,8 +4,8 @@ from ui_objects.button import Button
 from systems import sound, settings
 from ui_objects.slider import Slider
 from ui_objects.text_loader import Text_Loader
-from ui_objects.camera import toggle_fullscreen
 from typing import Any
+from systems.display import create_window
 
 
 class Options:
@@ -130,7 +130,9 @@ class Options:
 
         if self.full_screen_button.is_clicked():
             self.full_screen_toggle = not self.full_screen_toggle
-            new_screen = toggle_fullscreen()
+            fullscreen = not settings.get_setting("full_screen_enabled")
+            settings.set_setting("full_screen_enabled", fullscreen)
+            new_screen = create_window(SCREENWIDTH, SCREENHEIGHT, fullscreen)
             self.screen = new_screen
             self.gameStateManager.update_screen_reference(new_screen)
             self.cursor.screen = new_screen

@@ -14,31 +14,10 @@ Functions:
 """
 
 import pygame
-from globals import *
-from systems import settings
+from globals import SCREENWIDTH, SCREENHEIGHT
 
 # Global camera Rect used by other modules to calculate draw offsets
-camera = pygame.Rect(0, 0, 0, 0)
-
-
-def create_screen(width, height, title):
-    """
-    Initializes the Pygame window using the SCALED flag for automatic
-    resolution handling and checks settings for Fullscreen mode.
-    """
-    pygame.display.set_caption(title)
-
-    # SCALED allows the window to be resized while maintaining aspect ratio
-    flags = pygame.SCALED
-
-    if settings.get_setting("full_screen_enabled"):
-        flags |= pygame.FULLSCREEN
-
-    screen = pygame.display.set_mode((width, height), flags)
-
-    camera.width = width
-    camera.height = height
-    return screen
+camera = pygame.Rect(0, 0, SCREENWIDTH, SCREENHEIGHT)
 
 
 def camera_start(pos):
@@ -62,14 +41,3 @@ def camera_update(target):
 def is_on_screen(target_rect):
     """Returns True if the given Rect overlaps with the camera view."""
     return camera.colliderect(target_rect)
-
-
-def toggle_fullscreen():
-    """
-    Toggles the fullscreen setting and re-initializes the screen
-    to apply the change.
-    """
-    current = settings.get_setting("full_screen_enabled")
-    settings.set_setting("full_screen_enabled", not current)
-
-    return create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")

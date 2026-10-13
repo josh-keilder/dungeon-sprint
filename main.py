@@ -5,18 +5,21 @@ from states.stateManager import GameStateManager
 from states.menus.start import Start
 from states.menus.options import Options
 from states.map.level import Level
-from ui_objects.camera import create_screen
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
 from systems import sound, settings
+from systems.display import create_window
 
 
 class Game:
     def __init__(self):
         pygame.init()
 
-        # Screen creation is handled by the camera module to support player tracking
-        self.screen = create_screen(SCREENWIDTH, SCREENHEIGHT, "Dungeon Sprint")
+        settings.load_settings()
+
+        self.screen = create_window(
+            SCREENWIDTH, SCREENHEIGHT, settings.get_setting("full_screen_enabled")
+        )
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -28,7 +31,6 @@ class Game:
         self.cursor = Cursor(self.screen, self.cursor_img)
 
         # Load settings and set initial sound volumes
-        settings.load_settings()
         music_volume = settings.get_setting("music_volume")
         sfx_volume = settings.get_setting("sfx_volume")
         sound.load_sfx()
