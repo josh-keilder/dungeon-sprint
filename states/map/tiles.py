@@ -12,9 +12,8 @@ Classes:
 """
 
 import pygame
-import random
 from globals import *
-from ui_objects.camera import camera
+from systems.camera import camera
 from Components.hitboxComponent import Hitbox
 
 

@@ -14,7 +14,7 @@ import random
 from globals import *
 import globals
 from Entities.player.load_player import load_player
-from ui_objects.camera import camera_update, camera, is_on_screen, camera_start
+from systems.camera import camera, center_camera, is_on_screen
 from Entities.enemies.load_enemies import load_enemies
 from items.items import WorldItem
 from items.itemDataBase import initialize_item_database
@@ -56,7 +56,7 @@ class Level:
 
         # Player Setup
         self.player = load_player(level_data["player_spawn"])
-        camera_start(self.player.rect.center)
+        center_camera(self.player.rect.center)
 
         # Enemy Spawning
         self.enemies = load_enemies(level_data["enemy_spawns"])
@@ -110,7 +110,7 @@ class Level:
 
         self.items.update(dt)
         self.decor_tiles.update(dt)
-        camera_update(self.player)
+        center_camera(self.player.rect.center)
 
     def draw(self):
         """Renders the world layers, applying camera offsets and culling."""

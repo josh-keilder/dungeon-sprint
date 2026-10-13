@@ -11,7 +11,7 @@ Functions:
 
 import pygame
 from globals import *
-from ui_objects.camera import camera
+from systems.camera import camera
 
 
 def create_outline(screen, object, color, pos, is_camera=False):

@@ -13,7 +13,7 @@ Classes:
 import pygame
 import globals
 from globals import *
-from ui_objects.camera import camera
+from systems.camera import camera
 from Components.component import Component
 from typing import Any, Dict, Optional, Tuple
 
