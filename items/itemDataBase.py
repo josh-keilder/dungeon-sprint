@@ -11,7 +11,7 @@ Functions:
 
 from items.itemTextureData import *
 from items.items import Item, EquipmentItem
-import random
+from systems.assets import load_animations
 
 
 def initialize_item_database():
@@ -23,9 +23,9 @@ def initialize_item_database():
 
     # --- Texture Generation ---
     # Slices spritesheets into frame lists using the Item static method
-    gold_key_frames = Item.gen_item_textures(keys, "gold_key")
-    small_health_potion_frames = Item.gen_item_textures(health_potions, "health_potion")
-    speed_boots_frames = EquipmentItem.gen_item_textures(speed_boots, "speed_boots")
+    gold_key_frames = load_animations(keys)
+    small_health_potion_frames = load_animations(health_potions)
+    speed_boots_frames = load_animations(speed_boots)
 
     # --- Item Registration ---
 

@@ -19,9 +19,6 @@ from Components.animationComponent import AnimationComponent
 
 
 class Item:
-    # Shared across all instances to prevent redundant disk I/O
-    _image_cache = {}
-
     def __init__(
         self,
         id: str,
@@ -52,33 +49,6 @@ class Item:
 
     def clone(self):
         return copy.copy(self)
-
-    @staticmethod
-    def gen_item_textures(texture_data: dict, item_name: str) -> dict:
-        """
-        Slices a spritesheet into individual animation frames.
-        Caches the source sheet to ensure each file is loaded only once.
-        """
-        textures = {}
-        data = texture_data.get(item_name)
-        if not data:
-            return textures
-
-        path = data["file_path"]
-        if path not in Item._image_cache:
-            Item._image_cache[path] = pygame.image.load(path).convert_alpha()
-
-        sheet = Item._image_cache[path]
-        w, h = data["size"]
-        frames = data["frames"]
-        row = data["position"][1]
-
-        textures[item_name] = []
-        for i in range(frames):
-            rect = pygame.Rect(i * w, row * h, w, h)
-            textures[item_name].append(sheet.subsurface(rect))
-
-        return textures
 
 
 class EquipmentItem(Item):
