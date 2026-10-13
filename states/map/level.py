@@ -13,12 +13,10 @@ import pygame
 import random
 from globals import *
 import globals
-from pytmx.util_pygame import load_pygame
-from states.map.tiles import WallTile, DecorTile, Door
 from Entities.player.load_player import load_player
 from ui_objects.camera import camera_update, camera, is_on_screen, camera_start
 from Entities.enemies.load_enemies import load_enemies
-from items.items import Chest, WorldItem
+from items.items import WorldItem
 from items.itemDataBase import initialize_item_database
 
 from systems.input import read_input
@@ -27,61 +25,36 @@ from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
 from ui_objects.inventory_ui import InventoryUI
 
+from states.map.map_loader import load_level_data
+
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
-
-
-def find_player_spawn(tmx_data):
-
-    for obj in tmx_data.objects:
-        if obj.name == "Player":
-            return (obj.x, obj.y)
-
-    # Fallback spawn if no object is found
-    return (0, 0)
-
-
-def find_enemy_spawns(tmx_data):
-    enemy_positions = {}
-
-    for obj in tmx_data.objects:
-        if obj.name and obj.name.startswith("Enemy_"):
-            # Split 'Enemy_Skeleton' into ['Enemy', 'Skeleton'] and take the latter
-            enemy_type = obj.name.split("_", 1)[1]
-
-            if enemy_type not in enemy_positions:
-                enemy_positions[enemy_type] = []
-
-            enemy_positions[enemy_type].append((obj.x, obj.y))
-
-    return enemy_positions
 
 
 class Level:
     def __init__(self, screen, gameStateManager, map_path):
         self.screen = screen
         self.gameStateManager = gameStateManager
-        self.map_path = map_path
 
         # Entity Management
-        self.sprites = pygame.sprite.Group()
-        self.wall_tiles = pygame.sprite.Group()
-        self.door_tiles = pygame.sprite.Group()
         self.items = pygame.sprite.Group()
-        self.chests = pygame.sprite.Group()
 
         # Data Initialization
         self.ITEM_DATABASE = initialize_item_database()
 
-        tmx_data = load_pygame(map_path)
-        self.load_map(tmx_data)
+        level_data = load_level_data(map_path)
+        self.map_surface = level_data["map_surface"]
+        self.decor_tiles = level_data["decor_tiles"]
+        self.wall_tiles = level_data["wall_tiles"]
+        self.door_tiles = level_data["door_tiles"]
+        self.chests = level_data["chests"]
 
         # Player Setup
-        self.player = load_player(find_player_spawn(tmx_data))
+        self.player = load_player(level_data["player_spawn"])
         camera_start(self.player.rect.center)
 
         # Enemy Spawning
-        self.enemies = load_enemies(find_enemy_spawns(tmx_data))
+        self.enemies = load_enemies(level_data["enemy_spawns"])
 
         # Collision Setup: Combine static walls and interactable doors
         self.solid_tiles = []
@@ -131,7 +104,7 @@ class Level:
                 self.enemies.remove(enemy)
 
         self.items.update(dt)
-        self.sprites.update(dt)
+        self.decor_tiles.update(dt)
         camera_update(self.player)
 
     def draw(self):
@@ -140,7 +113,7 @@ class Level:
         self.screen.blit(self.map_surface, (-camera.x, -camera.y))
 
         # Static Tiles & Decorations
-        for group in [self.sprites, self.wall_tiles, self.door_tiles]:
+        for group in [self.decor_tiles, self.wall_tiles, self.door_tiles]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.screen)
@@ -170,67 +143,6 @@ class Level:
 
         if self.show_inventory:
             self.inventory_ui.draw(self.screen, self.player.inventory)
-
-    def load_map(self, tmx_data):
-
-        # Create a static surface for the floor to save draw calls
-        map_width = tmx_data.width * TILESIZE
-        map_height = tmx_data.height * TILESIZE
-        self.map_surface = pygame.Surface((map_width, map_height)).convert()
-
-        layer_names = [
-            "Floor",
-            "Walls",
-            "Wall_Decor",
-            "Floor_Decor",
-            "Door_Tiles",
-            "Items",
-            "Chests",
-        ]
-        logic_layer = tmx_data.get_layer_by_name("Logic_Layer")
-
-        for layer in tmx_data.visible_layers:
-            if layer.name not in layer_names:
-                continue
-
-            if layer.name == "Floor":
-                for x, y, surf in layer.tiles():
-                    self.map_surface.blit(surf, (x * TILESIZE, y * TILESIZE))
-
-            elif layer.name == "Walls":
-                for x, y, surf in layer.tiles():
-                    WallTile(
-                        groups=self.wall_tiles,
-                        image=surf,
-                        pos=(x * TILESIZE, y * TILESIZE),
-                    )
-
-            elif layer.name in ["Wall_Decor", "Floor_Decor"]:
-                for x, y, surf in layer.tiles():
-                    DecorTile(
-                        groups=self.sprites,
-                        image=surf,
-                        pos=(x * TILESIZE, y * TILESIZE),
-                    )
-
-            elif layer.name == "Door_Tiles":
-                for x, y, surf in layer.tiles():
-                    door_tile = Door(
-                        groups=self.door_tiles,
-                        image=surf,
-                        pos=(x * TILESIZE, y * TILESIZE),
-                    )
-                    # Extract door_id property from the logic layer at the same coordinate
-                    logic_props = tmx_data.get_tile_properties(
-                        x, y, tmx_data.layers.index(logic_layer)
-                    )
-                    if logic_props:
-                        door_tile.door_id = logic_props.get("door_id")
-
-            elif layer.name == "Chests":
-                for obj in layer:
-                    if obj.name.lower() == "chest":
-                        Chest(pos=(obj.x, obj.y), groups=self.chests)
 
     def unlock_door(self, door_id):
         for door in self.door_tiles.sprites():
