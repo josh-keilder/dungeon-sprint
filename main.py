@@ -10,6 +10,8 @@ from ui_objects.text_loader import Text_Loader
 from systems import sound, settings
 from systems.display import create_window
 
+TITLE_MUSIC = "JuiceWrldChasingTheDragon"
+
 
 class Game:
     def __init__(self):
@@ -37,6 +39,7 @@ class Game:
         sound.load_music()
         sound.set_sfx_volume(sfx_volume)
         sound.set_music_volume(music_volume)
+        sound.play_music(TITLE_MUSIC)
 
         # FPS UI Setup
         self.fps = None
@@ -92,3 +95,4 @@ class Game:
 if __name__ == "__main__":
     game = Game()
     game.run()
+    pygame.quit()

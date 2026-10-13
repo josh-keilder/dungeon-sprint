@@ -1,19 +1,6 @@
-"""
-State: Start Menu
------------------
-Manages the initial landing screen of the game. Handles the initialization,
-rendering, and interaction logic for menu buttons (Start, Options, Exit)
-and initiates the background music for the title screen.
-
-Classes:
-    Start: The state object representing the main menu.
-"""
-
 import pygame
-import sys
 from globals import *
 from ui_objects.button import Button
-from systems import sound
 
 
 class Start:
@@ -37,9 +24,6 @@ class Start:
             pos=(985, 650),
         )
 
-        # Title Music
-        sound.play_music("JuiceWrldChasingTheDragon")
-
     def draw(self, screen):
         """Renders the background image and all menu buttons."""
         screen.blit(self.image, (0, 0))
@@ -61,5 +45,4 @@ class Start:
             self.gameStateManager.set_state("options")
 
         elif self.exit_button.is_clicked():
-            pygame.quit()
-            sys.exit()
+            pygame.event.post(pygame.event.Event(pygame.QUIT))
