@@ -3,9 +3,9 @@ from globals import *
 from node import Node
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
-from Components.animationComponent import AnimationComponent
 from typing import Optional
 
+from systems.animation import new_animation, advance_animation
 from systems.enemy_ai import fly_velocity, wander_chase_velocity, random_idle_direction
 from systems.movement import move_and_collide
 from systems.assets import load_animations
@@ -21,9 +21,7 @@ class Enemy(Node):
         self.behavior = type_data["behavior"]
         self.pos = pygame.math.Vector2(pos)
 
-        self.animations = AnimationComponent(
-            self, animations, start_animation=start_animation
-        )
+        self.animation = new_animation(animations, start_animation)
         self.image = animations[start_animation][0]
         self.rect = self.image.get_frect(topleft=self.pos)
 
@@ -40,7 +38,7 @@ class Enemy(Node):
             return
 
         super().update(dt)
-        self.animations.update(dt)
+        self.image = advance_animation(self.animation, dt)
         self.health_bar.update(dt)
         self.update_movement(dt, walls, target_pos)
         self.pos.xy = self.rect.topleft

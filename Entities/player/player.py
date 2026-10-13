@@ -3,7 +3,7 @@ from globals import *
 from node import Node
 from Components.healthComponent import Health, HealthBar
 from Components.hitboxComponent import Hitbox
-from Components.animationComponent import AnimationComponent
+from systems.animation import new_animation, set_animation, advance_animation
 from systems.inventory import new_inventory
 from systems.consumables import use_small_health_potion
 from systems.movement import steer, move_and_collide
@@ -42,7 +42,7 @@ class Player(Node):
         }
 
         # --- Visuals & Animation ---
-        self.animations = AnimationComponent(self, animations, "player_idle_down")
+        self.animation = new_animation(animations, "player_idle_down")
         self.image = animations["player_idle_down"][0]
         self.rect = self.image.get_frect()
         self.rect.center = pos
@@ -91,7 +91,7 @@ class Player(Node):
         self.update_roll(dt, walls)
 
         self.handle_animation_state()
-        self.animations.update(dt)
+        self.image = advance_animation(self.animation, dt)
         self.health_bar.update(dt)
         self.hitbox.update(dt)
 
@@ -120,7 +120,7 @@ class Player(Node):
             action = "idle"
 
         anim_name = f"player_{action}_{self.last_direction}"
-        self.animations.set_animation(anim_name)
+        set_animation(self.animation, anim_name)
 
     def update_facing(self, move):
         if move.y < 0:

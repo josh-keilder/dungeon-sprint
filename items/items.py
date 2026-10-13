@@ -15,7 +15,7 @@ Classes:
 import pygame
 from globals import *
 import pygame, copy, random
-from Components.animationComponent import AnimationComponent
+from systems.animation import new_animation, advance_animation
 
 
 class Item:
@@ -88,11 +88,8 @@ class WorldItem(pygame.sprite.Sprite):
         super().__init__(groups)
         self.item_data = item_data.clone()
         self.item_data.quantity = quantity
-        self.animations = AnimationComponent(
-            node=self,
-            animations=item_data.animations,
-            start_animation="idle",
-            animation_speed=item_data.animation_speed,
+        self.animation = new_animation(
+            item_data.animations, "idle", item_data.animation_speed
         )
         self.image = item_data.image
         self.pos = pos
@@ -104,7 +101,7 @@ class WorldItem(pygame.sprite.Sprite):
 
     def update(self, dt):
         """Advances the item's visual animation."""
-        self.animations.update(dt)
+        self.image = advance_animation(self.animation, dt)
 
 
 class Chest(pygame.sprite.Sprite):
