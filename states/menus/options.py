@@ -9,12 +9,10 @@ from systems.display import create_window
 
 
 class Options:
-    def __init__(
-        self, screen: pygame.Surface, game_state_manager: Any, cursor: Any
-    ) -> None:
+    def __init__(self, screen, game_state_manager) -> None:
         self.screen = screen
         self.gameStateManager = game_state_manager
-        self.cursor = cursor
+
         self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
 
         # Load current preferences from disk/memory
@@ -27,7 +25,6 @@ class Options:
 
         # UI Components: Volume Controls
         self.music_volume_slider = Slider(
-            self.screen,
             pos=(640, 575),
             size=(300, 20),
             initial_value=float(self.music_volume),
@@ -38,13 +35,11 @@ class Options:
         )
         self.music_volume_text = Text_Loader(
             f"Music Volume: {self.music_volume}",
-            self.screen,
             pos=(500, 515),
             color=OPTION_MENU_BUTTON_BG,
         )
 
         self.sfx_volume_slider = Slider(
-            self.screen,
             pos=(640, 475),
             size=(300, 20),
             initial_value=float(self.sfx_volume),
@@ -55,7 +50,6 @@ class Options:
         )
         self.sfx_volume_text = Text_Loader(
             f"Menu SFX Volume: {self.sfx_volume}",
-            self.screen,
             pos=(500, 415),
             color=OPTION_MENU_BUTTON_BG,
         )
@@ -63,13 +57,11 @@ class Options:
         # Navigation Buttons
         self.main_menu_button_img = MAIN_MENU_BUTTON_IMAGE.convert_alpha()
         self.main_menu_button = Button(
-            self.screen,
             pygame.transform.scale_by(self.main_menu_button_img, 0.4),
             pos=(15, 650),
         )
         self.back_button_img = BACK_BUTTON_IMAGE.convert_alpha()
         self.back_button = Button(
-            self.screen,
             pygame.transform.scale_by(self.back_button_img, 0.4),
             pos=(1135, 650),
         )
@@ -85,28 +77,28 @@ class Options:
         initial_fps_img = (
             self.fps_button_on_img if self.fps_toggle else self.fps_button_off_img
         )
-        self.fps_button = Button(self.screen, initial_fps_img, pos=(450, 200))
+        self.fps_button = Button(initial_fps_img, pos=(450, 200))
 
-        self.full_screen_button = Button(self.screen, TEMP_BUTTON_IMAGE, pos=(100, 300))
+        self.full_screen_button = Button(TEMP_BUTTON_IMAGE, pos=(100, 300))
 
     def draw(self) -> None:
         self.screen.blit(self.image, (0, 0))
 
         if self.gameStateManager.currentState == "options":
-            self.main_menu_button.draw()
-            self.full_screen_button.draw()
-            self.fps_button.draw()
+            self.main_menu_button.draw(self.screen)
+            self.full_screen_button.draw(self.screen)
+            self.fps_button.draw(self.screen)
 
-            self.music_volume_slider.draw()
-            self.music_volume_text.draw()
+            self.music_volume_slider.draw(self.screen)
+            self.music_volume_text.draw(self.screen)
 
-            self.sfx_volume_slider.draw()
-            self.sfx_volume_text.draw()
+            self.sfx_volume_slider.draw(self.screen)
+            self.sfx_volume_text.draw(self.screen)
 
             # Only show 'Back' if we have a gameplay state to return to
             prev_state = self.gameStateManager.get_previous_state()
             if prev_state and prev_state.startswith("level"):
-                self.back_button.draw()
+                self.back_button.draw(self.screen)
 
     def update(self, dt: float) -> None:
         self.main_menu_button.update()
@@ -135,7 +127,6 @@ class Options:
             new_screen = create_window(SCREENWIDTH, SCREENHEIGHT, fullscreen)
             self.screen = new_screen
             self.gameStateManager.update_screen_reference(new_screen)
-            self.cursor.screen = new_screen
 
         # Volume Slider Logic
         new_bg_vol = self.music_volume_slider.get_current_value()

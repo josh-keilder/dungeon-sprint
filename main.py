@@ -28,7 +28,7 @@ class Game:
         self.cursor_img = pygame.transform.scale_by(
             pygame.image.load("Assets/Cursors/01.png").convert_alpha(), 0.5
         )
-        self.cursor = Cursor(self.screen, self.cursor_img)
+        self.cursor = Cursor(self.cursor_img)
 
         # Load settings and set initial sound volumes
         music_volume = settings.get_setting("music_volume")
@@ -40,14 +40,12 @@ class Game:
 
         # FPS UI Setup
         self.fps = None
-        self.fps_text = Text_Loader(
-            self.fps, self.screen, font_size=15, pos=(1215, 0), color=WHITE
-        )
+        self.fps_text = Text_Loader(self.fps, font_size=15, pos=(1215, 0), color=WHITE)
 
         # State Machine Setup: Handles transitions between menus and gameplay levels
         self.gameStateManager = GameStateManager("start")
-        self.start = Start(self.screen, self.gameStateManager, self.cursor)
-        self.options = Options(self.screen, self.gameStateManager, self.cursor)
+        self.start = Start(self.screen, self.gameStateManager)
+        self.options = Options(self.screen, self.gameStateManager)
         self.level = Level(self.screen, self.gameStateManager, DUNGEON_LEVEL_ONE)
 
         self.gameStateManager.add_state("level", self.level)
@@ -82,12 +80,13 @@ class Game:
 
     def draw(self):
         """Renders the current state and global UI elements to the screen."""
+        screen = pygame.display.get_surface()
         self.gameStateManager.get_state().draw()
 
         if settings.get_setting("fps_enabled"):
-            self.fps_text.draw()
+            self.fps_text.draw(screen)
 
-        self.cursor.draw()
+        self.cursor.draw(screen)
 
 
 if __name__ == "__main__":

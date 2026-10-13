@@ -17,7 +17,6 @@ from systems import sound
 class Slider:
     def __init__(
         self,
-        screen,
         pos,
         size,
         initial_value,
@@ -37,7 +36,6 @@ class Slider:
             min_val (float): Minimum possible value.
             max_val (float): Maximum possible value.
         """
-        self.screen = screen
         self.pos = pos
         self.size = size
 
@@ -103,10 +101,10 @@ class Slider:
             self.button_rect.centerx = new_x
             self.value = self.get_value_from_pos()
 
-    def draw(self):
+    def draw(self, screen):
         """Renders the track background, filled progress, and the interactive knob."""
         # Main background track
-        pygame.draw.rect(self.screen, GRAY, self.container_rect, border_radius=5)
+        pygame.draw.rect(screen, GRAY, self.container_rect, border_radius=5)
 
         # "Progress" fill: shows the distance between the start and the knob
         filled_rect = pygame.Rect(
@@ -115,11 +113,11 @@ class Slider:
             self.button_rect.centerx - self.left_x,
             self.size[1],
         )
-        pygame.draw.rect(self.screen, self.track_color, filled_rect, border_radius=5)
+        pygame.draw.rect(screen, self.track_color, filled_rect, border_radius=5)
 
         # Knob rendering with visual feedback for interaction
         color = WHITE if self.hovered or self.dragging else LIGHT_GRAY
-        pygame.draw.rect(self.screen, color, self.button_rect, border_radius=3)
+        pygame.draw.rect(screen, color, self.button_rect, border_radius=3)
 
     def get_current_value(self):
         """Returns the current slider value as an integer."""

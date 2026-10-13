@@ -12,16 +12,16 @@ class InventoryUI:
         self.equip_start_x, self.equip_start_y = self.start_x + 1200, self.start_y - 150
 
         self.quantity_label = Text_Loader(
-            text="", screen=None, font_name="Arial", font_size=10, color=WHITE
+            text="", font_name="Arial", font_size=10, color=WHITE
         )
         self.tooltip_name = Text_Loader(
-            text="", screen=None, font_name="Arial", font_size=14, color=WHITE
+            text="", font_name="Arial", font_size=14, color=WHITE
         )
         self.tooltip_desc = Text_Loader(
-            text="", screen=None, font_name="Arial", font_size=12, color=(200, 200, 200)
+            text="", font_name="Arial", font_size=12, color=(200, 200, 200)
         )
         self.tooltip_value = Text_Loader(
-            text="", screen=None, font_name="Arial", font_size=12, color=(200, 200, 200)
+            text="", font_name="Arial", font_size=12, color=(200, 200, 200)
         )
 
         self.held_item = None

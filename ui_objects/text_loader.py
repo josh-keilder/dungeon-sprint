@@ -16,7 +16,6 @@ class Text_Loader:
     def __init__(
         self,
         text,
-        screen,
         font_name="Comic Sans MS",
         font_size=30,
         color=BLACK,
@@ -35,7 +34,6 @@ class Text_Loader:
         """
         pygame.font.init()
         self.font = pygame.font.SysFont(font_name, font_size)
-        self.screen = screen
         self.color = color
         self.pos = pos
         self.text = text
@@ -43,7 +41,7 @@ class Text_Loader:
         # Initial render: False indicates no anti-aliasing for a crisper pixel look
         self.text_surface = self.font.render(str(self.text), False, self.color)
 
-    def draw(self, specific_pos=None):
+    def draw(self, screen, specific_pos=None):
         """
         Blits the text surface onto the screen.
 
@@ -51,7 +49,7 @@ class Text_Loader:
             specific_pos (tuple, optional): Overrides the default position if provided.
         """
         pos_to_use = specific_pos if specific_pos else self.pos
-        self.screen.blit(self.text_surface, pos_to_use)
+        screen.blit(self.text_surface, pos_to_use)
 
     def update_text(self, new_text):
         """Re-renders the text surface with new content."""

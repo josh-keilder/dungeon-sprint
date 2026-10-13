@@ -17,25 +17,23 @@ from systems import sound
 
 
 class Start:
-    def __init__(self, screen, gameStateManager, cursor):
+    def __init__(self, screen, gameStateManager):
         """
         Initializes the start menu, loads assets, and sets up interactive buttons.
         """
         self.screen = screen
         self.gameStateManager = gameStateManager
         self.image = START_SCREEN_IMAGE.convert_alpha()
-        self.cursor = cursor
 
         # Button Initialization
         self.start_button_img = START_BUTTON_IMAGE.convert_alpha()
-        self.start_button = Button(self.screen, self.start_button_img, pos=(416, 288))
+        self.start_button = Button(self.start_button_img, pos=(416, 288))
 
         self.exit_button_img = EXIT_BUTTON_IMAGE.convert_alpha()
-        self.exit_button = Button(self.screen, self.exit_button_img, pos=(416, 448))
+        self.exit_button = Button(self.exit_button_img, pos=(416, 448))
 
         self.options_button_img = OPTIONS_BUTTON_IMAGE.convert_alpha()
         self.options_button = Button(
-            self.screen,
             pygame.transform.scale_by(self.options_button_img, 0.5),
             pos=(985, 650),
         )
@@ -46,9 +44,9 @@ class Start:
     def draw(self):
         """Renders the background image and all menu buttons."""
         self.screen.blit(self.image, (0, 0))
-        self.start_button.draw()
-        self.exit_button.draw()
-        self.options_button.draw()
+        self.start_button.draw(self.screen)
+        self.exit_button.draw(self.screen)
+        self.options_button.draw(self.screen)
 
     def update(self, dt):
         """Processes button hover states and handles click-based state transitions."""

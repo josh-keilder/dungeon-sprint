@@ -16,7 +16,7 @@ from systems import sound
 
 
 class Button:
-    def __init__(self, screen, image, pos=(0, 0)):
+    def __init__(self, image, pos=(0, 0)):
         """
         Initializes the button with an image and position.
 
@@ -28,16 +28,15 @@ class Button:
         self.image = image
         self.rect = self.image.get_frect()
         self.rect.topleft = pos
-        self.screen = screen
         self.hovered = False
         self.clicked = False
 
-    def draw(self):
+    def draw(self, screen):
         """Renders the button and its hover outline to the screen."""
-        self.screen.blit(self.image, (self.rect.x, self.rect.y))
+        screen.blit(self.image, (self.rect.x, self.rect.y))
 
         if self.hovered:
-            create_outline(self.screen, self, WHITE, (self.rect.x, self.rect.y))
+            create_outline(screen, self, WHITE, (self.rect.x, self.rect.y))
 
     def update(self):
         """Updates the hover state and triggers hover sound effects."""

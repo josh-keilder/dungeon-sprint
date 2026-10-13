@@ -14,7 +14,7 @@ from globals import *
 
 
 class Cursor:
-    def __init__(self, screen, image):
+    def __init__(self, image):
         """
         Initializes the cursor with a specific image and a floating-point rect.
 
@@ -22,7 +22,6 @@ class Cursor:
             screen (pygame.Surface): The main display surface.
             image (pygame.Surface): The sprite to use as the cursor.
         """
-        self.screen = screen
         self.image = image
         # Using frect (float rect) for sub-pixel precision and smoother movement
         self.rect = self.image.get_frect()
@@ -40,6 +39,6 @@ class Cursor:
         # under the top-left pixel, improving visual feel.
         self.rect.center = mouse_pos_x + 5, mouse_pos_y + 5
 
-    def draw(self):
+    def draw(self, screen):
         """Draws the cursor to the screen."""
-        self.screen.blit(self.image, self.rect)
+        screen.blit(self.image, self.rect)
