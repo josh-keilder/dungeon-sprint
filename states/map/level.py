@@ -24,11 +24,15 @@ from systems import sound, interact
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
 from ui_objects.inventory_ui import InventoryUI
+from ui_objects.health_bar import draw_health_bar
 
 from states.map.map_loader import load_level_data
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
+
+PLAYER_HEALTH_BAR_POS = (20, 20)
+PLAYER_HEALTH_BAR_SIZE = (200, 10)
 
 
 class Level:
@@ -139,7 +143,12 @@ class Level:
             if is_on_screen(actor.rect):
                 actor.draw(self.screen, camera)
 
-        self.player.health_bar.draw(self.screen)
+        draw_health_bar(
+            self.screen,
+            self.player.health,
+            *PLAYER_HEALTH_BAR_POS,
+            *PLAYER_HEALTH_BAR_SIZE
+        )
 
         if self.show_inventory:
             self.inventory_ui.draw(self.screen, self.player.inventory)

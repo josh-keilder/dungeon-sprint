@@ -1,14 +1,18 @@
 import pygame
 from globals import *
 from node import Node
-from Components.healthComponent import Health, HealthBar
+from Components.healthComponent import Health
 from Components.hitboxComponent import Hitbox
 from typing import Optional
-
+from ui_objects.health_bar import draw_health_bar
 from systems.animation import new_animation, advance_animation
 from systems.enemy_ai import fly_velocity, wander_chase_velocity, random_idle_direction
 from systems.movement import move_and_collide
 from systems.assets import load_animations
+
+ENEMY_HEALTH_BAR_WIDTH = TILESIZE
+ENEMY_HEALTH_BAR_HEIGHT = 4
+ENEMY_HEALTH_BAR_GAP = 8
 
 
 class Enemy(Node):
@@ -26,7 +30,6 @@ class Enemy(Node):
         self.rect = self.image.get_frect(topleft=self.pos)
 
         self.health = Health(self, type_data["max_health"])
-        self.health_bar = HealthBar(self)
         self.hitbox = Hitbox(self)
 
         self.flee_timer = 0.0
@@ -39,7 +42,6 @@ class Enemy(Node):
 
         super().update(dt)
         self.image = advance_animation(self.animation, dt)
-        self.health_bar.update(dt)
         self.update_movement(dt, walls, target_pos)
         self.pos.xy = self.rect.topleft
         self.hitbox.update(dt)
@@ -66,7 +68,23 @@ class Enemy(Node):
             draw_pos = (self.rect.x - camera.x, self.rect.y - camera.y)
 
         screen.blit(self.image, draw_pos)
-        self.health_bar.draw(screen, camera)
+
+        if self.health.current < self.health.max_health:
+            bar_x = self.rect.centerx - ENEMY_HEALTH_BAR_WIDTH // 2
+            bar_y = self.rect.top - ENEMY_HEALTH_BAR_GAP
+
+            bar_pos = (bar_x, bar_y)
+            if camera:
+                bar_pos = (bar_x - camera.x, bar_y - camera.y)
+
+            draw_health_bar(
+                screen,
+                self.health,
+                *bar_pos,
+                ENEMY_HEALTH_BAR_WIDTH,
+                ENEMY_HEALTH_BAR_HEIGHT
+            )
+
         self.hitbox.draw(screen, camera)
 
         super().draw(screen, camera)

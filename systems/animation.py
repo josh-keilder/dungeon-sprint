@@ -16,7 +16,7 @@ def set_animation(animation, name):
         if name in animation["frames"]:
             animation["current"] = name
             animation["index"] = 0
-            animation["timer"] = 0
+            animation["timer"] = 0.0
 
 
 def advance_animation(animation, dt):

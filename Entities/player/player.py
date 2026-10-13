@@ -1,7 +1,7 @@
 import pygame
 from globals import *
 from node import Node
-from Components.healthComponent import Health, HealthBar
+from Components.healthComponent import Health
 from Components.hitboxComponent import Hitbox
 from systems.animation import new_animation, set_animation, advance_animation
 from systems.inventory import new_inventory
@@ -49,13 +49,7 @@ class Player(Node):
 
         # --- Component Composition ---
         self.health = Health(self, self.base_stats["health"])
-        self.health_bar = HealthBar(
-            self,
-            width=200,
-            height=10,
-            is_player=True,
-            shrink_speed=5,
-        )
+
         self.hitbox = Hitbox(self)
         self.inventory = new_inventory(20)
 
@@ -92,7 +86,6 @@ class Player(Node):
 
         self.handle_animation_state()
         self.image = advance_animation(self.animation, dt)
-        self.health_bar.update(dt)
         self.hitbox.update(dt)
 
         self.pos = pygame.math.Vector2(self.rect.topleft)
