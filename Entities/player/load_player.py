@@ -11,40 +11,14 @@ This includes:
 
 import pygame
 from globals import *
-from ui_objects.camera import camera_start
 from Entities.player.player import Player
-from pytmx.util_pygame import load_pygame
 from Entities.player.playerTextureData import player_texture_data
 
 
-def load_player(map_path) -> object:
-    """
-    Orchestrates player creation: loads textures, finds spawn point,
-    and centers the camera.
-    """
+def load_player(spawn_pos) -> object:
     player_textures = gen_player_textures()
-    player_pos = get_player_pos(map_path)
 
-    player = Player(animations=player_textures, pos=player_pos)
-
-    # Snap camera to player immediately to avoid frame-one sliding
-    camera_start(player.rect.center)
-
-    return player
-
-
-def get_player_pos(map_path) -> tuple:
-    """
-    Scans the Tiled map's Object Layer for an object named 'Player'.
-    Returns the (x, y) coordinates for spawning.
-    """
-    tmx_data = load_pygame(map_path)
-    for obj in tmx_data.objects:
-        if obj.name == "Player":
-            return (obj.x, obj.y)
-
-    # Fallback spawn if no object is found
-    return (0, 0)
+    return Player(animations=player_textures, pos=spawn_pos)
 
 
 # Global cache to prevent re-processing textures if the player is re-loaded

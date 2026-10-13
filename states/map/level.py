@@ -16,7 +16,7 @@ import globals
 from pytmx.util_pygame import load_pygame
 from states.map.tiles import WallTile, DecorTile, Door
 from Entities.player.load_player import load_player
-from ui_objects.camera import camera_update, camera, is_on_screen
+from ui_objects.camera import camera_update, camera, is_on_screen, camera_start
 from Entities.enemies.load_enemies import load_enemies
 from items.items import Chest, WorldItem
 from items.itemDataBase import initialize_item_database
@@ -30,7 +30,31 @@ from ui_objects.inventory_ui import InventoryUI
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
 
-pygame.mixer.init()
+
+def find_player_spawn(tmx_data):
+
+    for obj in tmx_data.objects:
+        if obj.name == "Player":
+            return (obj.x, obj.y)
+
+    # Fallback spawn if no object is found
+    return (0, 0)
+
+
+def find_enemy_spawns(tmx_data):
+    enemy_positions = {}
+
+    for obj in tmx_data.objects:
+        if obj.name and obj.name.startswith("Enemy_"):
+            # Split 'Enemy_Skeleton' into ['Enemy', 'Skeleton'] and take the latter
+            enemy_type = obj.name.split("_", 1)[1]
+
+            if enemy_type not in enemy_positions:
+                enemy_positions[enemy_type] = []
+
+            enemy_positions[enemy_type].append((obj.x, obj.y))
+
+    return enemy_positions
 
 
 class Level:
@@ -48,13 +72,16 @@ class Level:
 
         # Data Initialization
         self.ITEM_DATABASE = initialize_item_database()
-        self.load_map(self.map_path)
+
+        tmx_data = load_pygame(map_path)
+        self.load_map(tmx_data)
 
         # Player Setup
-        self.player = load_player(self.map_path)
+        self.player = load_player(find_player_spawn(tmx_data))
+        camera_start(self.player.rect.center)
 
         # Enemy Spawning
-        self.enemies = load_enemies(self.map_path)
+        self.enemies = load_enemies(find_enemy_spawns(tmx_data))
 
         # Collision Setup: Combine static walls and interactable doors
         self.solid_tiles = []
@@ -144,9 +171,7 @@ class Level:
         if self.show_inventory:
             self.inventory_ui.draw(self.screen, self.player.inventory)
 
-    def load_map(self, map_path):
-        """Parses the .tmx file and populates sprite groups based on layer names."""
-        tmx_data = load_pygame(map_path)
+    def load_map(self, tmx_data):
 
         # Create a static surface for the floor to save draw calls
         map_width = tmx_data.width * TILESIZE
