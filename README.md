@@ -83,5 +83,5 @@ The game currently includes:
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 591
-- **Total Lines of Code:** 212867
+- **Total Files:** 592
+- **Total Lines of Code:** 212879
