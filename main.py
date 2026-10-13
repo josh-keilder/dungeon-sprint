@@ -17,7 +17,7 @@ class Game:
 
         settings.load_settings()
 
-        self.screen = create_window(
+        create_window(
             SCREENWIDTH, SCREENHEIGHT, settings.get_setting("full_screen_enabled")
         )
         self.clock = pygame.time.Clock()
@@ -44,9 +44,9 @@ class Game:
 
         # State Machine Setup: Handles transitions between menus and gameplay levels
         self.gameStateManager = GameStateManager("start")
-        self.start = Start(self.screen, self.gameStateManager)
-        self.options = Options(self.screen, self.gameStateManager)
-        self.level = Level(self.screen, self.gameStateManager, DUNGEON_LEVEL_ONE)
+        self.start = Start(self.gameStateManager)
+        self.options = Options(self.gameStateManager)
+        self.level = Level(self.gameStateManager, DUNGEON_LEVEL_ONE)
 
         self.gameStateManager.add_state("level", self.level)
         self.gameStateManager.add_state("options", self.options)
@@ -81,7 +81,7 @@ class Game:
     def draw(self):
         """Renders the current state and global UI elements to the screen."""
         screen = pygame.display.get_surface()
-        self.gameStateManager.get_state().draw()
+        self.gameStateManager.get_state().draw(screen)
 
         if settings.get_setting("fps_enabled"):
             self.fps_text.draw(screen)

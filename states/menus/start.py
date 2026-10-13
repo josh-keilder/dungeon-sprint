@@ -17,11 +17,10 @@ from systems import sound
 
 
 class Start:
-    def __init__(self, screen, gameStateManager):
+    def __init__(self, gameStateManager):
         """
         Initializes the start menu, loads assets, and sets up interactive buttons.
         """
-        self.screen = screen
         self.gameStateManager = gameStateManager
         self.image = START_SCREEN_IMAGE.convert_alpha()
 
@@ -41,12 +40,12 @@ class Start:
         # Title Music
         sound.play_music("JuiceWrldChasingTheDragon")
 
-    def draw(self):
+    def draw(self, screen):
         """Renders the background image and all menu buttons."""
-        self.screen.blit(self.image, (0, 0))
-        self.start_button.draw(self.screen)
-        self.exit_button.draw(self.screen)
-        self.options_button.draw(self.screen)
+        screen.blit(self.image, (0, 0))
+        self.start_button.draw(screen)
+        self.exit_button.draw(screen)
+        self.options_button.draw(screen)
 
     def update(self, dt):
         """Processes button hover states and handles click-based state transitions."""

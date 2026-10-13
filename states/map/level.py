@@ -37,8 +37,7 @@ PLAYER_HEALTH_BAR_SIZE = (200, 10)
 
 
 class Level:
-    def __init__(self, screen, gameStateManager, map_path):
-        self.screen = screen
+    def __init__(self, gameStateManager, map_path):
         self.gameStateManager = gameStateManager
 
         # Entity Management
@@ -112,29 +111,29 @@ class Level:
         self.decor_tiles.update(dt)
         center_camera(self.player.rect.center)
 
-    def draw(self):
+    def draw(self, screen):
         """Renders the world layers, applying camera offsets and culling."""
         # Background / Floor
-        self.screen.blit(self.map_surface, (-camera.x, -camera.y))
+        screen.blit(self.map_surface, (-camera.x, -camera.y))
 
         # Static Tiles & Decorations
         for group in [self.decor_tiles, self.wall_tiles, self.door_tiles]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
-                    sprite.draw(self.screen)
+                    sprite.draw(screen)
 
                     # Highlight doors when player is nearby
                     if group == self.door_tiles:
                         if sprite.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DIST:
                             sprite.hitbox.draw(
-                                self.screen, camera=camera, color=WHITE, skip_debug=True
+                                screen, camera=camera, color=WHITE, skip_debug=True
                             )
 
         # Interactive Objects
         for group in [self.items, self.chests]:
             for obj in group:
                 if is_on_screen(obj.rect):
-                    obj.draw(self.screen, camera)
+                    obj.draw(screen, camera)
 
         # Dynamic Entities (Actors, Particles, etc.)
         actors = [self.player] + self.enemies
@@ -142,17 +141,14 @@ class Level:
 
         for actor in actors:
             if is_on_screen(actor.rect):
-                actor.draw(self.screen, camera)
+                actor.draw(screen, camera)
 
         draw_health_bar(
-            self.screen,
-            self.player.health,
-            *PLAYER_HEALTH_BAR_POS,
-            *PLAYER_HEALTH_BAR_SIZE
+            screen, self.player.health, *PLAYER_HEALTH_BAR_POS, *PLAYER_HEALTH_BAR_SIZE
         )
 
         if self.show_inventory:
-            self.inventory_ui.draw(self.screen, self.player.inventory)
+            self.inventory_ui.draw(screen, self.player.inventory)
 
     def unlock_door(self, door_id):
         for door in self.door_tiles.sprites():

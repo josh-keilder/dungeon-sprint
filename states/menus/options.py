@@ -9,8 +9,7 @@ from systems.display import create_window
 
 
 class Options:
-    def __init__(self, screen, game_state_manager) -> None:
-        self.screen = screen
+    def __init__(self, game_state_manager) -> None:
         self.gameStateManager = game_state_manager
 
         self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
@@ -81,24 +80,24 @@ class Options:
 
         self.full_screen_button = Button(TEMP_BUTTON_IMAGE, pos=(100, 300))
 
-    def draw(self) -> None:
-        self.screen.blit(self.image, (0, 0))
+    def draw(self, screen) -> None:
+        screen.blit(self.image, (0, 0))
 
         if self.gameStateManager.currentState == "options":
-            self.main_menu_button.draw(self.screen)
-            self.full_screen_button.draw(self.screen)
-            self.fps_button.draw(self.screen)
+            self.main_menu_button.draw(screen)
+            self.full_screen_button.draw(screen)
+            self.fps_button.draw(screen)
 
-            self.music_volume_slider.draw(self.screen)
-            self.music_volume_text.draw(self.screen)
+            self.music_volume_slider.draw(screen)
+            self.music_volume_text.draw(screen)
 
-            self.sfx_volume_slider.draw(self.screen)
-            self.sfx_volume_text.draw(self.screen)
+            self.sfx_volume_slider.draw(screen)
+            self.sfx_volume_text.draw(screen)
 
             # Only show 'Back' if we have a gameplay state to return to
             prev_state = self.gameStateManager.get_previous_state()
             if prev_state and prev_state.startswith("level"):
-                self.back_button.draw(self.screen)
+                self.back_button.draw(screen)
 
     def update(self, dt: float) -> None:
         self.main_menu_button.update()
@@ -124,9 +123,7 @@ class Options:
             self.full_screen_toggle = not self.full_screen_toggle
             fullscreen = not settings.get_setting("full_screen_enabled")
             settings.set_setting("full_screen_enabled", fullscreen)
-            new_screen = create_window(SCREENWIDTH, SCREENHEIGHT, fullscreen)
-            self.screen = new_screen
-            self.gameStateManager.update_screen_reference(new_screen)
+            create_window(SCREENWIDTH, SCREENHEIGHT, fullscreen)
 
         # Volume Slider Logic
         new_bg_vol = self.music_volume_slider.get_current_value()

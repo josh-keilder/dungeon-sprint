@@ -70,8 +70,3 @@ class GameStateManager:
     def all_states(self) -> list:
         """Returns a list of all registered state names."""
         return list(self.states.keys())
-
-    def update_screen_reference(self, new_screen):
-        """Propagates a new display surface reference to all registered states."""
-        for state in self.states.values():
-            state.screen = new_screen
