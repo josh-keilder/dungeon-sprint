@@ -17,7 +17,7 @@ def find_target(player, level):
             if reach_box.colliderect(door.rect):
                 return ("door", door)
 
-    for item in level.items:
+    for item in level.ground_items:
         if reach_box.colliderect(item.rect):
             return ("item", item)
 

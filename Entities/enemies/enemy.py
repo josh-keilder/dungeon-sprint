@@ -2,7 +2,7 @@ from typing import Optional
 
 import pygame
 
-from globals import RED, TILESIZE
+from globals import RED, TILE_SIZE
 from systems import debug
 from systems.animation import advance_animation, new_animation
 from systems.assets import load_animations
@@ -12,7 +12,7 @@ from systems.hitbox import draw_hitbox
 from systems.movement import move_and_collide
 from ui_objects.health_bar import draw_health_bar
 
-ENEMY_HEALTH_BAR_WIDTH = TILESIZE
+ENEMY_HEALTH_BAR_WIDTH = TILE_SIZE
 ENEMY_HEALTH_BAR_HEIGHT = 4
 ENEMY_HEALTH_BAR_GAP = 8
 

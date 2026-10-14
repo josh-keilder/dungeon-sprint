@@ -1,12 +1,12 @@
 import pygame
 
-from globals import LIGHT_GRAY, OPTION_MENU_BUTTON_BG, SCREENHEIGHT, SCREENWIDTH
+from globals import LIGHT_GRAY, OPTION_MENU_BUTTON_BACKGROUND, SCREEN_HEIGHT, SCREEN_WIDTH
 from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window
 from ui_objects.button import Button
 from ui_objects.slider import Slider
-from ui_objects.text_loader import Text_Loader
+from ui_objects.text_label import TextLabel
 
 OPTIONS_SCREEN_PATH = "Assets/Menu-Assets/options-screen.png"
 MAIN_MENU_BUTTON_PATH = "Assets/Menu-Assets/main-menu-button.png"
@@ -21,7 +21,7 @@ SFX_LABEL = "SFX Volume: {}"
 
 class Options:
     def __init__(self, game_state_manager) -> None:
-        self.gameStateManager = game_state_manager
+        self.game_state_manager = game_state_manager
 
         self.image = load_image(OPTIONS_SCREEN_PATH)
 
@@ -36,13 +36,13 @@ class Options:
             initial_value=float(self.music_slider_value),
             min_val=0.0,
             max_val=100.0,
-            track_color=OPTION_MENU_BUTTON_BG,
+            track_color=OPTION_MENU_BUTTON_BACKGROUND,
             knob_color=LIGHT_GRAY,
         )
-        self.music_volume_text = Text_Loader(
+        self.music_volume_text = TextLabel(
             MUSIC_LABEL.format(self.music_slider_value),
             pos=(500, 515),
-            color=OPTION_MENU_BUTTON_BG,
+            color=OPTION_MENU_BUTTON_BACKGROUND,
         )
 
         self.sfx_volume_slider = Slider(
@@ -51,13 +51,13 @@ class Options:
             initial_value=float(self.sfx_slider_value),
             min_val=0.0,
             max_val=100.0,
-            track_color=OPTION_MENU_BUTTON_BG,
+            track_color=OPTION_MENU_BUTTON_BACKGROUND,
             knob_color=LIGHT_GRAY,
         )
-        self.sfx_volume_text = Text_Loader(
+        self.sfx_volume_text = TextLabel(
             SFX_LABEL.format(self.sfx_slider_value),
             pos=(500, 415),
-            color=OPTION_MENU_BUTTON_BG,
+            color=OPTION_MENU_BUTTON_BACKGROUND,
         )
 
         # Navigation Buttons
@@ -88,7 +88,7 @@ class Options:
         self.full_screen_button = Button(load_image(TEMP_BUTTON_PATH), pos=(100, 300))
 
     def can_go_back(self):
-        return self.gameStateManager.get_previous_state() == "level"
+        return self.game_state_manager.get_previous_state() == "level"
 
     def draw(self, screen) -> None:
         screen.blit(self.image, (0, 0))
@@ -116,7 +116,7 @@ class Options:
 
         # State Navigation
         if self.main_menu_button.is_clicked():
-            self.gameStateManager.set_state("start")
+            self.game_state_manager.set_state("start")
             settings.save_settings()
 
         # Settings Toggles
@@ -130,7 +130,7 @@ class Options:
         if self.full_screen_button.is_clicked():
             fullscreen = not settings.get_setting("full_screen_enabled")
             settings.set_setting("full_screen_enabled", fullscreen)
-            create_window(SCREENWIDTH, SCREENHEIGHT, fullscreen)
+            create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)
 
         # Apply a volume change when a slider moves
         new_music_value = self.music_volume_slider.get_current_value()
@@ -153,5 +153,5 @@ class Options:
         if self.can_go_back():
             self.back_button.update()
             if self.back_button.is_clicked():
-                self.gameStateManager.go_back()
+                self.game_state_manager.go_back()
                 settings.save_settings()

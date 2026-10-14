@@ -1,6 +1,6 @@
 import pygame
 
-from globals import DUNGEON_LEVEL_ONE, FRAMERATE, SCREENHEIGHT, SCREENWIDTH, WHITE
+from globals import DUNGEON_LEVEL_ONE, FRAME_RATE, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE
 from states.map.level import Level
 from states.menus.options import Options
 from states.menus.start import Start
@@ -9,7 +9,7 @@ from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window
 from ui_objects.cursor import Cursor
-from ui_objects.text_loader import Text_Loader
+from ui_objects.text_label import TextLabel
 
 TITLE_MUSIC = "JuiceWrldChasingTheDragon"
 
@@ -25,7 +25,7 @@ class Game:
         settings.load_settings()
 
         create_window(
-            SCREENWIDTH, SCREENHEIGHT, settings.get_setting("full_screen_enabled")
+            SCREEN_WIDTH, SCREEN_HEIGHT, settings.get_setting("full_screen_enabled")
         )
         self.clock = pygame.time.Clock()
         self.running = True
@@ -46,17 +46,17 @@ class Game:
 
         # FPS counter
         self.fps_timer = 0.0
-        self.fps_text = Text_Loader("", font_size=15, pos=(1215, 0), color=WHITE)
+        self.fps_text = TextLabel("", font_size=15, pos=(1215, 0), color=WHITE)
 
         # Screens, and the manager that switches between them
-        self.gameStateManager = GameStateManager("start")
-        self.start = Start(self.gameStateManager)
-        self.options = Options(self.gameStateManager)
-        self.level = Level(self.gameStateManager, DUNGEON_LEVEL_ONE)
+        self.game_state_manager = GameStateManager("start")
+        self.start_menu = Start(self.game_state_manager)
+        self.options_menu = Options(self.game_state_manager)
+        self.level = Level(self.game_state_manager, DUNGEON_LEVEL_ONE)
 
-        self.gameStateManager.add_state("level", self.level)
-        self.gameStateManager.add_state("options", self.options)
-        self.gameStateManager.add_state("start", self.start)
+        self.game_state_manager.add_state("level", self.level)
+        self.game_state_manager.add_state("options", self.options_menu)
+        self.game_state_manager.add_state("start", self.start_menu)
 
     def run(self):
         while self.running:
@@ -69,9 +69,9 @@ class Game:
                 self.running = False
 
         # Seconds since the last frame
-        self.dt = self.clock.tick(FRAMERATE) / 1000.0
+        self.dt = self.clock.tick(FRAME_RATE) / 1000.0
 
-        self.gameStateManager.get_state().update(self.dt)
+        self.game_state_manager.get_state().update(self.dt)
         self.cursor.update()
 
         self.fps_timer += self.dt
@@ -81,7 +81,7 @@ class Game:
 
     def draw(self):
         screen = pygame.display.get_surface()
-        self.gameStateManager.get_state().draw(screen)
+        self.game_state_manager.get_state().draw(screen)
 
         if settings.get_setting("fps_enabled"):
             self.fps_text.draw(screen)

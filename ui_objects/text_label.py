@@ -3,7 +3,7 @@ import pygame
 from globals import BLACK
 
 
-class Text_Loader:
+class TextLabel:
     def __init__(
         self,
         text,

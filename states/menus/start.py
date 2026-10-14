@@ -10,8 +10,8 @@ OPTIONS_BUTTON_PATH = "Assets/Menu-Assets/options-button.png"
 
 
 class Start:
-    def __init__(self, gameStateManager):
-        self.gameStateManager = gameStateManager
+    def __init__(self, game_state_manager):
+        self.game_state_manager = game_state_manager
         self.image = load_image(START_SCREEN_PATH)
         self.start_button_img = load_image(START_BUTTON_PATH)
         self.exit_button_img = load_image(EXIT_BUTTON_PATH)
@@ -37,10 +37,10 @@ class Start:
 
         # Navigation Logic
         if self.start_button.is_clicked():
-            self.gameStateManager.set_state("level")
+            self.game_state_manager.set_state("level")
 
         elif self.options_button.is_clicked():
-            self.gameStateManager.set_state("options")
+            self.game_state_manager.set_state("options")
 
         elif self.exit_button.is_clicked():
             pygame.event.post(pygame.event.Event(pygame.QUIT))

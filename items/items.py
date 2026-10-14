@@ -12,20 +12,20 @@ class Item:
         id: str,
         name: str = None,
         animations: dict = None,
-        desc: str = None,
+        description: str = None,
         quantity: int = 1,
         max_stack: int = 99,
         animation_speed: int = 4,
-        value: str = None,
+        value_text: str = None,
     ):
         self.id = id
         self.name = name
         self.animations = animations
-        self.desc = desc
+        self.description = description
         self.quantity = quantity
         self.max_stack = max_stack
         self.animation_speed = animation_speed
-        self.value = value
+        self.value_text = value_text
 
         self.image = animations.get("idle", [None])[0]
 
@@ -39,19 +39,19 @@ class EquipmentItem(Item):
         id: str,
         name: str = None,
         animations: dict = None,
-        desc: str = None,
+        description: str = None,
         slot: str = None,
         bonuses: dict = None,
-        value: str = None,
+        value_text: str = None,
     ):
         super().__init__(
             id=id,
             name=name,
             animations=animations,
-            desc=desc,
+            description=description,
             quantity=1,
             max_stack=1,
-            value=value,
+            value_text=value_text,
         )
         self.slot = slot
         self.bonuses = bonuses

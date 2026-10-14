@@ -1,8 +1,8 @@
 import pygame
 
-from globals import SCREENHEIGHT, SCREENWIDTH
+from globals import SCREEN_HEIGHT, SCREEN_WIDTH
 
-camera = pygame.Rect(0, 0, SCREENWIDTH, SCREENHEIGHT)
+camera = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
 
 
 def center_camera(pos):

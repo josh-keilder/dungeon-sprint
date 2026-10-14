@@ -4,7 +4,7 @@ import pygame
 
 from Entities.enemies.load_enemies import load_enemies
 from Entities.player.load_player import load_player
-from globals import UNLOCK_DOOR_DIST, WHITE
+from globals import UNLOCK_DOOR_DISTANCE, WHITE
 from items.itemDataBase import initialize_item_database
 from items.items import WorldItem
 from states.map.map_loader import load_level_data
@@ -26,14 +26,14 @@ PLAYER_HEALTH_BAR_SIZE = (200, 10)
 
 
 class Level:
-    def __init__(self, gameStateManager, map_path):
-        self.gameStateManager = gameStateManager
+    def __init__(self, game_state_manager, map_path):
+        self.game_state_manager = game_state_manager
 
         # Ground items, spawned during play
-        self.items = pygame.sprite.Group()
+        self.ground_items = pygame.sprite.Group()
 
         # Item templates and map data
-        self.ITEM_DATABASE = initialize_item_database()
+        self.item_database = initialize_item_database()
 
         level_data = load_level_data(map_path)
         self.map_surface = level_data["map_surface"]
@@ -61,7 +61,7 @@ class Level:
         self.player.intent = read_input()
 
         if self.player.intent["pause"]:
-            self.gameStateManager.set_state("options")
+            self.game_state_manager.set_state("options")
             sound.play_sfx("Pause")
             return
 
@@ -95,7 +95,7 @@ class Level:
             if is_dead(enemy.health):
                 self.enemies.remove(enemy)
 
-        self.items.update(dt)
+        self.ground_items.update(dt)
         center_camera(self.player.rect.center)
 
     def draw(self, screen):
@@ -110,13 +110,13 @@ class Level:
 
                     # Highlight doors when player is nearby
                     if group == self.door_tiles:
-                        if sprite.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DIST:
+                        if sprite.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DISTANCE:
                             draw_hitbox(
                                 screen, sprite.image, sprite.rect, camera, WHITE
                             )
 
         # Ground items and chests
-        for group in [self.items, self.chests]:
+        for group in [self.ground_items, self.chests]:
             for obj in group:
                 if is_on_screen(obj.rect):
                     obj.draw(screen, camera)
@@ -148,12 +148,12 @@ class Level:
 
     def spawn_loot(self, drops, center):
         for item_id, quantity in drops:
-            item_data = self.ITEM_DATABASE[item_id]
+            item_data = self.item_database[item_id]
             offset_x = random.randint(-LOOT_SCATTER_X, LOOT_SCATTER_X)
             offset_y = random.randint(-LOOT_SCATTER_Y, LOOT_SCATTER_Y)
 
             WorldItem(
-                groups=self.items,
+                groups=self.ground_items,
                 pos=(center[0] + offset_x, center[1] + offset_y),
                 item_data=item_data,
                 quantity=quantity,

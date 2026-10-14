@@ -1,7 +1,7 @@
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from globals import TILESIZE
+from globals import TILE_SIZE
 from items.items import Chest
 from states.map.tiles import DecorTile, Door, WallTile
 
@@ -18,8 +18,8 @@ def load_level_data(map_path):
 
 
 def build_map(tmx_data):
-    map_width = tmx_data.width * TILESIZE
-    map_height = tmx_data.height * TILESIZE
+    map_width = tmx_data.width * TILE_SIZE
+    map_height = tmx_data.height * TILE_SIZE
     map_surface = pygame.Surface((map_width, map_height)).convert()
 
     decor_tiles = pygame.sprite.Group()
@@ -33,14 +33,14 @@ def build_map(tmx_data):
 
         if layer.name == "Floor":
             for x, y, surf in layer.tiles():
-                map_surface.blit(surf, (x * TILESIZE, y * TILESIZE))
+                map_surface.blit(surf, (x * TILE_SIZE, y * TILE_SIZE))
 
         elif layer.name == "Walls":
             for x, y, surf in layer.tiles():
                 WallTile(
                     groups=wall_tiles,
                     image=surf,
-                    pos=(x * TILESIZE, y * TILESIZE),
+                    pos=(x * TILE_SIZE, y * TILE_SIZE),
                 )
 
         elif layer.name in ["Wall_Decor", "Floor_Decor"]:
@@ -48,7 +48,7 @@ def build_map(tmx_data):
                 DecorTile(
                     groups=decor_tiles,
                     image=surf,
-                    pos=(x * TILESIZE, y * TILESIZE),
+                    pos=(x * TILE_SIZE, y * TILE_SIZE),
                 )
 
         elif layer.name == "Door_Tiles":
@@ -56,7 +56,7 @@ def build_map(tmx_data):
                 door_tile = Door(
                     groups=door_tiles,
                     image=surf,
-                    pos=(x * TILESIZE, y * TILESIZE),
+                    pos=(x * TILE_SIZE, y * TILE_SIZE),
                 )
                 # Extract door_id property from the logic layer at the same coordinate
                 logic_props = tmx_data.get_tile_properties(

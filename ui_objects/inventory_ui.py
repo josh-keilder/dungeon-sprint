@@ -1,27 +1,27 @@
 import pygame
 
-from globals import DARK_GRAY, SCREENWIDTH, WHITE
+from globals import DARK_GRAY, SCREEN_WIDTH, WHITE
 from systems.inventory import add_item, can_equip
-from ui_objects.text_loader import Text_Loader
+from ui_objects.text_label import TextLabel
 
 
 class InventoryUI:
     def __init__(self):
         self.slot_size = 48
         self.cols = 10
-        self.start_x, self.start_y = SCREENWIDTH - 780 - self.slot_size * self.cols, 610
+        self.start_x, self.start_y = SCREEN_WIDTH - 780 - self.slot_size * self.cols, 610
         self.equip_start_x, self.equip_start_y = self.start_x + 1200, self.start_y - 150
 
-        self.quantity_label = Text_Loader(
+        self.quantity_label = TextLabel(
             text="", font_name="Arial", font_size=10, color=WHITE
         )
-        self.tooltip_name = Text_Loader(
+        self.tooltip_name = TextLabel(
             text="", font_name="Arial", font_size=14, color=WHITE
         )
-        self.tooltip_desc = Text_Loader(
+        self.tooltip_desc = TextLabel(
             text="", font_name="Arial", font_size=12, color=(200, 200, 200)
         )
-        self.tooltip_value = Text_Loader(
+        self.tooltip_value = TextLabel(
             text="", font_name="Arial", font_size=12, color=(200, 200, 200)
         )
 
@@ -74,19 +74,19 @@ class InventoryUI:
 
     def draw_tooltip(self, screen, item, mouse_pos):
         self.tooltip_name.update_text(item.name)
-        self.tooltip_desc.update_text(item.desc)
-        self.tooltip_value.update_text(item.value)
+        self.tooltip_desc.update_text(item.description)
+        self.tooltip_value.update_text(item.value_text)
 
         padding, line_spacing = 8, 4
         name_w, name_h = self.tooltip_name.text_surface.get_size()
         desc_w, desc_h = self.tooltip_desc.text_surface.get_size()
         value_w, value_h = self.tooltip_value.text_surface.get_size()
 
-        width = max(name_w, desc_w, value_w if item.value else 0) + (padding * 2)
+        width = max(name_w, desc_w, value_w if item.value_text else 0) + (padding * 2)
         height = (
             name_h
             + desc_h
-            + (value_h if item.value else 0)
+            + (value_h if item.value_text else 0)
             + (padding * 2)
             + line_spacing
         )
@@ -105,7 +105,7 @@ class InventoryUI:
             self.tooltip_desc.text_surface,
             (tx + padding, ty + padding + name_h + line_spacing),
         )
-        if item.value:
+        if item.value_text:
             screen.blit(
                 self.tooltip_value.text_surface,
                 (tx + padding, ty + padding + name_h + desc_h + line_spacing + 4),
