@@ -2,7 +2,7 @@ import os
 
 
 def count_lines_in_project(
-    start_path=".", ignore_folders={"venv", ".git", "__pycache__"}
+    start_path=".", ignore_folders={"venv", ".git", "__pycache__", ".venv"}
 ):
     total_lines = 0
     file_count = 0
