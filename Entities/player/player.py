@@ -15,7 +15,6 @@ from systems.stats import compute_stats
 class Player:
     def __init__(self, animations, pos=(0, 0)):
 
-        # --- Attributes ---
         self.last_direction = "down"
         self.walking = False
         self.pos = pygame.math.Vector2(pos)
@@ -23,7 +22,7 @@ class Player:
 
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
 
-        # Base values before equipment or status modifiers
+        # Base values before equipment bonuses
         self.base_stats = {
             "attack": 5,
             "defense": 0,
@@ -41,13 +40,13 @@ class Player:
             "cooldown": 0.0,
         }
 
-        # --- Visuals & Animation ---
+        # Animation and sprite
         self.animation = new_animation(animations, "player_idle_down")
         self.image = animations["player_idle_down"][0]
         self.rect = self.image.get_frect()
         self.rect.center = pos
 
-        # --- Component Composition ---
+        # Health, inventory, and stats
         self.health = new_health(self.base_stats["health"])
 
         self.inventory = new_inventory(20)
@@ -70,7 +69,7 @@ class Player:
         if self.health["max_health"] != self.stats["health"]:
             set_max_health(self.health, self.stats["health"])
 
-        # Component Updates
+        # Actions requested this frame
         if self.intent["roll"]:
             try_start_roll(self.roll, move)
 
@@ -86,8 +85,6 @@ class Player:
         self.pos = pygame.math.Vector2(self.rect.topleft)
 
     def draw(self, screen, camera=None):
-        """Renders the player, health bar, inventory, and debug hitbox."""
-        # Render Player Sprite
         if camera:
             screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
         else:
@@ -97,7 +94,6 @@ class Player:
             draw_hitbox(screen, self.image, self.rect, camera, GREEN)
 
     def handle_animation_state(self):
-        """Determines the correct animation string based on current movement/action."""
         if self.roll["active"]:
             action = "roll"
         elif self.walking:

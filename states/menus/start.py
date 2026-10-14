@@ -11,9 +11,6 @@ OPTIONS_BUTTON_PATH = "Assets/Menu-Assets/options-button.png"
 
 class Start:
     def __init__(self, gameStateManager):
-        """
-        Initializes the start menu, loads assets, and sets up interactive buttons.
-        """
         self.gameStateManager = gameStateManager
         self.image = load_image(START_SCREEN_PATH)
         self.start_button_img = load_image(START_BUTTON_PATH)
@@ -28,14 +25,12 @@ class Start:
         )
 
     def draw(self, screen):
-        """Renders the background image and all menu buttons."""
         screen.blit(self.image, (0, 0))
         self.start_button.draw(screen)
         self.exit_button.draw(screen)
         self.options_button.draw(screen)
 
     def update(self, dt):
-        """Processes button hover states and handles click-based state transitions."""
         self.start_button.update()
         self.exit_button.update()
         self.options_button.update()

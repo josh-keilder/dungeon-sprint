@@ -1,18 +1,7 @@
-"""
-Data: Player Texture Metadata
------------------------------
-Defines the spritesheet configurations for the player character. Each entry
-specifies the frame dimensions, counts, and file paths for animations across
-different states (Idle, Walk, Roll) and cardinal directions.
-
-Note: 'Left' animations are typically handled via code-side flipping of 'Right'
-assets to optimize storage and memory.
-"""
-
 from globals import PLAYER_SPRITESIZE
 
 player_texture_data = {
-    # --- Idle Animations ---
+    # Idle Animations
     "player_idle_down": {
         "size": (PLAYER_SPRITESIZE, PLAYER_SPRITESIZE),
         "position": (0, 0),
@@ -31,7 +20,7 @@ player_texture_data = {
         "frames": 6,
         "file_path": "Assets/Player/Idle/Proto_Idle_Right.png",
     },
-    # --- Walking Animations ---
+    # Walking Animations
     "player_walk_down": {
         "size": (PLAYER_SPRITESIZE, PLAYER_SPRITESIZE),
         "position": (0, 0),
@@ -50,7 +39,7 @@ player_texture_data = {
         "frames": 6,
         "file_path": "Assets/Player/Walk/Proto_Walk_Right.png",
     },
-    # --- Rolling Animations ---
+    # Rolling Animations
     "player_roll_down": {
         "size": (PLAYER_SPRITESIZE, PLAYER_SPRITESIZE),
         "position": (0, 0),

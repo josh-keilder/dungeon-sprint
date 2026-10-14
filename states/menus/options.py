@@ -29,7 +29,7 @@ class Options:
         self.music_slider_value = int(settings.get_setting("music_volume") * 100)
         self.sfx_slider_value = int(settings.get_setting("sfx_volume") * 100)
 
-        # UI Components: Volume Controls
+        # Volume sliders and labels
         self.music_volume_slider = Slider(
             pos=(640, 575),
             size=(300, 20),
@@ -72,7 +72,7 @@ class Options:
             pos=(1135, 650),
         )
 
-        # Toggle Buttons (FPS and placeholders for others)
+        # Toggle buttons: FPS and fullscreen
         self.fps_button_off_img = pygame.transform.scale_by(
             load_image(FPS_OFF_PATH), 0.5
         )
@@ -132,7 +132,7 @@ class Options:
             settings.set_setting("full_screen_enabled", fullscreen)
             create_window(SCREENWIDTH, SCREENHEIGHT, fullscreen)
 
-        # Volume Slider Logic
+        # Apply a volume change when a slider moves
         new_music_value = self.music_volume_slider.get_current_value()
         if new_music_value != self.music_slider_value:
             self.music_slider_value = new_music_value
@@ -149,7 +149,7 @@ class Options:
             sound.set_sfx_volume(self.sfx_slider_value / 100.0)
             settings.set_setting("sfx_volume", self.sfx_slider_value / 100.0)
 
-        # Contextual Back Logic
+        # Back button, only when we came from the level
         if self.can_go_back():
             self.back_button.update()
             if self.back_button.is_clicked():

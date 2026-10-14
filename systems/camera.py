@@ -10,5 +10,4 @@ def center_camera(pos):
 
 
 def is_on_screen(target_rect):
-    """Returns True if the given Rect overlaps with the camera view."""
     return camera.colliderect(target_rect)

@@ -35,7 +35,7 @@ class Game:
         cursor_img = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
         self.cursor = Cursor(cursor_img)
 
-        # Load settings and set initial sound volumes
+        # Sound: load files, apply saved volumes, start the title music
         music_volume = settings.get_setting("music_volume")
         sfx_volume = settings.get_setting("sfx_volume")
         sound.load_sfx()
@@ -44,11 +44,11 @@ class Game:
         sound.set_music_volume(music_volume)
         sound.play_music(TITLE_MUSIC)
 
-        # FPS UI Setup
+        # FPS counter
         self.fps_timer = 0.0
         self.fps_text = Text_Loader("", font_size=15, pos=(1215, 0), color=WHITE)
 
-        # State Machine Setup: Handles transitions between menus and gameplay levels
+        # Screens, and the manager that switches between them
         self.gameStateManager = GameStateManager("start")
         self.start = Start(self.gameStateManager)
         self.options = Options(self.gameStateManager)
@@ -59,21 +59,18 @@ class Game:
         self.gameStateManager.add_state("start", self.start)
 
     def run(self):
-        """Main game loop."""
         while self.running:
             self.update()
             self.draw()
 
     def update(self):
-        """Processes input events, updates delta time, and updates the active state."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
 
-        # Calculate Delta Time (seconds)
+        # Seconds since the last frame
         self.dt = self.clock.tick(FRAMERATE) / 1000.0
 
-        # Update current active state (Menu/Level)
         self.gameStateManager.get_state().update(self.dt)
         self.cursor.update()
 
@@ -83,7 +80,6 @@ class Game:
             self.fps_text.update_text(f"FPS: {int(self.clock.get_fps())}")
 
     def draw(self):
-        """Renders the current state and global UI elements to the screen."""
         screen = pygame.display.get_surface()
         self.gameStateManager.get_state().draw(screen)
 

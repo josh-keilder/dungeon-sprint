@@ -1,11 +1,11 @@
-# Game Settings
+# Screen, timing, and sprite sizes
 SCREENWIDTH = 1280
 SCREENHEIGHT = 720
 FRAMERATE = 240
 TILESIZE = 16
 PLAYER_SPRITESIZE = 64
 
-# Random Values
+# Gameplay distances
 UNLOCK_DOOR_DIST = 32
 
 # Item Values

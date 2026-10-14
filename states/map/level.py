@@ -1,14 +1,3 @@
-"""
-State: Dungeon Level One
-------------------------
-Manages the primary gameplay state for the first dungeon level. This class
-handles Tiled map loading (.tmx), entity spawning (player/enemies),
-camera tracking, and the rendering order of world objects.
-
-Classes:
-    Dungeon_Level_One: The controller for the first playable dungeon area.
-"""
-
 import random
 
 import pygame
@@ -40,10 +29,10 @@ class Level:
     def __init__(self, gameStateManager, map_path):
         self.gameStateManager = gameStateManager
 
-        # Entity Management
+        # Ground items, spawned during play
         self.items = pygame.sprite.Group()
 
-        # Data Initialization
+        # Item templates and map data
         self.ITEM_DATABASE = initialize_item_database()
 
         level_data = load_level_data(map_path)
@@ -60,7 +49,7 @@ class Level:
         # Enemy Spawning
         self.enemies = load_enemies(level_data["enemy_spawns"])
 
-        # Collision Setup: Combine static walls and interactable doors
+        # Everything that blocks movement: walls and locked doors
         self.solid_tiles = []
         self.refresh_walls()
 
@@ -68,7 +57,6 @@ class Level:
         self.inventory_ui = InventoryUI()
 
     def update(self, dt):
-        """Updates all world entities and syncs the camera focal point."""
 
         self.player.intent = read_input()
 
@@ -111,11 +99,10 @@ class Level:
         center_camera(self.player.rect.center)
 
     def draw(self, screen):
-        """Renders the world layers, applying camera offsets and culling."""
-        # Background / Floor
+        # Floor
         screen.blit(self.map_surface, (-camera.x, -camera.y))
 
-        # Static Tiles & Decorations
+        # Static tiles: decor, walls, doors
         for group in [self.decor_tiles, self.wall_tiles, self.door_tiles]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
@@ -128,13 +115,13 @@ class Level:
                                 screen, sprite.image, sprite.rect, camera, WHITE
                             )
 
-        # Interactive Objects
+        # Ground items and chests
         for group in [self.items, self.chests]:
             for obj in group:
                 if is_on_screen(obj.rect):
                     obj.draw(screen, camera)
 
-        # Dynamic Entities (Actors, Particles, etc.)
+        # Actors, sorted by y so lower ones draw on top
         actors = [self.player] + self.enemies
         actors = sorted(actors, key=lambda actor: actor.rect.y)
 

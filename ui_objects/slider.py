@@ -1,14 +1,3 @@
-"""
-UI Component: Slider
---------------------
-Provides an interactive horizontal slider for settings menus (e.g., volume
-control). Handles mouse collision, dragging logic, and value mapping
-between pixel coordinates and numerical ranges.
-
-Classes:
-    Slider: A customizable UI element that returns a value within a set range.
-"""
-
 import pygame
 
 from globals import GRAY, WHITE
@@ -26,17 +15,6 @@ class Slider:
         track_color,
         knob_color,
     ):
-        """
-        Initializes the slider and calculates its interactive boundaries.
-
-        Args:
-            screen (pygame.Surface): Target surface for rendering.
-            pos (tuple): (x, y) center position of the slider.
-            size (tuple): (width, height) of the slider track.
-            initial_value (float): Starting value.
-            min_val (float): Minimum possible value.
-            max_val (float): Maximum possible value.
-        """
         self.pos = pos
         self.size = size
 
@@ -65,17 +43,14 @@ class Slider:
         self.hovered = False
 
     def set_knob_pos_from_value(self, val):
-        """Maps a numerical value (e.g., 0-100) to a pixel position on the track."""
         ratio = (val - self.min_val) / (self.max_val - self.min_val)
         self.button_rect.centerx = self.left_x + (ratio * self.size[0])
 
     def get_value_from_pos(self):
-        """Maps the current knob pixel position back to a numerical value."""
         ratio = (self.button_rect.centerx - self.left_x) / self.size[0]
         return self.min_val + (ratio * (self.max_val - self.min_val))
 
     def update(self):
-        """Processes mouse interaction, hover states, and drag-and-drop logic."""
         mouse_pos = pygame.mouse.get_pos()
         mouse_click = pygame.mouse.get_pressed()[0]
 
@@ -89,7 +64,7 @@ class Slider:
         else:
             self.hovered = False
 
-        # State Management
+        # Start dragging on a press over the slider; stop on release
         if self.hovered and mouse_click:
             self.dragging = True
 
@@ -103,7 +78,6 @@ class Slider:
             self.value = self.get_value_from_pos()
 
     def draw(self, screen):
-        """Renders the track background, filled progress, and the interactive knob."""
         # Main background track
         pygame.draw.rect(screen, GRAY, self.container_rect, border_radius=5)
 
@@ -121,5 +95,4 @@ class Slider:
         pygame.draw.rect(screen, color, self.button_rect, border_radius=3)
 
     def get_current_value(self):
-        """Returns the current slider value as an integer."""
         return int(self.value)

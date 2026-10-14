@@ -18,10 +18,6 @@ class Item:
         animation_speed: int = 4,
         value: str = None,
     ):
-        """
-        Base blueprint for an item.
-        Note: 'animations' expects a dict of frame lists.
-        """
         self.id = id
         self.name = name
         self.animations = animations
@@ -48,7 +44,6 @@ class EquipmentItem(Item):
         bonuses: dict = None,
         value: str = None,
     ):
-        """Specialized Item with slot-specific logic and stat modifiers."""
         super().__init__(
             id=id,
             name=name,
@@ -64,10 +59,6 @@ class EquipmentItem(Item):
 
 class WorldItem(pygame.sprite.Sprite):
     def __init__(self, groups, pos, item_data, quantity):
-        """
-        The physical entity representing an item in the game world.
-        Takes an Item object and wraps it in a Sprite with an AnimationComponent.
-        """
         super().__init__(groups)
         self.item_data = item_data.clone()
         self.item_data.quantity = quantity
@@ -78,11 +69,9 @@ class WorldItem(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
 
     def draw(self, screen, camera):
-        """Renders the item relative to the camera."""
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
 
     def update(self, dt):
-        """Advances the item's visual animation."""
         self.image = advance_animation(self.animation, dt)
 
 
@@ -91,11 +80,9 @@ CHEST_IMAGE_PATH = "Assets/Objects/chest_1.png"
 
 class Chest(pygame.sprite.Sprite):
     def __init__(self, groups, pos):
-        """Interactable container that spawns WorldItems when opened."""
         super().__init__(groups)
         self.image = load_image(CHEST_IMAGE_PATH)
         self.rect = self.image.get_frect(topleft=pos)
 
     def draw(self, screen, camera):
-        """Renders the chest relative to the camera."""
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))

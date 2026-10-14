@@ -1,14 +1,5 @@
-"""
-Data: Item Database
--------------------
-Defines the metadata for all collectable and interactable items in the game.
-Each entry acts as a blueprint containing the item type, sprite dimensions,
-animation frame counts, and file paths.
-"""
-
 from globals import TILESIZE
 
-# --- Item Definitions ---
 
 keys = {
     "gold_key": {

@@ -1,13 +1,3 @@
-"""
-UI Component: Text Loader
--------------------------
-A utility class for rendering and displaying text in Pygame. It handles
-font initialization, surface creation (rendering), and drawing to the screen.
-
-Classes:
-    Text_Loader: Manages a single text surface with update capabilities.
-"""
-
 import pygame
 
 from globals import BLACK
@@ -22,17 +12,6 @@ class Text_Loader:
         color=BLACK,
         pos=(0, 0),
     ):
-        """
-        Initializes the font and creates the initial text surface.
-
-        Args:
-            text (str): The initial string to display.
-            screen (pygame.Surface): The target surface for drawing.
-            font_name (str): System font name.
-            font_size (int): Size of the font in pixels.
-            color (tuple): RGB color of the text.
-            pos (tuple): Default (x, y) coordinates for placement.
-        """
         pygame.font.init()
         self.font = pygame.font.SysFont(font_name, font_size)
         self.color = color
@@ -42,9 +21,7 @@ class Text_Loader:
         self.text_surface = self.font.render(str(text), False, self.color)
 
     def draw(self, screen):
-        """Blits the text surface onto the screen."""
         screen.blit(self.text_surface, self.pos)
 
     def update_text(self, new_text):
-        """Re-renders the text surface with new content."""
         self.text_surface = self.font.render(str(new_text), False, self.color)

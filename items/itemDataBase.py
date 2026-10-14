@@ -1,14 +1,3 @@
-"""
-Data: Item Initialization
--------------------------
-Constructs the global ITEM_DATABASE by instantiating Item and EquipmentItem
-objects. This module links raw texture data (spritesheets) to logical
-game objects, defining their properties, animations, and statistics.
-
-Functions:
-    initialize_item_database: The primary factory function for game loot.
-"""
-
 from globals import SMALL_HEALTH_POTION_VALUE
 from items.itemTextureData import health_potions, keys, speed_boots
 from items.items import EquipmentItem, Item
@@ -16,19 +5,13 @@ from systems.assets import load_animations
 
 
 def initialize_item_database():
-    """
-    Instantiates all items in the game and returns them in a searchable dictionary.
-    Each item is initialized with its sliced texture frames and gameplay metadata.
-    """
     ITEM_DATABASE = {}
 
-    # --- Texture Generation ---
-    # Slices spritesheets into frame lists using the Item static method
+    # Animation frames for each item
     gold_key_frames = load_animations(keys)
     small_health_potion_frames = load_animations(health_potions)
     speed_boots_frames = load_animations(speed_boots)
 
-    # --- Item Registration ---
 
     # Key Items
     ITEM_DATABASE["gold_key"] = Item(
