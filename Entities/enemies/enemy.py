@@ -2,13 +2,14 @@ import pygame
 from globals import *
 from node import Node
 from systems.health import new_health
-from Components.hitboxComponent import Hitbox
 from typing import Optional
 from ui_objects.health_bar import draw_health_bar
 from systems.animation import new_animation, advance_animation
 from systems.enemy_ai import fly_velocity, wander_chase_velocity, random_idle_direction
 from systems.movement import move_and_collide
 from systems.assets import load_animations
+from systems.hitbox import draw_hitbox
+from systems import debug
 
 ENEMY_HEALTH_BAR_WIDTH = TILESIZE
 ENEMY_HEALTH_BAR_HEIGHT = 4
@@ -30,7 +31,6 @@ class Enemy(Node):
         self.rect = self.image.get_frect(topleft=self.pos)
 
         self.health = new_health(type_data["max_health"])
-        self.hitbox = Hitbox(self)
 
         self.flee_timer = 0.0
         self.return_timer = 0.0
@@ -44,7 +44,6 @@ class Enemy(Node):
         self.image = advance_animation(self.animation, dt)
         self.update_movement(dt, walls, target_pos)
         self.pos.xy = self.rect.topleft
-        self.hitbox.update(dt)
 
     def update_movement(self, dt, walls, target_pos):
         if self.behavior == "fly":
@@ -85,6 +84,7 @@ class Enemy(Node):
                 ENEMY_HEALTH_BAR_HEIGHT
             )
 
-        self.hitbox.draw(screen, camera)
+        if debug.show_hitboxes:
+            draw_hitbox(screen, self.image, self.rect, camera, RED)
 
         super().draw(screen, camera)

@@ -14,7 +14,8 @@ Classes:
 import pygame
 from globals import *
 from systems.camera import camera
-from Components.hitboxComponent import Hitbox
+from systems.hitbox import draw_hitbox
+from systems import debug
 
 
 class WallTile(pygame.sprite.Sprite):
@@ -23,18 +24,13 @@ class WallTile(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = image
         self.rect = self.image.get_frect(topleft=pos)
-        self.hitbox = Hitbox(self)
-
-    def update(self, dt):
-        """Syncs the hitbox position with the tile position."""
-        self.hitbox.update()
 
     def draw(self, screen):
         """Renders the tile relative to the global camera position."""
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
 
-        # Debug: Draws the collision boundary
-        self.hitbox.draw(screen, camera=camera, color=BLUE)
+        if debug.show_hitboxes:
+            draw_hitbox(screen, self.image, self.rect, camera, BLUE)
 
 
 class DecorTile(pygame.sprite.Sprite):
@@ -43,10 +39,6 @@ class DecorTile(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = image
         self.rect = self.image.get_frect(topleft=pos)
-
-    def update(self, dt):
-        """Static tiles usually require no logic updates."""
-        pass
 
     def draw(self, screen):
         """Renders the decoration relative to the global camera position."""
@@ -61,11 +53,6 @@ class Door(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(topleft=pos)
         self.pos = pygame.math.Vector2(pos)
         self.door_id = None
-        self.hitbox = Hitbox(self)
-
-    def update(self, dt):
-        """Syncs the hitbox for interaction/collision detection."""
-        self.hitbox.update()
 
     def draw(self, screen):
         """Renders the door relative to the global camera position."""

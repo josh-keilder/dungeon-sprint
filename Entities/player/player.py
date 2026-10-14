@@ -2,13 +2,14 @@ import pygame
 from globals import *
 from node import Node
 from systems.health import new_health, set_max_health
-from Components.hitboxComponent import Hitbox
 from systems.animation import new_animation, set_animation, advance_animation
 from systems.inventory import new_inventory
 from systems.consumables import use_small_health_potion
 from systems.movement import steer, move_and_collide
 from systems.roll import try_start_roll, advance_roll
 from systems.stats import compute_stats
+from systems.hitbox import draw_hitbox
+from systems import debug
 
 
 class Player(Node):
@@ -50,7 +51,6 @@ class Player(Node):
         # --- Component Composition ---
         self.health = new_health(self.base_stats["health"])
 
-        self.hitbox = Hitbox(self)
         self.inventory = new_inventory(20)
 
         self.stats = compute_stats(
@@ -85,7 +85,6 @@ class Player(Node):
 
         self.handle_animation_state()
         self.image = advance_animation(self.animation, dt)
-        self.hitbox.update(dt)
 
         self.pos = pygame.math.Vector2(self.rect.topleft)
 
@@ -97,8 +96,8 @@ class Player(Node):
         else:
             screen.blit(self.image, self.rect.topleft)
 
-        # Debug: Collision boundary
-        self.hitbox.draw(screen, camera, color=GREEN)
+        if debug.show_hitboxes:
+            draw_hitbox(screen, self.image, self.rect, camera, GREEN)
 
         super().draw(screen, camera)
 
