@@ -12,7 +12,6 @@ from globals import TILESIZE
 
 keys = {
     "gold_key": {
-        "type": "key",
         "size": (TILESIZE, TILESIZE),
         "position": (0, 0),
         "frames": 4,
@@ -22,7 +21,6 @@ keys = {
 
 health_potions = {
     "health_potion": {
-        "type": "potion",
         "size": (TILESIZE, TILESIZE),
         "position": (0, 0),
         "frames": 1,
@@ -32,7 +30,6 @@ health_potions = {
 
 speed_boots = {
     "speed_boots": {
-        "type": "equipment",
         "size": (TILESIZE, TILESIZE),
         "position": (0, 0),
         "frames": 1,

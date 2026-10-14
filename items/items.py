@@ -10,7 +10,6 @@ class Item:
     def __init__(
         self,
         id: str,
-        type: str = None,
         name: str = None,
         animations: dict = None,
         desc: str = None,
@@ -24,7 +23,6 @@ class Item:
         Note: 'animations' expects a dict of frame lists.
         """
         self.id = id
-        self.type = type
         self.name = name
         self.animations = animations
         self.desc = desc
@@ -48,13 +46,11 @@ class EquipmentItem(Item):
         desc: str = None,
         slot: str = None,
         bonuses: dict = None,
-        ability: str = None,
         value: str = None,
     ):
         """Specialized Item with slot-specific logic and stat modifiers."""
         super().__init__(
             id=id,
-            type="equipment",
             name=name,
             animations=animations,
             desc=desc,
@@ -64,7 +60,6 @@ class EquipmentItem(Item):
         )
         self.slot = slot
         self.bonuses = bonuses
-        self.ability = ability
 
 
 class WorldItem(pygame.sprite.Sprite):
@@ -80,8 +75,7 @@ class WorldItem(pygame.sprite.Sprite):
             item_data.animations, "idle", item_data.animation_speed
         )
         self.image = item_data.image
-        self.pos = pos
-        self.rect = self.image.get_rect(center=self.pos)
+        self.rect = self.image.get_rect(center=pos)
 
     def draw(self, screen, camera):
         """Renders the item relative to the camera."""
@@ -101,7 +95,6 @@ class Chest(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = load_image(CHEST_IMAGE_PATH)
         self.rect = self.image.get_frect(topleft=pos)
-        self.pos = pygame.math.Vector2(pos)
 
     def draw(self, screen, camera):
         """Renders the chest relative to the camera."""

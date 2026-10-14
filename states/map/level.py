@@ -108,7 +108,6 @@ class Level:
                 self.enemies.remove(enemy)
 
         self.items.update(dt)
-        self.decor_tiles.update(dt)
         center_camera(self.player.rect.center)
 
     def draw(self, screen):

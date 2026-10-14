@@ -37,22 +37,14 @@ class Text_Loader:
         self.font = pygame.font.SysFont(font_name, font_size)
         self.color = color
         self.pos = pos
-        self.text = text
 
         # Initial render: False indicates no anti-aliasing for a crisper pixel look
-        self.text_surface = self.font.render(str(self.text), False, self.color)
+        self.text_surface = self.font.render(str(text), False, self.color)
 
-    def draw(self, screen, specific_pos=None):
-        """
-        Blits the text surface onto the screen.
-
-        Args:
-            specific_pos (tuple, optional): Overrides the default position if provided.
-        """
-        pos_to_use = specific_pos if specific_pos else self.pos
-        screen.blit(self.text_surface, pos_to_use)
+    def draw(self, screen):
+        """Blits the text surface onto the screen."""
+        screen.blit(self.text_surface, self.pos)
 
     def update_text(self, new_text):
         """Re-renders the text surface with new content."""
-        self.text = new_text
-        self.text_surface = self.font.render(str(self.text), False, self.color)
+        self.text_surface = self.font.render(str(new_text), False, self.color)

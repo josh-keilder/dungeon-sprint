@@ -33,7 +33,6 @@ def initialize_item_database():
     # Key Items
     ITEM_DATABASE["gold_key"] = Item(
         id="gold_key",
-        type="key",
         name="Gold Key",
         animations={"idle": gold_key_frames["gold_key"]},
         desc="Unlocks Doors",
@@ -43,7 +42,6 @@ def initialize_item_database():
     ITEM_DATABASE["small_health_potion"] = Item(
         id="small_health_potion",
         name="Small Health Potion",
-        type="small_potion",
         animations={"idle": small_health_potion_frames["health_potion"]},
         desc="Heals Player",
         value=f"Value: {SMALL_HEALTH_POTION_VALUE} HP",
@@ -57,7 +55,6 @@ def initialize_item_database():
         desc="Run faster",
         slot="boots",
         bonuses={"max_speed": 10, "acceleration": 20, "defense": 3, "health": 10},
-        ability=None,
     )
 
     return ITEM_DATABASE
