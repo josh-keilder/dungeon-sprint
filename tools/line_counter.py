@@ -9,14 +9,18 @@ def count_lines_in_project(
 
     for folder_path, folder_names, file_names in os.walk(start_path):
         folder_names[:] = [
-            folder_name for folder_name in folder_names if folder_name not in ignore_folders
+            folder_name
+            for folder_name in folder_names
+            if folder_name not in ignore_folders
         ]
 
         for file_name in file_names:
             file_path = os.path.join(folder_path, file_name)
             try:
                 if file_name.endswith(".py"):
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as python_file:
+                    with open(
+                        file_path, "r", encoding="utf-8", errors="ignore"
+                    ) as python_file:
                         line_count = sum(1 for line in python_file)
                         total_lines += line_count
                         file_count += 1
@@ -28,7 +32,9 @@ def count_lines_in_project(
 
 def update_readme(line_count, file_count, readme_path="README.md"):
     stats_header = "\n## Project Statistics\n"
-    stats_content = f"- **Total Files:** {file_count}\n- **Total Lines of Code:** {line_count}\n"
+    stats_content = (
+        f"- **Total Files:** {file_count}\n- **Total Lines of Code:** {line_count}\n"
+    )
 
     if os.path.exists(readme_path):
         with open(readme_path, "r", encoding="utf-8") as readme_file:

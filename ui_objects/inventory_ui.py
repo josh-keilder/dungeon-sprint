@@ -9,8 +9,14 @@ class InventoryUI:
     def __init__(self):
         self.slot_size = 48
         self.columns = 10
-        self.grid_start_x, self.grid_start_y = SCREEN_WIDTH - 780 - self.slot_size * self.columns, 610
-        self.equipment_start_x, self.equipment_start_y = self.grid_start_x + 1200, self.grid_start_y - 150
+        self.grid_start_x, self.grid_start_y = (
+            SCREEN_WIDTH - 780 - self.slot_size * self.columns,
+            610,
+        )
+        self.equipment_start_x, self.equipment_start_y = (
+            self.grid_start_x + 1200,
+            self.grid_start_y - 150,
+        )
 
         self.quantity_label = TextLabel(
             text="", font_name="Arial", font_size=10, color=WHITE
@@ -51,9 +57,14 @@ class InventoryUI:
                     )
 
         for slot_index, (slot_name, item) in enumerate(inventory["equipment"].items()):
-            equipment_slot_x, equipment_slot_y = self.equipment_start_x, self.equipment_start_y + slot_index * (self.slot_size + 5)
+            equipment_slot_x, equipment_slot_y = (
+                self.equipment_start_x,
+                self.equipment_start_y + slot_index * (self.slot_size + 5),
+            )
             pygame.draw.rect(
-                screen, (40, 40, 50), (equipment_slot_x, equipment_slot_y, self.slot_size, self.slot_size)
+                screen,
+                (40, 40, 50),
+                (equipment_slot_x, equipment_slot_y, self.slot_size, self.slot_size),
             )
 
             if item:
@@ -64,7 +75,9 @@ class InventoryUI:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             icon = self._get_icon(self.held_item)
             if icon:
-                screen.blit(icon, (mouse_x - self.slot_size // 2, mouse_y - self.slot_size // 2))
+                screen.blit(
+                    icon, (mouse_x - self.slot_size // 2, mouse_y - self.slot_size // 2)
+                )
 
         if not self.held_item:
             mouse_pos = pygame.mouse.get_pos()
@@ -79,10 +92,14 @@ class InventoryUI:
 
         padding, line_spacing = 8, 4
         name_width, name_height = self.tooltip_name.text_surface.get_size()
-        description_width, description_height = self.tooltip_description.text_surface.get_size()
+        description_width, description_height = (
+            self.tooltip_description.text_surface.get_size()
+        )
         value_width, value_height = self.tooltip_value.text_surface.get_size()
 
-        width = max(name_width, description_width, value_width if item.value_text else 0) + (padding * 2)
+        width = max(
+            name_width, description_width, value_width if item.value_text else 0
+        ) + (padding * 2)
         height = (
             name_height
             + description_height
@@ -98,9 +115,13 @@ class InventoryUI:
             tooltip_y = mouse_pos[1] - height - 5
 
         pygame.draw.rect(screen, (20, 20, 20), (tooltip_x, tooltip_y, width, height))
-        pygame.draw.rect(screen, (150, 150, 150), (tooltip_x, tooltip_y, width, height), 1)
+        pygame.draw.rect(
+            screen, (150, 150, 150), (tooltip_x, tooltip_y, width, height), 1
+        )
 
-        screen.blit(self.tooltip_name.text_surface, (tooltip_x + padding, tooltip_y + padding))
+        screen.blit(
+            self.tooltip_name.text_surface, (tooltip_x + padding, tooltip_y + padding)
+        )
         screen.blit(
             self.tooltip_description.text_surface,
             (tooltip_x + padding, tooltip_y + padding + name_height + line_spacing),
@@ -108,16 +129,27 @@ class InventoryUI:
         if item.value_text:
             screen.blit(
                 self.tooltip_value.text_surface,
-                (tooltip_x + padding, tooltip_y + padding + name_height + description_height + line_spacing + 4),
+                (
+                    tooltip_x + padding,
+                    tooltip_y
+                    + padding
+                    + name_height
+                    + description_height
+                    + line_spacing
+                    + 4,
+                ),
             )
 
     def get_slot_at_mouse(self, mouse_pos, inventory):
         mouse_x, mouse_y = mouse_pos
         if (
-            self.grid_start_x <= mouse_x <= self.grid_start_x + self.columns * self.slot_size
+            self.grid_start_x
+            <= mouse_x
+            <= self.grid_start_x + self.columns * self.slot_size
             and self.grid_start_y
             <= mouse_y
-            <= self.grid_start_y + (len(inventory["slots"]) // self.columns) * self.slot_size
+            <= self.grid_start_y
+            + (len(inventory["slots"]) // self.columns) * self.slot_size
         ):
             column = (mouse_x - self.grid_start_x) // self.slot_size
             row = (mouse_y - self.grid_start_y) // self.slot_size
@@ -128,8 +160,13 @@ class InventoryUI:
     def get_equipment_slot_at_mouse(self, mouse_pos, inventory):
         mouse_x, mouse_y = mouse_pos
         for slot_index, slot_name in enumerate(inventory["equipment"].keys()):
-            equipment_slot_x, equipment_slot_y = self.equipment_start_x, self.equipment_start_y + slot_index * (self.slot_size + 5)
-            if pygame.Rect(equipment_slot_x, equipment_slot_y, self.slot_size, self.slot_size).collidepoint(mouse_x, mouse_y):
+            equipment_slot_x, equipment_slot_y = (
+                self.equipment_start_x,
+                self.equipment_start_y + slot_index * (self.slot_size + 5),
+            )
+            if pygame.Rect(
+                equipment_slot_x, equipment_slot_y, self.slot_size, self.slot_size
+            ).collidepoint(mouse_x, mouse_y):
                 return slot_name
         return None
 
@@ -170,6 +207,8 @@ class InventoryUI:
 
         if item.id not in self.icon_cache:
             icon_size = self.slot_size - 10
-            self.icon_cache[item.id] = pygame.transform.scale(item.image, (icon_size, icon_size))
+            self.icon_cache[item.id] = pygame.transform.scale(
+                item.image, (icon_size, icon_size)
+            )
 
         return self.icon_cache[item.id]

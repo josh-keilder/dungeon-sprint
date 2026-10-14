@@ -109,7 +109,10 @@ class Level:
 
                     # Highlight doors when player is nearby
                     if group == self.door_tiles:
-                        if sprite.pos.distance_to(self.player.pos) < UNLOCK_DOOR_DISTANCE:
+                        if (
+                            sprite.pos.distance_to(self.player.pos)
+                            < UNLOCK_DOOR_DISTANCE
+                        ):
                             draw_hitbox(
                                 screen, sprite.image, sprite.rect, camera, WHITE
                             )

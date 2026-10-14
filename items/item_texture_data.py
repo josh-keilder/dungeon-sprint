@@ -1,6 +1,5 @@
 from globals import TILE_SIZE
 
-
 gold_key_texture_data = {
     "gold_key": {
         "size": (TILE_SIZE, TILE_SIZE),

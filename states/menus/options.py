@@ -1,6 +1,11 @@
 import pygame
 
-from globals import LIGHT_GRAY, OPTION_MENU_BUTTON_BACKGROUND, SCREEN_HEIGHT, SCREEN_WIDTH
+from globals import (
+    LIGHT_GRAY,
+    OPTION_MENU_BUTTON_BACKGROUND,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
 from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window
@@ -76,7 +81,9 @@ class Options:
         self.fps_button_off_image = pygame.transform.scale_by(
             load_image(FPS_OFF_PATH), 0.5
         )
-        self.fps_button_on_image = pygame.transform.scale_by(load_image(FPS_ON_PATH), 0.5)
+        self.fps_button_on_image = pygame.transform.scale_by(
+            load_image(FPS_ON_PATH), 0.5
+        )
 
         initial_fps_image = (
             self.fps_button_on_image
