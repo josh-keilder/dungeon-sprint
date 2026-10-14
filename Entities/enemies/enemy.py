@@ -1,6 +1,5 @@
 import pygame
 from globals import *
-from node import Node
 from systems.health import new_health
 from typing import Optional
 from ui_objects.health_bar import draw_health_bar
@@ -16,9 +15,8 @@ ENEMY_HEALTH_BAR_HEIGHT = 4
 ENEMY_HEALTH_BAR_GAP = 8
 
 
-class Enemy(Node):
+class Enemy:
     def __init__(self, type_data, pos) -> None:
-        super().__init__()
         animations = load_animations(type_data["texture_data"])
         start_animation = type_data["start_animation"]
         self.attack_damage = type_data["attack_damage"]
@@ -37,10 +35,7 @@ class Enemy(Node):
         self.idle_direction = random_idle_direction()
 
     def update(self, dt, walls, target_pos) -> None:
-        if not self.active:
-            return
 
-        super().update(dt)
         self.image = advance_animation(self.animation, dt)
         self.update_movement(dt, walls, target_pos)
         self.pos.xy = self.rect.topleft
@@ -58,8 +53,6 @@ class Enemy(Node):
     def draw(
         self, screen: pygame.Surface, camera: Optional[pygame.Rect] = None
     ) -> None:
-        if not self.active:
-            return
 
         draw_pos = self.rect.topleft
 
@@ -86,5 +79,3 @@ class Enemy(Node):
 
         if debug.show_hitboxes:
             draw_hitbox(screen, self.image, self.rect, camera, RED)
-
-        super().draw(screen, camera)

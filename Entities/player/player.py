@@ -1,6 +1,5 @@
 import pygame
 from globals import *
-from node import Node
 from systems.health import new_health, set_max_health
 from systems.animation import new_animation, set_animation, advance_animation
 from systems.inventory import new_inventory
@@ -12,9 +11,8 @@ from systems.hitbox import draw_hitbox
 from systems import debug
 
 
-class Player(Node):
+class Player:
     def __init__(self, animations, pos=(0, 0)):
-        super().__init__()
 
         # --- Attributes ---
         self.last_direction = "down"
@@ -58,8 +56,6 @@ class Player(Node):
         )
 
     def update(self, dt, walls):
-        """Main logic loop: Updates all sub-components and syncs state."""
-        super().update(dt)
 
         move = self.intent["move"]
         self.walking = move.length_squared() > 0
@@ -98,8 +94,6 @@ class Player(Node):
 
         if debug.show_hitboxes:
             draw_hitbox(screen, self.image, self.rect, camera, GREEN)
-
-        super().draw(screen, camera)
 
     def handle_animation_state(self):
         """Determines the correct animation string based on current movement/action."""
