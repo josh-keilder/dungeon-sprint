@@ -13,8 +13,6 @@ OPEN_CHEST_DIST = 24
 # Item Values
 SMALL_HEALTH_POTION_VALUE = 70
 
-# Debug
-DEBUG_HITBOXES = False
 
 # Colors
 WHITE = (255, 255, 255)

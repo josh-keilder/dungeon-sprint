@@ -11,11 +11,10 @@ Classes:
 """
 
 import pygame
-import globals
 from globals import *
-from systems.camera import camera
 from Components.component import Component
 from typing import Any, Dict, Optional, Tuple
+from systems import debug
 
 # Global cache to store pygame.mask.Mask objects keyed by their source Surface
 MASK_CACHE: Dict[pygame.Surface, pygame.mask.Mask] = {}
@@ -64,7 +63,7 @@ class Hitbox(Component):
         Visualizes the pixel-perfect outline of the mask.
         Only renders if global debug hitboxes are enabled or explicitly requested.
         """
-        if globals.DEBUG_HITBOXES or skip_debug:
+        if debug.toggle_hitboxes or skip_debug:
             # Adjust drawing position based on camera offset
             offset_x = self.rect.x - (camera.x if camera else 0)
             offset_y = self.rect.y - (camera.y if camera else 0)

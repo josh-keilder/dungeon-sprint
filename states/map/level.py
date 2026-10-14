@@ -12,7 +12,6 @@ Classes:
 import pygame
 import random
 from globals import *
-import globals
 from Entities.player.load_player import load_player
 from systems.camera import camera, center_camera, is_on_screen
 from Entities.enemies.load_enemies import load_enemies
@@ -26,6 +25,7 @@ from systems.combat import resolve_contact
 from ui_objects.inventory_ui import InventoryUI
 from ui_objects.health_bar import draw_health_bar
 from systems.health import is_dead
+from systems import debug
 
 from states.map.map_loader import load_level_data
 
@@ -78,7 +78,7 @@ class Level:
             return
 
         if self.player.intent["debug"]:
-            globals.DEBUG_HITBOXES = not globals.DEBUG_HITBOXES
+            debug.toggle_hitboxes()
 
         if self.player.intent["interact"]:
             interact.interact(self.player, self)
