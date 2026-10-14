@@ -1,7 +1,8 @@
+import copy
+
 import pygame
-from globals import *
-import pygame, copy
-from systems.animation import new_animation, advance_animation
+
+from systems.animation import advance_animation, new_animation
 from systems.assets import load_image
 
 

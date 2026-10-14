@@ -1,11 +1,12 @@
 import pygame
-from globals import *
-from ui_objects.button import Button
-from systems import sound, settings
-from ui_objects.slider import Slider
-from ui_objects.text_loader import Text_Loader
+
+from globals import LIGHT_GRAY, OPTION_MENU_BUTTON_BG, SCREENHEIGHT, SCREENWIDTH
+from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window
+from ui_objects.button import Button
+from ui_objects.slider import Slider
+from ui_objects.text_loader import Text_Loader
 
 OPTIONS_SCREEN_PATH = "Assets/Menu-Assets/options-screen.png"
 MAIN_MENU_BUTTON_PATH = "Assets/Menu-Assets/main-menu-button.png"

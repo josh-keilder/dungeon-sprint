@@ -1,15 +1,15 @@
 import pygame
-from globals import *
 
-from states.stateManager import GameStateManager
-from states.menus.start import Start
-from states.menus.options import Options
+from globals import DUNGEON_LEVEL_ONE, FRAMERATE, SCREENHEIGHT, SCREENWIDTH, WHITE
 from states.map.level import Level
+from states.menus.options import Options
+from states.menus.start import Start
+from states.stateManager import GameStateManager
+from systems import settings, sound
+from systems.assets import load_image
+from systems.display import create_window
 from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
-from systems import sound, settings
-from systems.display import create_window
-from systems.assets import load_image
 
 TITLE_MUSIC = "JuiceWrldChasingTheDragon"
 

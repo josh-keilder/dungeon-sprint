@@ -1,14 +1,15 @@
 import pygame
-from globals import *
-from systems.health import new_health, set_max_health
-from systems.animation import new_animation, set_animation, advance_animation
-from systems.inventory import new_inventory
-from systems.consumables import use_small_health_potion
-from systems.movement import steer, move_and_collide
-from systems.roll import try_start_roll, advance_roll
-from systems.stats import compute_stats
-from systems.hitbox import draw_hitbox
+
+from globals import GREEN
 from systems import debug
+from systems.animation import advance_animation, new_animation, set_animation
+from systems.consumables import use_small_health_potion
+from systems.health import new_health, set_max_health
+from systems.hitbox import draw_hitbox
+from systems.inventory import new_inventory
+from systems.movement import move_and_collide, steer
+from systems.roll import advance_roll, try_start_roll
+from systems.stats import compute_stats
 
 
 class Player:

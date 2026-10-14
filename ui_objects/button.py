@@ -10,9 +10,10 @@ Classes:
 """
 
 import pygame
-from globals import *
-from ui_objects.create_outline import make_outline, draw_outline
+
+from globals import WHITE
 from systems import sound
+from ui_objects.create_outline import draw_outline, make_outline
 
 
 class Button:

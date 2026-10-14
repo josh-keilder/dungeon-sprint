@@ -9,7 +9,8 @@ Classes:
 """
 
 import pygame
-from globals import *
+
+from globals import BLACK
 
 
 class Text_Loader:

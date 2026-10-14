@@ -10,7 +10,8 @@ Classes:
 """
 
 import pygame
-from globals import *
+
+from globals import GRAY, WHITE
 from systems import sound
 
 

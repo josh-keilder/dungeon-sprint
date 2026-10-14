@@ -1,6 +1,6 @@
 from globals import SMALL_HEALTH_POTION_VALUE
-from systems.inventory import remove_item, has_item
 from systems.health import heal
+from systems.inventory import has_item, remove_item
 
 
 def use_small_health_potion(health, inventory):

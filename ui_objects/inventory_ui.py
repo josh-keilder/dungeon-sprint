@@ -1,7 +1,8 @@
 import pygame
-from globals import SCREENWIDTH, WHITE, DARK_GRAY
+
+from globals import DARK_GRAY, SCREENWIDTH, WHITE
+from systems.inventory import add_item, can_equip
 from ui_objects.text_loader import Text_Loader
-from systems.inventory import can_equip, add_item
 
 
 class InventoryUI:

@@ -1,6 +1,6 @@
-from systems.inventory import has_item, remove_item, add_item
-from systems.loot import roll_loot
 from items.lootTableData import CHEST_LOOT
+from systems.inventory import add_item, has_item, remove_item
+from systems.loot import roll_loot
 
 REACH = 15
 

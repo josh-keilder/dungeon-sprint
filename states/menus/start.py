@@ -1,7 +1,7 @@
 import pygame
-from globals import *
-from ui_objects.button import Button
+
 from systems.assets import load_image
+from ui_objects.button import Button
 
 START_SCREEN_PATH = "Assets/Menu-Assets/start-screen_1.png"
 START_BUTTON_PATH = "Assets/Menu-Assets/start-button.png"

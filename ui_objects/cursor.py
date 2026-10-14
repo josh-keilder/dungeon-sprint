@@ -10,7 +10,6 @@ Classes:
 """
 
 import pygame
-from globals import *
 
 
 class Cursor:

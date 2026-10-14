@@ -1,5 +1,6 @@
 import pygame
-from globals import SCREENWIDTH, SCREENHEIGHT
+
+from globals import SCREENHEIGHT, SCREENWIDTH
 
 camera = pygame.Rect(0, 0, SCREENWIDTH, SCREENHEIGHT)
 

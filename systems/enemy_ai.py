@@ -1,5 +1,6 @@
-import pygame
 import random
+
+import pygame
 
 SIGHT_SEARCH_MARGIN = 64
 

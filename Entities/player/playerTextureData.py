@@ -9,7 +9,7 @@ Note: 'Left' animations are typically handled via code-side flipping of 'Right'
 assets to optimize storage and memory.
 """
 
-from globals import *
+from globals import PLAYER_SPRITESIZE
 
 player_texture_data = {
     # --- Idle Animations ---

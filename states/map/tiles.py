@@ -12,10 +12,11 @@ Classes:
 """
 
 import pygame
-from globals import *
+
+from globals import BLUE
+from systems import debug
 from systems.camera import camera
 from systems.hitbox import draw_hitbox
-from systems import debug
 
 
 class WallTile(pygame.sprite.Sprite):

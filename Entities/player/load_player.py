@@ -1,6 +1,6 @@
-from globals import TILESIZE
 from Entities.player.player import Player
 from Entities.player.playerTextureData import player_texture_data
+from globals import TILESIZE
 from systems.assets import load_animations
 
 

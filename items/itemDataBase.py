@@ -9,8 +9,9 @@ Functions:
     initialize_item_database: The primary factory function for game loot.
 """
 
-from items.itemTextureData import *
-from items.items import Item, EquipmentItem
+from globals import SMALL_HEALTH_POTION_VALUE
+from items.itemTextureData import health_potions, keys, speed_boots
+from items.items import EquipmentItem, Item
 from systems.assets import load_animations
 
 

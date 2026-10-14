@@ -6,8 +6,7 @@ Each entry acts as a blueprint containing the item type, sprite dimensions,
 animation frame counts, and file paths.
 """
 
-from globals import *
-import pygame
+from globals import TILESIZE
 
 # --- Item Definitions ---
 

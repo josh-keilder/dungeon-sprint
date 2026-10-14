@@ -9,26 +9,25 @@ Classes:
     Dungeon_Level_One: The controller for the first playable dungeon area.
 """
 
-import pygame
 import random
-from globals import *
-from Entities.player.load_player import load_player
-from systems.camera import camera, center_camera, is_on_screen
-from Entities.enemies.load_enemies import load_enemies
-from items.items import WorldItem
-from items.itemDataBase import initialize_item_database
 
-from systems.input import read_input
-from systems import sound, interact
+import pygame
+
+from Entities.enemies.load_enemies import load_enemies
+from Entities.player.load_player import load_player
+from globals import UNLOCK_DOOR_DIST, WHITE
+from items.itemDataBase import initialize_item_database
+from items.items import WorldItem
+from states.map.map_loader import load_level_data
+from systems import debug, interact, sound
+from systems.camera import camera, center_camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
-from ui_objects.inventory_ui import InventoryUI
-from ui_objects.health_bar import draw_health_bar
 from systems.health import is_dead
-from systems import debug
 from systems.hitbox import draw_hitbox
-
-from states.map.map_loader import load_level_data
+from systems.input import read_input
+from ui_objects.health_bar import draw_health_bar
+from ui_objects.inventory_ui import InventoryUI
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5

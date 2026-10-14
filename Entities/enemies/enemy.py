@@ -1,14 +1,16 @@
-import pygame
-from globals import *
-from systems.health import new_health
 from typing import Optional
-from ui_objects.health_bar import draw_health_bar
-from systems.animation import new_animation, advance_animation
-from systems.enemy_ai import fly_velocity, wander_chase_velocity, random_idle_direction
-from systems.movement import move_and_collide
-from systems.assets import load_animations
-from systems.hitbox import draw_hitbox
+
+import pygame
+
+from globals import RED, TILESIZE
 from systems import debug
+from systems.animation import advance_animation, new_animation
+from systems.assets import load_animations
+from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_velocity
+from systems.health import new_health
+from systems.hitbox import draw_hitbox
+from systems.movement import move_and_collide
+from ui_objects.health_bar import draw_health_bar
 
 ENEMY_HEALTH_BAR_WIDTH = TILESIZE
 ENEMY_HEALTH_BAR_HEIGHT = 4
