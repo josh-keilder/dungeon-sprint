@@ -7,8 +7,8 @@ _ANIMATION_CACHE = {}
 
 def load_image(path):
     if path not in _IMAGE_CACHE:
-        sheet = pygame.image.load(path).convert_alpha()
-        _IMAGE_CACHE[path] = sheet
+        image = pygame.image.load(path).convert_alpha()
+        _IMAGE_CACHE[path] = image
 
     return _IMAGE_CACHE[path]
 
