@@ -9,8 +9,11 @@ from ui_objects.cursor import Cursor
 from ui_objects.text_loader import Text_Loader
 from systems import sound, settings
 from systems.display import create_window
+from systems.assets import load_image
 
 TITLE_MUSIC = "JuiceWrldChasingTheDragon"
+
+CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 
 
 class Game:
@@ -27,9 +30,7 @@ class Game:
 
         # Custom cursor setup
         pygame.mouse.set_visible(False)
-        self.cursor_img = pygame.transform.scale_by(
-            pygame.image.load("Assets/Cursors/01.png").convert_alpha(), 0.5
-        )
+        self.cursor_img = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
         self.cursor = Cursor(self.cursor_img)
 
         # Load settings and set initial sound volumes

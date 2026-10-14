@@ -1,16 +1,16 @@
 import pygame
 
-_SHEET_CACHE = {}
+_IMAGE_CACHE = {}
 
 _ANIMATION_CACHE = {}
 
 
-def load_sheet(path):
-    if path not in _SHEET_CACHE:
+def load_image(path):
+    if path not in _IMAGE_CACHE:
         sheet = pygame.image.load(path).convert_alpha()
-        _SHEET_CACHE[path] = sheet
+        _IMAGE_CACHE[path] = sheet
 
-    return _SHEET_CACHE[path]
+    return _IMAGE_CACHE[path]
 
 
 def slice_frames(sheet, entry):
@@ -65,7 +65,7 @@ def load_animations(texture_data, crop_size=None):
         animations = {}
 
         for name, entry in texture_data.items():
-            sheet = load_sheet(entry["file_path"])
+            sheet = load_image(entry["file_path"])
             frames = slice_frames(sheet, entry)
 
             if crop_size is not None:

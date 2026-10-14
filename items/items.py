@@ -1,21 +1,8 @@
-"""
-System: Item and Loot Generation
--------------------------------
-Defines the data structures and world-space objects for the game's item
-system. Uses a Prototype pattern for item instantiation and a static
-image cache to optimize texture loading for large numbers of world items.
-
-Classes:
-    Item: Base data class for all items.
-    EquipmentItem: Specialized item for wearable gear with stats.
-    WorldItem: The physical Sprite representation of an item on the ground.
-    Chest: An interactable container that rolls loot and spawns WorldItems.
-"""
-
 import pygame
 from globals import *
-import pygame, copy, random
+import pygame, copy
 from systems.animation import new_animation, advance_animation
+from systems.assets import load_image
 
 
 class Item:
@@ -104,11 +91,14 @@ class WorldItem(pygame.sprite.Sprite):
         self.image = advance_animation(self.animation, dt)
 
 
+CHEST_IMAGE_PATH = "Assets/Objects/chest_1.png"
+
+
 class Chest(pygame.sprite.Sprite):
     def __init__(self, groups, pos):
         """Interactable container that spawns WorldItems when opened."""
         super().__init__(groups)
-        self.image = CHEST_IMAGE
+        self.image = load_image(CHEST_IMAGE_PATH)
         self.rect = self.image.get_frect(topleft=pos)
         self.pos = pygame.math.Vector2(pos)
 

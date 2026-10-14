@@ -1,6 +1,12 @@
 import pygame
 from globals import *
 from ui_objects.button import Button
+from systems.assets import load_image
+
+START_SCREEN_PATH = "Assets/Menu-Assets/start-screen_1.png"
+START_BUTTON_PATH = "Assets/Menu-Assets/start-button.png"
+EXIT_BUTTON_PATH = "Assets/Menu-Assets/exit-button.png"
+OPTIONS_BUTTON_PATH = "Assets/Menu-Assets/options-button.png"
 
 
 class Start:
@@ -9,16 +15,13 @@ class Start:
         Initializes the start menu, loads assets, and sets up interactive buttons.
         """
         self.gameStateManager = gameStateManager
-        self.image = START_SCREEN_IMAGE.convert_alpha()
+        self.image = load_image(START_SCREEN_PATH)
+        self.start_button_img = load_image(START_BUTTON_PATH)
+        self.exit_button_img = load_image(EXIT_BUTTON_PATH)
+        self.options_button_img = load_image(OPTIONS_BUTTON_PATH)
 
-        # Button Initialization
-        self.start_button_img = START_BUTTON_IMAGE.convert_alpha()
         self.start_button = Button(self.start_button_img, pos=(416, 288))
-
-        self.exit_button_img = EXIT_BUTTON_IMAGE.convert_alpha()
         self.exit_button = Button(self.exit_button_img, pos=(416, 448))
-
-        self.options_button_img = OPTIONS_BUTTON_IMAGE.convert_alpha()
         self.options_button = Button(
             pygame.transform.scale_by(self.options_button_img, 0.5),
             pos=(985, 650),

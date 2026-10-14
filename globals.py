@@ -1,5 +1,3 @@
-import pygame
-
 # Game Settings
 SCREENWIDTH = 1280
 SCREENHEIGHT = 720
@@ -39,25 +37,4 @@ OPTION_MENU_BUTTON_BG = (110, 74, 72)
 OPTION_MENU_BUTTON_FG = (37, 19, 26)
 
 
-# --- Images ---
-""" All images are stored in the globals file to allow for easier locating when changes are needed."""
-
-# Start Screen images
-START_SCREEN_IMAGE = pygame.image.load("Assets/Menu-Assets/start-screen_1.png")
-START_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/start-button.png")
-EXIT_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/exit-button.png")
-OPTIONS_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/options-button.png")
-
-# Options Screen images
-TEMP_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/temp_button.png")
-OPTIONS_SCREEN_IMAGE = pygame.image.load("Assets/Menu-Assets/options-screen.png")
-MAIN_MENU_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/main-menu-button.png")
-BACK_BUTTON_IMAGE = pygame.image.load("Assets/Menu-Assets/back-button.png")
-
-FPS_BUTTON_ON_IMAGE = pygame.image.load("Assets/Menu-Assets/Fps_On.png")
-FPS_BUTTON_OFF_IMAGE = pygame.image.load("Assets/Menu-Assets/Fps_Off.png")
-
-CHEST_IMAGE = pygame.image.load("Assets/Objects/chest_1.png")
-
-# Dungeon Level Maps
 DUNGEON_LEVEL_ONE = "Assets/Maps/Dungeon_Level_One.tmx"

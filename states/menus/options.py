@@ -4,8 +4,15 @@ from ui_objects.button import Button
 from systems import sound, settings
 from ui_objects.slider import Slider
 from ui_objects.text_loader import Text_Loader
-from typing import Any
+from systems.assets import load_image
 from systems.display import create_window
+
+OPTIONS_SCREEN_PATH = "Assets/Menu-Assets/options-screen.png"
+MAIN_MENU_BUTTON_PATH = "Assets/Menu-Assets/main-menu-button.png"
+BACK_BUTTON_PATH = "Assets/Menu-Assets/back-button.png"
+FPS_ON_PATH = "Assets/Menu-Assets/Fps_On.png"
+FPS_OFF_PATH = "Assets/Menu-Assets/Fps_Off.png"
+TEMP_BUTTON_PATH = "Assets/Menu-Assets/temp_button.png"
 
 MUSIC_LABEL = "Music Volume: {}"
 SFX_LABEL = "SFX Volume: {}"
@@ -15,7 +22,7 @@ class Options:
     def __init__(self, game_state_manager) -> None:
         self.gameStateManager = game_state_manager
 
-        self.image = OPTIONS_SCREEN_IMAGE.convert_alpha()
+        self.image = load_image(OPTIONS_SCREEN_PATH)
 
         # Slider math: Convert 0.0-1.0 float to 0-100 integer for UI display
         self.music_slider_value = int(settings.get_setting("music_volume") * 100)
@@ -53,12 +60,12 @@ class Options:
         )
 
         # Navigation Buttons
-        self.main_menu_button_img = MAIN_MENU_BUTTON_IMAGE.convert_alpha()
+        self.main_menu_button_img = load_image(MAIN_MENU_BUTTON_PATH)
         self.main_menu_button = Button(
             pygame.transform.scale_by(self.main_menu_button_img, 0.4),
             pos=(15, 650),
         )
-        self.back_button_img = BACK_BUTTON_IMAGE.convert_alpha()
+        self.back_button_img = load_image(BACK_BUTTON_PATH)
         self.back_button = Button(
             pygame.transform.scale_by(self.back_button_img, 0.4),
             pos=(1135, 650),
@@ -66,11 +73,9 @@ class Options:
 
         # Toggle Buttons (FPS and placeholders for others)
         self.fps_button_off_img = pygame.transform.scale_by(
-            FPS_BUTTON_OFF_IMAGE.convert_alpha(), 0.5
+            load_image(FPS_OFF_PATH), 0.5
         )
-        self.fps_button_on_img = pygame.transform.scale_by(
-            FPS_BUTTON_ON_IMAGE.convert_alpha(), 0.5
-        )
+        self.fps_button_on_img = pygame.transform.scale_by(load_image(FPS_ON_PATH), 0.5)
 
         initial_fps_img = (
             self.fps_button_on_img
@@ -79,7 +84,7 @@ class Options:
         )
         self.fps_button = Button(initial_fps_img, pos=(450, 200))
 
-        self.full_screen_button = Button(TEMP_BUTTON_IMAGE, pos=(100, 300))
+        self.full_screen_button = Button(load_image(TEMP_BUTTON_PATH), pos=(100, 300))
 
     def can_go_back(self):
         return self.gameStateManager.get_previous_state() == "level"
