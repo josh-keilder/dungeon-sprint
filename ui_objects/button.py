@@ -11,7 +11,7 @@ Classes:
 
 import pygame
 from globals import *
-from ui_objects.create_outline import create_outline
+from ui_objects.create_outline import make_outline, draw_outline
 from systems import sound
 
 
@@ -26,17 +26,18 @@ class Button:
             pos (tuple): The (x, y) coordinates for the top-left corner.
         """
         self.image = image
+        self.outline = make_outline(self.image, WHITE)
         self.rect = self.image.get_frect()
         self.rect.topleft = pos
         self.hovered = False
-        self.clicked = False
+        self.clicked_this_frame = False
 
     def draw(self, screen):
         """Renders the button and its hover outline to the screen."""
         screen.blit(self.image, (self.rect.x, self.rect.y))
 
         if self.hovered:
-            create_outline(screen, self, WHITE, (self.rect.x, self.rect.y))
+            draw_outline(screen, self.outline, (self.rect.x, self.rect.y))
 
     def update(self):
         """Updates the hover state and triggers hover sound effects."""
@@ -49,24 +50,15 @@ class Button:
         else:
             self.hovered = False
 
+        self.clicked_this_frame = self.hovered and pygame.mouse.get_just_pressed()[0]
+
+        if self.clicked_this_frame:
+            sound.play_sfx("Button_Click")
+
     def is_clicked(self) -> bool:
-        """
-        Detects a single click event (mouse down then up).
+        return self.clicked_this_frame
 
-        Returns:
-            bool: True if the button was clicked in the current frame.
-        """
-        action = False
-
-        if self.hovered:
-            # Check for initial click (button down)
-            if pygame.mouse.get_pressed()[0] == 1 and not self.clicked:
-                self.clicked = True
-                action = True
-                sound.play_sfx("Button_Click")
-
-        # Reset 'clicked' state once the mouse button is released
-        if pygame.mouse.get_pressed()[0] == 0:
-            self.clicked = False
-
-        return action
+    def set_image(self, image):
+        self.image = image
+        self.outline = make_outline(image, WHITE)
+        self.rect = image.get_frect(topleft=self.rect.topleft)

@@ -116,7 +116,7 @@ class Slider:
         pygame.draw.rect(screen, self.track_color, filled_rect, border_radius=5)
 
         # Knob rendering with visual feedback for interaction
-        color = WHITE if self.hovered or self.dragging else LIGHT_GRAY
+        color = WHITE if self.hovered or self.dragging else self.knob_color
         pygame.draw.rect(screen, color, self.button_rect, border_radius=3)
 
     def get_current_value(self):

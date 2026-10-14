@@ -117,7 +117,7 @@ class Options:
         if self.fps_button.is_clicked():
             fps_enabled = not settings.get_setting("fps_enabled")
             settings.set_setting("fps_enabled", fps_enabled)
-            self.fps_button.image = (
+            self.fps_button.set_image(
                 self.fps_button_on_img if fps_enabled else self.fps_button_off_img
             )
 
