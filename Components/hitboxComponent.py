@@ -63,7 +63,7 @@ class Hitbox(Component):
         Visualizes the pixel-perfect outline of the mask.
         Only renders if global debug hitboxes are enabled or explicitly requested.
         """
-        if debug.toggle_hitboxes or skip_debug:
+        if debug.show_hitboxes or skip_debug:
             # Adjust drawing position based on camera offset
             offset_x = self.rect.x - (camera.x if camera else 0)
             offset_y = self.rect.y - (camera.y if camera else 0)
