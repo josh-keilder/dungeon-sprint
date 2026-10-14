@@ -15,6 +15,8 @@ TITLE_MUSIC = "JuiceWrldChasingTheDragon"
 
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 
+FPS_REFRESH_INTERVAL = 0.5
+
 
 class Game:
     def __init__(self):
@@ -30,8 +32,8 @@ class Game:
 
         # Custom cursor setup
         pygame.mouse.set_visible(False)
-        self.cursor_img = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
-        self.cursor = Cursor(self.cursor_img)
+        cursor_img = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
+        self.cursor = Cursor(cursor_img)
 
         # Load settings and set initial sound volumes
         music_volume = settings.get_setting("music_volume")
@@ -43,8 +45,8 @@ class Game:
         sound.play_music(TITLE_MUSIC)
 
         # FPS UI Setup
-        self.fps = None
-        self.fps_text = Text_Loader(self.fps, font_size=15, pos=(1215, 0), color=WHITE)
+        self.fps_timer = 0.0
+        self.fps_text = Text_Loader("", font_size=15, pos=(1215, 0), color=WHITE)
 
         # State Machine Setup: Handles transitions between menus and gameplay levels
         self.gameStateManager = GameStateManager("start")
@@ -75,12 +77,10 @@ class Game:
         self.gameStateManager.get_state().update(self.dt)
         self.cursor.update()
 
-        pygame.display.update()
-
-        # Performance monitoring: Update FPS display approximately every 0.5 seconds
-        if pygame.time.get_ticks() % 500 < 20:
-            self.fps = self.clock.get_fps()
-            self.fps_text.update_text(f"FPS: {int(self.fps)}")
+        self.fps_timer += self.dt
+        if self.fps_timer >= FPS_REFRESH_INTERVAL:
+            self.fps_timer -= FPS_REFRESH_INTERVAL
+            self.fps_text.update_text(f"FPS: {int(self.clock.get_fps())}")
 
     def draw(self):
         """Renders the current state and global UI elements to the screen."""
@@ -91,6 +91,8 @@ class Game:
             self.fps_text.draw(screen)
 
         self.cursor.draw(screen)
+
+        pygame.display.update()
 
 
 if __name__ == "__main__":
