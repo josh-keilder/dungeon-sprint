@@ -9,7 +9,7 @@ from systems.assets import load_image
 class Item:
     def __init__(
         self,
-        id: str,
+        item_id: str,
         name: str = None,
         animations: dict = None,
         description: str = None,
@@ -18,7 +18,7 @@ class Item:
         animation_speed: int = 4,
         value_text: str = None,
     ):
-        self.id = id
+        self.id = item_id
         self.name = name
         self.animations = animations
         self.description = description
@@ -36,7 +36,7 @@ class Item:
 class EquipmentItem(Item):
     def __init__(
         self,
-        id: str,
+        item_id: str,
         name: str = None,
         animations: dict = None,
         description: str = None,
@@ -45,7 +45,7 @@ class EquipmentItem(Item):
         value_text: str = None,
     ):
         super().__init__(
-            id=id,
+            item_id=item_id,
             name=name,
             animations=animations,
             description=description,

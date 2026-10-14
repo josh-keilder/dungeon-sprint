@@ -117,9 +117,9 @@ class Level:
 
         # Ground items and chests
         for group in [self.ground_items, self.chests]:
-            for obj in group:
-                if is_on_screen(obj.rect):
-                    obj.draw(screen, camera)
+            for sprite in group:
+                if is_on_screen(sprite.rect):
+                    sprite.draw(screen, camera)
 
         # Actors, sorted by y so lower ones draw on top
         actors = [self.player] + self.enemies

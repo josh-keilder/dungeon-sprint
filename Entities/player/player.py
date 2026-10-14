@@ -57,10 +57,10 @@ class Player:
 
     def update(self, dt, walls):
 
-        move = self.intent["move"]
-        self.walking = move.length_squared() > 0
+        move_direction = self.intent["move"]
+        self.walking = move_direction.length_squared() > 0
         if self.walking and not self.roll["active"]:
-            self.update_facing(move)
+            self.update_facing(move_direction)
 
         self.stats = compute_stats(
             self.base_stats, self.inventory["equipment"].values()
@@ -71,7 +71,7 @@ class Player:
 
         # Actions requested this frame
         if self.intent["roll"]:
-            try_start_roll(self.roll, move)
+            try_start_roll(self.roll, move_direction)
 
         if self.intent["heal"]:
             use_small_health_potion(self.health, self.inventory)
@@ -101,17 +101,17 @@ class Player:
         else:
             action = "idle"
 
-        anim_name = f"player_{action}_{self.last_direction}"
-        set_animation(self.animation, anim_name)
+        animation_name = f"player_{action}_{self.last_direction}"
+        set_animation(self.animation, animation_name)
 
-    def update_facing(self, move):
-        if move.y < 0:
+    def update_facing(self, move_direction):
+        if move_direction.y < 0:
             self.last_direction = "up"
-        elif move.y > 0:
+        elif move_direction.y > 0:
             self.last_direction = "down"
-        elif move.x < 0:
+        elif move_direction.x < 0:
             self.last_direction = "left"
-        elif move.x > 0:
+        elif move_direction.x > 0:
             self.last_direction = "right"
 
     def update_movement(self, dt, walls):

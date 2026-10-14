@@ -5,6 +5,6 @@ from systems.assets import load_animations
 
 
 def load_player(spawn_pos) -> object:
-    player_textures = load_animations(player_texture_data, crop_size=TILE_SIZE)
+    player_animations = load_animations(player_texture_data, crop_size=TILE_SIZE)
 
-    return Player(animations=player_textures, pos=spawn_pos)
+    return Player(animations=player_animations, pos=spawn_pos)

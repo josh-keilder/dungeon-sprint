@@ -32,8 +32,8 @@ class Game:
 
         # Custom cursor setup
         pygame.mouse.set_visible(False)
-        cursor_img = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
-        self.cursor = Cursor(cursor_img)
+        cursor_image = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
+        self.cursor = Cursor(cursor_image)
 
         # Sound: load files, apply saved volumes, start the title music
         music_volume = settings.get_setting("music_volume")

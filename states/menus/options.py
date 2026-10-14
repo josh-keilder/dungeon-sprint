@@ -34,8 +34,8 @@ class Options:
             pos=(640, 575),
             size=(300, 20),
             initial_value=float(self.music_slider_value),
-            min_val=0.0,
-            max_val=100.0,
+            min_value=0.0,
+            max_value=100.0,
             track_color=OPTION_MENU_BUTTON_BACKGROUND,
             knob_color=LIGHT_GRAY,
         )
@@ -49,8 +49,8 @@ class Options:
             pos=(640, 475),
             size=(300, 20),
             initial_value=float(self.sfx_slider_value),
-            min_val=0.0,
-            max_val=100.0,
+            min_value=0.0,
+            max_value=100.0,
             track_color=OPTION_MENU_BUTTON_BACKGROUND,
             knob_color=LIGHT_GRAY,
         )
@@ -61,29 +61,29 @@ class Options:
         )
 
         # Navigation Buttons
-        self.main_menu_button_img = load_image(MAIN_MENU_BUTTON_PATH)
+        self.main_menu_button_image = load_image(MAIN_MENU_BUTTON_PATH)
         self.main_menu_button = Button(
-            pygame.transform.scale_by(self.main_menu_button_img, 0.4),
+            pygame.transform.scale_by(self.main_menu_button_image, 0.4),
             pos=(15, 650),
         )
-        self.back_button_img = load_image(BACK_BUTTON_PATH)
+        self.back_button_image = load_image(BACK_BUTTON_PATH)
         self.back_button = Button(
-            pygame.transform.scale_by(self.back_button_img, 0.4),
+            pygame.transform.scale_by(self.back_button_image, 0.4),
             pos=(1135, 650),
         )
 
         # Toggle buttons: FPS and fullscreen
-        self.fps_button_off_img = pygame.transform.scale_by(
+        self.fps_button_off_image = pygame.transform.scale_by(
             load_image(FPS_OFF_PATH), 0.5
         )
-        self.fps_button_on_img = pygame.transform.scale_by(load_image(FPS_ON_PATH), 0.5)
+        self.fps_button_on_image = pygame.transform.scale_by(load_image(FPS_ON_PATH), 0.5)
 
-        initial_fps_img = (
-            self.fps_button_on_img
+        initial_fps_image = (
+            self.fps_button_on_image
             if settings.get_setting("fps_enabled")
-            else self.fps_button_off_img
+            else self.fps_button_off_image
         )
-        self.fps_button = Button(initial_fps_img, pos=(450, 200))
+        self.fps_button = Button(initial_fps_image, pos=(450, 200))
 
         self.full_screen_button = Button(load_image(TEMP_BUTTON_PATH), pos=(100, 300))
 
@@ -124,7 +124,7 @@ class Options:
             fps_enabled = not settings.get_setting("fps_enabled")
             settings.set_setting("fps_enabled", fps_enabled)
             self.fps_button.set_image(
-                self.fps_button_on_img if fps_enabled else self.fps_button_off_img
+                self.fps_button_on_image if fps_enabled else self.fps_button_off_image
             )
 
         if self.full_screen_button.is_clicked():

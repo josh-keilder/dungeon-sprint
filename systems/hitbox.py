@@ -9,9 +9,9 @@ def get_mask(image):
     return _MASK_CACHE[image]
 
 
-def sprites_overlap(a, b):
-    offset = (b.rect.x - a.rect.x, b.rect.y - a.rect.y)
-    return get_mask(a.image).overlap(get_mask(b.image), offset) is not None
+def sprites_overlap(first_sprite, second_sprite):
+    offset = (second_sprite.rect.x - first_sprite.rect.x, second_sprite.rect.y - first_sprite.rect.y)
+    return get_mask(first_sprite.image).overlap(get_mask(second_sprite.image), offset) is not None
 
 
 def draw_hitbox(screen, image, rect, camera, color):

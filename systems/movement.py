@@ -50,12 +50,12 @@ def steer(velocity, direction, acceleration, friction, max_speed, dt):
 
     else:
         if new_velocity.length_squared() > 0:
-            drop = new_velocity.normalize() * friction * IDLE_DRAG_MULTIPLIER * dt
+            speed_loss = new_velocity.normalize() * friction * IDLE_DRAG_MULTIPLIER * dt
 
-            if new_velocity.length_squared() < drop.length_squared():
+            if new_velocity.length_squared() < speed_loss.length_squared():
                 new_velocity.update(0, 0)
             else:
-                new_velocity -= drop
+                new_velocity -= speed_loss
 
     if new_velocity.length_squared() > max_speed**2:
         new_velocity.scale_to_length(max_speed)

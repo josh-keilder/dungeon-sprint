@@ -2,7 +2,7 @@ import json
 import os
 from typing import Any
 
-FILENAME = "settings.json"
+SETTINGS_FILE_PATH = "settings.json"
 
 SETTINGS = {
     "fps_enabled": False,
@@ -13,18 +13,18 @@ SETTINGS = {
 
 
 def load_settings() -> None:
-    if os.path.exists(FILENAME):
+    if os.path.exists(SETTINGS_FILE_PATH):
         try:
-            with open(FILENAME, "r") as file:
-                file_data = json.load(file)
-                SETTINGS.update(file_data)
+            with open(SETTINGS_FILE_PATH, "r") as settings_file:
+                saved_settings = json.load(settings_file)
+                SETTINGS.update(saved_settings)
         except (json.JSONDecodeError, IOError):
             print("Warning: Settings file corrupted, using defaults.")
 
 
 def save_settings() -> None:
-    with open(FILENAME, "w") as file:
-        json.dump(SETTINGS, file, indent=4)
+    with open(SETTINGS_FILE_PATH, "w") as settings_file:
+        json.dump(SETTINGS, settings_file, indent=4)
 
 
 def get_setting(setting_name: str) -> str:

@@ -42,26 +42,26 @@ def fly_velocity(enemy, target_pos, dt):
 
     if enemy.flee_timer > 0:
         enemy.flee_timer -= dt
-        dir_vector = (enemy.pos - target_pos).normalize() * enemy.speed
+        velocity = (enemy.pos - target_pos).normalize() * enemy.speed
     elif enemy.return_timer > 0:
         enemy.return_timer -= dt
-        dir_vector = (target_pos - enemy.pos).normalize() * enemy.speed
+        velocity = (target_pos - enemy.pos).normalize() * enemy.speed
     elif distance < CHASE_RANGE:
-        dir_vector = (target_pos - enemy.pos).normalize() * enemy.speed
+        velocity = (target_pos - enemy.pos).normalize() * enemy.speed
     else:
         if random.random() < IDLE_TURN_CHANCE:
             enemy.idle_direction = random_idle_direction()
-        dir_vector = enemy.idle_direction * enemy.speed * FLY_WANDER_FACTOR
+        velocity = enemy.idle_direction * enemy.speed * FLY_WANDER_FACTOR
 
-    return dir_vector
+    return velocity
 
 
 def wander_chase_velocity(enemy, target_pos, walls):
     if has_line_of_sight(enemy.pos, target_pos, walls):
-        dir_vector = (target_pos - enemy.pos).normalize() * enemy.speed
+        velocity = (target_pos - enemy.pos).normalize() * enemy.speed
     else:
         if random.random() < IDLE_TURN_CHANCE:
             enemy.idle_direction = random_idle_direction()
-        dir_vector = enemy.idle_direction * enemy.speed * WALK_WANDER_FACTOR
+        velocity = enemy.idle_direction * enemy.speed * WALK_WANDER_FACTOR
 
-    return dir_vector
+    return velocity

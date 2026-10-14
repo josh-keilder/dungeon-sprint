@@ -32,43 +32,43 @@ def build_map(tmx_data):
     for layer in tmx_data.visible_layers:
 
         if layer.name == "Floor":
-            for x, y, surf in layer.tiles():
-                map_surface.blit(surf, (x * TILE_SIZE, y * TILE_SIZE))
+            for x, y, tile_image in layer.tiles():
+                map_surface.blit(tile_image, (x * TILE_SIZE, y * TILE_SIZE))
 
         elif layer.name == "Walls":
-            for x, y, surf in layer.tiles():
+            for x, y, tile_image in layer.tiles():
                 WallTile(
                     groups=wall_tiles,
-                    image=surf,
+                    image=tile_image,
                     pos=(x * TILE_SIZE, y * TILE_SIZE),
                 )
 
         elif layer.name in ["Wall_Decor", "Floor_Decor"]:
-            for x, y, surf in layer.tiles():
+            for x, y, tile_image in layer.tiles():
                 DecorTile(
                     groups=decor_tiles,
-                    image=surf,
+                    image=tile_image,
                     pos=(x * TILE_SIZE, y * TILE_SIZE),
                 )
 
         elif layer.name == "Door_Tiles":
-            for x, y, surf in layer.tiles():
+            for x, y, tile_image in layer.tiles():
                 door_tile = Door(
                     groups=door_tiles,
-                    image=surf,
+                    image=tile_image,
                     pos=(x * TILE_SIZE, y * TILE_SIZE),
                 )
                 # Extract door_id property from the logic layer at the same coordinate
-                logic_props = tmx_data.get_tile_properties(
+                logic_properties = tmx_data.get_tile_properties(
                     x, y, tmx_data.layers.index(logic_layer)
                 )
-                if logic_props:
-                    door_tile.door_id = logic_props.get("door_id")
+                if logic_properties:
+                    door_tile.door_id = logic_properties.get("door_id")
 
         elif layer.name == "Chests":
-            for obj in layer:
-                if obj.name.lower() == "chest":
-                    Chest(pos=(obj.x, obj.y), groups=chests)
+            for map_object in layer:
+                if map_object.name.lower() == "chest":
+                    Chest(pos=(map_object.x, map_object.y), groups=chests)
 
     return {
         "map_surface": map_surface,
@@ -81,9 +81,9 @@ def build_map(tmx_data):
 
 def find_player_spawn(tmx_data):
 
-    for obj in tmx_data.objects:
-        if obj.name == "Player":
-            return (obj.x, obj.y)
+    for map_object in tmx_data.objects:
+        if map_object.name == "Player":
+            return (map_object.x, map_object.y)
 
     return (0, 0)
 
@@ -91,14 +91,14 @@ def find_player_spawn(tmx_data):
 def find_enemy_spawns(tmx_data):
     enemy_positions = {}
 
-    for obj in tmx_data.objects:
-        if obj.name and obj.name.startswith("Enemy_"):
+    for map_object in tmx_data.objects:
+        if map_object.name and map_object.name.startswith("Enemy_"):
             # Split 'Enemy_Skeleton' into ['Enemy', 'Skeleton'] and take the latter
-            enemy_type = obj.name.split("_", 1)[1]
+            enemy_type = map_object.name.split("_", 1)[1]
 
             if enemy_type not in enemy_positions:
                 enemy_positions[enemy_type] = []
 
-            enemy_positions[enemy_type].append((obj.x, obj.y))
+            enemy_positions[enemy_type].append((map_object.x, map_object.y))
 
     return enemy_positions

@@ -19,9 +19,9 @@ def slice_frames(sheet, entry):
 
     frames = []
 
-    for i in range(entry["frames"]):
+    for frame_index in range(entry["frames"]):
 
-        frame = sheet.subsurface(pygame.Rect(i * width, row * height, width, height))
+        frame = sheet.subsurface(pygame.Rect(frame_index * width, row * height, width, height))
         frames.append(frame)
 
     return frames

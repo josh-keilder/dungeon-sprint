@@ -12,19 +12,19 @@ _current_music_volume = 0.5
 def load_sfx() -> None:
     directory = "Assets/Sounds"
     if os.path.exists(directory):
-        for file in os.listdir(directory):
-            if file.endswith((".wav", ".ogg")):
-                name = os.path.splitext(file)[0]
-                SFX[name] = pygame.mixer.Sound(os.path.join(directory, file))
+        for filename in os.listdir(directory):
+            if filename.endswith((".wav", ".ogg")):
+                name = os.path.splitext(filename)[0]
+                SFX[name] = pygame.mixer.Sound(os.path.join(directory, filename))
 
 
 def load_music() -> None:
     directory = "Assets/Music"
     if os.path.exists(directory):
-        for file in os.listdir(directory):
-            if file.endswith((".wav", ".ogg")):
-                name = os.path.splitext(file)[0]
-                MUSIC[name] = os.path.join(directory, file)
+        for filename in os.listdir(directory):
+            if filename.endswith((".wav", ".ogg")):
+                name = os.path.splitext(filename)[0]
+                MUSIC[name] = os.path.join(directory, filename)
 
 
 def play_sfx(name: str, volume: Optional[float] = None) -> None:

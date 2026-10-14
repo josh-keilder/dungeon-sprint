@@ -13,14 +13,14 @@ class Start:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
         self.image = load_image(START_SCREEN_PATH)
-        self.start_button_img = load_image(START_BUTTON_PATH)
-        self.exit_button_img = load_image(EXIT_BUTTON_PATH)
-        self.options_button_img = load_image(OPTIONS_BUTTON_PATH)
+        self.start_button_image = load_image(START_BUTTON_PATH)
+        self.exit_button_image = load_image(EXIT_BUTTON_PATH)
+        self.options_button_image = load_image(OPTIONS_BUTTON_PATH)
 
-        self.start_button = Button(self.start_button_img, pos=(416, 288))
-        self.exit_button = Button(self.exit_button_img, pos=(416, 448))
+        self.start_button = Button(self.start_button_image, pos=(416, 288))
+        self.exit_button = Button(self.exit_button_image, pos=(416, 448))
         self.options_button = Button(
-            pygame.transform.scale_by(self.options_button_img, 0.5),
+            pygame.transform.scale_by(self.options_button_image, 0.5),
             pos=(985, 650),
         )
 
