@@ -1,6 +1,6 @@
 # Dungeon Sprint
 
-Dungeon Sprint is a 2D top-down dungeon adventure built with Python and Pygame. It features a modular, object-oriented architecture, a menu/state system, and a single hand-built dungeon level with combat-adjacent player mechanics, items, enemies, doors, and a camera that follows the player through the map.
+Dungeon Sprint is a 2D top-down dungeon adventure built with Python and Pygame. It features a modular architecture built from plain data and function-based systems, a menu/state system, and a single hand-built dungeon level with combat-adjacent player mechanics, items, enemies, doors, and a camera that follows the player through the map.
 
 ## Overview
 
@@ -38,19 +38,23 @@ The game currently includes:
 ## Tech Stack
 
 - Python
-- Pygame
+- pygame-ce (Pygame Community Edition)
 - pytmx
 
 ## Project Structure
 
-- `main.py` - Game bootstrap and main loop
-- `states/` - Menu and gameplay states
-- `Entities/` - Player and enemy logic
-- `Components/` - Reusable gameplay components
-- `Controllers/` - Sound and animation controllers
-- `items/` - Item data, textures, and inventory objects
-- `ui_objects/` - Camera, cursor, text, buttons, and sliders
+- `main.py` - Game startup and main loop
+- `globals.py` - Shared constants: screen size, tile size, colors, map path
+- `entities/` - Player and enemy classes, their stats and sprite data
+- `items/` - Item classes, item database, sprite data, and loot tables
+- `states/` - Game state manager, dungeon level and map loading, start and options menus
+- `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, sound, settings, and more
+- `ui_objects/` - Buttons, sliders, text labels, health bars, inventory screen, cursor
+- `tools/` - Developer scripts (line counter used by the pre-commit hook)
+- `hooks/` - Git pre-commit hook
 - `Assets/` - Sprites, maps, audio, and UI art
+
+For a full explanation of how the code works, see [Project_Documentation.md](Project_Documentation.md).
 
 ## Running Locally
 
