@@ -35,7 +35,7 @@ class Button:
         if self.clicked_this_frame:
             sound.play_sfx("Button_Click")
 
-    def is_clicked(self) -> bool:
+    def is_clicked(self):
         return self.clicked_this_frame
 
     def set_image(self, image):

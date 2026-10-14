@@ -9,14 +9,14 @@ from systems.assets import load_image
 class Item:
     def __init__(
         self,
-        item_id: str,
-        name: str = None,
-        animations: dict = None,
-        description: str = None,
-        quantity: int = 1,
-        max_stack: int = 99,
-        animation_speed: int = 4,
-        value_text: str = None,
+        item_id,
+        name=None,
+        animations=None,
+        description=None,
+        quantity=1,
+        max_stack=99,
+        animation_speed=4,
+        value_text=None,
     ):
         self.id = item_id
         self.name = name
@@ -36,13 +36,13 @@ class Item:
 class EquipmentItem(Item):
     def __init__(
         self,
-        item_id: str,
-        name: str = None,
-        animations: dict = None,
-        description: str = None,
-        slot: str = None,
-        bonuses: dict = None,
-        value_text: str = None,
+        item_id,
+        name=None,
+        animations=None,
+        description=None,
+        slot=None,
+        bonuses=None,
+        value_text=None,
     ):
         super().__init__(
             item_id=item_id,

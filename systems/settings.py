@@ -1,6 +1,5 @@
 import json
 import os
-from typing import Any
 
 SETTINGS_FILE_PATH = "settings.json"
 
@@ -12,7 +11,7 @@ SETTINGS = {
 }
 
 
-def load_settings() -> None:
+def load_settings():
     if os.path.exists(SETTINGS_FILE_PATH):
         try:
             with open(SETTINGS_FILE_PATH, "r") as settings_file:
@@ -22,14 +21,14 @@ def load_settings() -> None:
             print("Warning: Settings file corrupted, using defaults.")
 
 
-def save_settings() -> None:
+def save_settings():
     with open(SETTINGS_FILE_PATH, "w") as settings_file:
         json.dump(SETTINGS, settings_file, indent=4)
 
 
-def get_setting(setting_name: str) -> str:
+def get_setting(setting_name):
     return SETTINGS.get(setting_name)
 
 
-def set_setting(setting_name: str, setting_value: Any) -> None:
+def set_setting(setting_name, setting_value):
     SETTINGS[setting_name] = setting_value

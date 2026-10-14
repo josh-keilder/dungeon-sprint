@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pygame
 
 from globals import RED, TILE_SIZE
@@ -18,7 +16,7 @@ ENEMY_HEALTH_BAR_GAP = 8
 
 
 class Enemy:
-    def __init__(self, type_data, pos) -> None:
+    def __init__(self, type_data, pos):
         animations = load_animations(type_data["texture_data"])
         start_animation = type_data["start_animation"]
         self.attack_damage = type_data["attack_damage"]
@@ -36,7 +34,7 @@ class Enemy:
         self.return_timer = 0.0
         self.idle_direction = random_idle_direction()
 
-    def update(self, dt, walls, target_pos) -> None:
+    def update(self, dt, walls, target_pos):
         self.image = advance_animation(self.animation, dt)
         self.update_movement(dt, walls, target_pos)
         self.pos.xy = self.rect.topleft
@@ -51,9 +49,7 @@ class Enemy:
             velocity = wander_chase_velocity(self, target_pos, walls)
             move_and_collide(self.rect, velocity * dt, walls)
 
-    def draw(
-        self, screen: pygame.Surface, camera: Optional[pygame.Rect] = None
-    ) -> None:
+    def draw(self, screen, camera=None):
 
         draw_pos = self.rect.topleft
 

@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import pygame
 
@@ -9,7 +8,7 @@ _current_sfx_volume = 0.5
 _current_music_volume = 0.5
 
 
-def load_sfx() -> None:
+def load_sfx():
     directory = "Assets/Sounds"
     if os.path.exists(directory):
         for filename in os.listdir(directory):
@@ -18,7 +17,7 @@ def load_sfx() -> None:
                 SFX[name] = pygame.mixer.Sound(os.path.join(directory, filename))
 
 
-def load_music() -> None:
+def load_music():
     directory = "Assets/Music"
     if os.path.exists(directory):
         for filename in os.listdir(directory):
@@ -27,7 +26,7 @@ def load_music() -> None:
                 MUSIC[name] = os.path.join(directory, filename)
 
 
-def play_sfx(name: str, volume: Optional[float] = None) -> None:
+def play_sfx(name, volume=None):
     if name in SFX:
         sound = SFX[name]
         if volume is None:
@@ -39,9 +38,7 @@ def play_sfx(name: str, volume: Optional[float] = None) -> None:
         print(f"Sound '{name}' not found")
 
 
-def play_music(
-    name: str = None, loops: int = 0, volume: Optional[float] = None
-) -> None:
+def play_music(name=None, loops=0, volume=None):
     if pygame.mixer.music.get_busy() and name is None:
         return
 
@@ -56,18 +53,18 @@ def play_music(
         print(f"Music track '{name}' not found")
 
 
-def stop_music() -> None:
+def stop_music():
     pygame.mixer.music.stop()
 
 
-def set_music_volume(volume: float) -> None:
+def set_music_volume(volume):
     global _current_music_volume
     volume = max(0.0, min(1.0, volume))
     _current_music_volume = volume
     pygame.mixer.music.set_volume(volume)
 
 
-def set_sfx_volume(volume: float) -> None:
+def set_sfx_volume(volume):
     global _current_sfx_volume
     volume = max(0.0, min(1.0, volume))
     _current_sfx_volume = volume

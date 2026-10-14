@@ -1,7 +1,7 @@
 import pygame
 
 
-def read_input() -> dict:
+def read_input():
     keys_held = pygame.key.get_pressed()
     keys_just_pressed = pygame.key.get_just_pressed()
 

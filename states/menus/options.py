@@ -20,7 +20,7 @@ SFX_LABEL = "SFX Volume: {}"
 
 
 class Options:
-    def __init__(self, game_state_manager) -> None:
+    def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
         self.image = load_image(OPTIONS_SCREEN_PATH)
@@ -90,7 +90,7 @@ class Options:
     def can_go_back(self):
         return self.game_state_manager.get_previous_state() == "level"
 
-    def draw(self, screen) -> None:
+    def draw(self, screen):
         screen.blit(self.image, (0, 0))
 
         self.main_menu_button.draw(screen)
@@ -107,7 +107,7 @@ class Options:
         if self.can_go_back():
             self.back_button.draw(screen)
 
-    def update(self, dt: float) -> None:
+    def update(self, dt):
         self.main_menu_button.update()
         self.fps_button.update()
         self.full_screen_button.update()

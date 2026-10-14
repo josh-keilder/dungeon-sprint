@@ -17,7 +17,7 @@ class GameStateManager:
         self.previous = self.current
         self.current = name
 
-    def get_previous_state(self) -> str:
+    def get_previous_state(self):
         return self.previous
 
     def go_back(self):

@@ -2,7 +2,7 @@ from entities.enemies.enemy import Enemy
 from entities.enemies.enemy_type_data import ENEMY_TYPES
 
 
-def load_enemies(enemy_spawns) -> list:
+def load_enemies(enemy_spawns):
     enemies = []
 
     for enemy_type, positions in enemy_spawns.items():
