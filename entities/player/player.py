@@ -14,7 +14,6 @@ from systems.stats import compute_stats
 
 class Player:
     def __init__(self, animations, pos=(0, 0)):
-
         self.last_direction = "down"
         self.walking = False
         self.pos = pygame.math.Vector2(pos)
@@ -56,7 +55,6 @@ class Player:
         )
 
     def update(self, dt, walls):
-
         move_direction = self.intent["move"]
         self.walking = move_direction.length_squared() > 0
         if self.walking and not self.roll["active"]:

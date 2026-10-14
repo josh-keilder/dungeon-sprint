@@ -20,7 +20,6 @@ def slice_frames(sheet, entry):
     frames = []
 
     for frame_index in range(entry["frames"]):
-
         frame = sheet.subsurface(pygame.Rect(frame_index * width, row * height, width, height))
         frames.append(frame)
 
@@ -42,7 +41,6 @@ def crop_center(frames, crop_size):
 
 
 def add_flipped_left(animations):
-
     for name, frames in list(animations.items()):
         if not name.endswith("_right"):
             continue

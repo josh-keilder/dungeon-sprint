@@ -2,10 +2,10 @@ import random
 
 import pygame
 
-from Entities.enemies.load_enemies import load_enemies
-from Entities.player.load_player import load_player
+from entities.enemies.load_enemies import load_enemies
+from entities.player.load_player import load_player
 from globals import UNLOCK_DOOR_DISTANCE, WHITE
-from items.itemDataBase import initialize_item_database
+from items.item_database import initialize_item_database
 from items.items import WorldItem
 from states.map.map_loader import load_level_data
 from systems import debug, interact, sound
@@ -57,7 +57,6 @@ class Level:
         self.inventory_ui = InventoryUI()
 
     def update(self, dt):
-
         self.player.intent = read_input()
 
         if self.player.intent["pause"]:

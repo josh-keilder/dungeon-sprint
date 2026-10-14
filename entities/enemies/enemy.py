@@ -37,7 +37,6 @@ class Enemy:
         self.idle_direction = random_idle_direction()
 
     def update(self, dt, walls, target_pos) -> None:
-
         self.image = advance_animation(self.animation, dt)
         self.update_movement(dt, walls, target_pos)
         self.pos.xy = self.rect.topleft

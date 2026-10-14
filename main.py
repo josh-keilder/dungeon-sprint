@@ -4,7 +4,7 @@ from globals import DUNGEON_LEVEL_ONE, FRAME_RATE, SCREEN_HEIGHT, SCREEN_WIDTH, 
 from states.map.level import Level
 from states.menus.options import Options
 from states.menus.start import Start
-from states.stateManager import GameStateManager
+from states.state_manager import GameStateManager
 from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window

@@ -1,4 +1,4 @@
-from Entities.enemies.enemyTextureData import skull_enemy_texture_data
+from entities.enemies.enemy_texture_data import skull_enemy_texture_data
 
 ENEMY_TYPES = {
     "Skull": {

@@ -1,5 +1,5 @@
 from globals import SMALL_HEALTH_POTION_VALUE
-from items.itemTextureData import (
+from items.item_texture_data import (
     gold_key_texture_data,
     health_potion_texture_data,
     speed_boots_texture_data,
@@ -15,7 +15,6 @@ def initialize_item_database():
     gold_key_frames = load_animations(gold_key_texture_data)
     small_health_potion_frames = load_animations(health_potion_texture_data)
     speed_boots_frames = load_animations(speed_boots_texture_data)
-
 
     # Key Items
     item_database["gold_key"] = Item(

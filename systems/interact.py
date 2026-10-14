@@ -1,4 +1,4 @@
-from items.lootTableData import CHEST_LOOT
+from items.loot_table_data import CHEST_LOOT
 from systems.inventory import add_item, has_item, remove_item
 from systems.loot import roll_loot
 

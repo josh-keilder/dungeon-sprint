@@ -4,7 +4,6 @@ WINDOW_TITLE = "Dungeon Sprint"
 
 
 def create_window(width, height, fullscreen):
-
     pygame.display.set_caption(WINDOW_TITLE)
 
     display_flags = pygame.SCALED

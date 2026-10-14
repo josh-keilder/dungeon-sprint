@@ -30,7 +30,6 @@ def build_map(tmx_data):
     logic_layer = tmx_data.get_layer_by_name("Logic_Layer")
 
     for layer in tmx_data.visible_layers:
-
         if layer.name == "Floor":
             for x, y, tile_image in layer.tiles():
                 map_surface.blit(tile_image, (x * TILE_SIZE, y * TILE_SIZE))
@@ -80,7 +79,6 @@ def build_map(tmx_data):
 
 
 def find_player_spawn(tmx_data):
-
     for map_object in tmx_data.objects:
         if map_object.name == "Player":
             return (map_object.x, map_object.y)

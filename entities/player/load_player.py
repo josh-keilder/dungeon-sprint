@@ -1,5 +1,5 @@
-from Entities.player.player import Player
-from Entities.player.playerTextureData import player_texture_data
+from entities.player.player import Player
+from entities.player.player_texture_data import player_texture_data
 from globals import TILE_SIZE
 from systems.assets import load_animations
 
