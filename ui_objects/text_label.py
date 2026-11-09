@@ -11,9 +11,15 @@ class TextLabel:
         font_size=30,
         color=BLACK,
         pos=(0, 0),
+        font=None,
     ):
         pygame.font.init()
-        self.font = pygame.font.SysFont(font_name, font_size)
+
+        if font is None:
+            self.font = pygame.font.SysFont(font_name, font_size)
+        else:
+            self.font = font
+
         self.color = color
         self.pos = pos
 

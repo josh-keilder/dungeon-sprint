@@ -1,31 +1,55 @@
 import pygame
 
-from systems.assets import load_image
-from ui_objects.button import Button
+from globals import (
+    BUTTON_FONT_SIZE,
+    FONT_PATH,
+    GRAY,
+    MENU_BACKGROUND_COLOR,
+    SCREEN_WIDTH,
+    WHITE,
+)
+from ui_objects.text_button import TextButton
 
-START_SCREEN_PATH = "Assets/Menu-Assets/start-screen_1.png"
-START_BUTTON_PATH = "Assets/Menu-Assets/start-button.png"
-EXIT_BUTTON_PATH = "Assets/Menu-Assets/exit-button.png"
-OPTIONS_BUTTON_PATH = "Assets/Menu-Assets/options-button.png"
+TITLE_FONT_SIZE = 96
+TITLE_Y = 50
+START_BUTTON_Y = 300
+OPTIONS_BUTTON_Y = 380
+EXIT_BUTTON_Y = 460
 
 
 class Start:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
-        self.image = load_image(START_SCREEN_PATH)
-        self.start_button_image = load_image(START_BUTTON_PATH)
-        self.exit_button_image = load_image(EXIT_BUTTON_PATH)
-        self.options_button_image = load_image(OPTIONS_BUTTON_PATH)
 
-        self.start_button = Button(self.start_button_image, pos=(416, 288))
-        self.exit_button = Button(self.exit_button_image, pos=(416, 448))
-        self.options_button = Button(
-            pygame.transform.scale_by(self.options_button_image, 0.5),
-            pos=(985, 650),
+        self.title_font = pygame.font.Font(FONT_PATH, TITLE_FONT_SIZE)
+        self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
+
+        self.title_image = self.title_font.render("DUNGEON SPRINT", False, WHITE)
+        self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
+
+        self.start_button = TextButton(
+            "Start",
+            self.button_font,
+            (SCREEN_WIDTH // 2, START_BUTTON_Y),
+            outline_color=GRAY,
+        )
+        self.options_button = TextButton(
+            "Options",
+            self.button_font,
+            (SCREEN_WIDTH // 2, OPTIONS_BUTTON_Y),
+            outline_color=GRAY,
+        )
+        self.exit_button = TextButton(
+            "Exit",
+            self.button_font,
+            (SCREEN_WIDTH // 2, EXIT_BUTTON_Y),
+            outline_color=GRAY,
         )
 
     def draw(self, screen):
-        screen.blit(self.image, (0, 0))
+        screen.fill(MENU_BACKGROUND_COLOR)
+
+        screen.blit(self.title_image, self.title_pos)
         self.start_button.draw(screen)
         self.exit_button.draw(screen)
         self.options_button.draw(screen)

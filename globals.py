@@ -28,10 +28,15 @@ GRAY = (128, 128, 128)
 LIGHT_GRAY = (192, 192, 192)
 DARK_GRAY = (64, 64, 64)
 
+# Kept in case I need this specific color
 OPTION_MENU_BUTTON_BACKGROUND = (110, 74, 72)
-OPTION_MENU_BUTTON_FOREGROUND = (37, 19, 26)
+
+MENU_BACKGROUND_COLOR = (37, 19, 26)
 
 
 DUNGEON_LEVEL_ONE = "Assets/Maps/Dungeon_Level_One.tmx"
 
 FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"
+BUTTON_FONT_SIZE = 32
+
+OVERLAY_ALPHA = 160

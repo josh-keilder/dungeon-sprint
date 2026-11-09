@@ -1,23 +1,22 @@
 import pygame
 
 from globals import (
+    BUTTON_FONT_SIZE,
     DUNGEON_LEVEL_ONE,
     FONT_PATH,
-    GREEN,
+    GRAY,
+    OVERLAY_ALPHA,
     RED,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    WHITE,
 )
 from states.map.level import Level
-from ui_objects.button import Button
+from ui_objects.text_button import TextButton
 
 TITLE_FONT_SIZE = 64
-BUTTON_FONT_SIZE = 32
 TITLE_Y = 200
 RESTART_BUTTON_Y = 380
 MAIN_MENU_BUTTON_Y = 460
-OVERLAY_ALPHA = 160
 
 
 class GameOver:
@@ -30,18 +29,18 @@ class GameOver:
         self.title_image = self.title_font.render("You Died!", False, RED)
         self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
 
-        restart_image = self.button_font.render("Restart", False, WHITE)
-        self.restart_button = Button(
-            restart_image,
-            pos=((SCREEN_WIDTH - restart_image.get_width()) // 2, RESTART_BUTTON_Y),
-            outline_color=GREEN,
+        self.restart_button = TextButton(
+            "Restart",
+            self.button_font,
+            (SCREEN_WIDTH // 2, RESTART_BUTTON_Y),
+            outline_color=GRAY,
         )
 
-        main_menu_image = self.button_font.render("Main Menu", False, WHITE)
-        self.main_menu_button = Button(
-            main_menu_image,
-            pos=((SCREEN_WIDTH - main_menu_image.get_width()) // 2, MAIN_MENU_BUTTON_Y),
-            outline_color=GREEN,
+        self.main_menu_button = TextButton(
+            "Main Menu",
+            self.button_font,
+            (SCREEN_WIDTH // 2, MAIN_MENU_BUTTON_Y),
+            outline_color=GRAY,
         )
 
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)

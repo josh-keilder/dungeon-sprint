@@ -1,34 +1,56 @@
 import pygame
 
 from globals import (
+    BUTTON_FONT_SIZE,
+    FONT_PATH,
+    GRAY,
     LIGHT_GRAY,
-    OPTION_MENU_BUTTON_BACKGROUND,
+    MENU_BACKGROUND_COLOR,
+    OVERLAY_ALPHA,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    WHITE,
 )
 from systems import settings, sound
-from systems.assets import load_image
 from systems.display import create_window
-from ui_objects.button import Button
 from ui_objects.slider import Slider
+from ui_objects.text_button import TextButton
 from ui_objects.text_label import TextLabel
 
-OPTIONS_SCREEN_PATH = "Assets/Menu-Assets/options-screen.png"
-MAIN_MENU_BUTTON_PATH = "Assets/Menu-Assets/main-menu-button.png"
-BACK_BUTTON_PATH = "Assets/Menu-Assets/back-button.png"
-FPS_ON_PATH = "Assets/Menu-Assets/Fps_On.png"
-FPS_OFF_PATH = "Assets/Menu-Assets/Fps_Off.png"
-TEMP_BUTTON_PATH = "Assets/Menu-Assets/temp_button.png"
+TITLE_FONT_SIZE = 96
+LABEL_FONT_SIZE = 24
+TITLE_Y = 50
+NAVIGATION_BUTTON_MARGIN = 20
+FPS_BUTTON_Y = 220
+FULL_SCREEN_BUTTON_Y = 300
 
+SLIDER_WIDTH = 300
+SLIDER_HEIGHT = 20
+SLIDER_X = SCREEN_WIDTH // 2
+SFX_SLIDER_Y = 475
+MUSIC_SLIDER_Y = 575
+SLIDER_LABEL_X = SLIDER_X - SLIDER_WIDTH // 2
+SLIDER_LABEL_OFFSET_Y = 45
+
+FPS_LABEL = "FPS: {}"
+FULL_SCREEN_LABEL = "Fullscreen: {}"
 MUSIC_LABEL = "Music Volume: {}"
 SFX_LABEL = "SFX Volume: {}"
+
+
+def _on_off(enabled):
+    return "On" if enabled else "Off"
 
 
 class Options:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
-        self.image = load_image(OPTIONS_SCREEN_PATH)
+        self.title_font = pygame.font.Font(FONT_PATH, TITLE_FONT_SIZE)
+        self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
+        self.label_font = pygame.font.Font(FONT_PATH, LABEL_FONT_SIZE)
+        self.title_image = self.title_font.render("OPTIONS", False, WHITE)
+        self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
 
         # Slider math: Convert 0.0-1.0 float to 0-100 integer for UI display
         self.music_slider_value = int(settings.get_setting("music_volume") * 100)
@@ -36,69 +58,88 @@ class Options:
 
         # Volume sliders and labels
         self.music_volume_slider = Slider(
-            pos=(640, 575),
-            size=(300, 20),
+            pos=(SLIDER_X, MUSIC_SLIDER_Y),
+            size=(SLIDER_WIDTH, SLIDER_HEIGHT),
             initial_value=float(self.music_slider_value),
             min_value=0.0,
             max_value=100.0,
-            track_color=OPTION_MENU_BUTTON_BACKGROUND,
+            track_color=WHITE,
             knob_color=LIGHT_GRAY,
         )
         self.music_volume_text = TextLabel(
             MUSIC_LABEL.format(self.music_slider_value),
-            pos=(500, 515),
-            color=OPTION_MENU_BUTTON_BACKGROUND,
+            pos=(SLIDER_LABEL_X, MUSIC_SLIDER_Y - SLIDER_LABEL_OFFSET_Y),
+            color=WHITE,
+            font=self.label_font,
         )
 
         self.sfx_volume_slider = Slider(
-            pos=(640, 475),
-            size=(300, 20),
+            pos=(SLIDER_X, SFX_SLIDER_Y),
+            size=(SLIDER_WIDTH, SLIDER_HEIGHT),
             initial_value=float(self.sfx_slider_value),
             min_value=0.0,
             max_value=100.0,
-            track_color=OPTION_MENU_BUTTON_BACKGROUND,
+            track_color=WHITE,
             knob_color=LIGHT_GRAY,
         )
         self.sfx_volume_text = TextLabel(
             SFX_LABEL.format(self.sfx_slider_value),
-            pos=(500, 415),
-            color=OPTION_MENU_BUTTON_BACKGROUND,
+            pos=(SLIDER_LABEL_X, SFX_SLIDER_Y - SLIDER_LABEL_OFFSET_Y),
+            color=WHITE,
+            font=self.label_font,
         )
 
         # Navigation Buttons
-        self.main_menu_button_image = load_image(MAIN_MENU_BUTTON_PATH)
-        self.main_menu_button = Button(
-            pygame.transform.scale_by(self.main_menu_button_image, 0.4),
-            pos=(15, 650),
+        self.main_menu_button = TextButton(
+            "Main Menu",
+            self.button_font,
+            outline_color=GRAY,
         )
-        self.back_button_image = load_image(BACK_BUTTON_PATH)
-        self.back_button = Button(
-            pygame.transform.scale_by(self.back_button_image, 0.4),
-            pos=(1135, 650),
+        self.main_menu_button.rect.bottomleft = (
+            NAVIGATION_BUTTON_MARGIN,
+            SCREEN_HEIGHT - NAVIGATION_BUTTON_MARGIN,
+        )
+        self.back_button = TextButton(
+            "Back",
+            self.button_font,
+            outline_color=GRAY,
+        )
+        self.back_button.rect.bottomright = (
+            SCREEN_WIDTH - NAVIGATION_BUTTON_MARGIN,
+            SCREEN_HEIGHT - NAVIGATION_BUTTON_MARGIN,
         )
 
-        # Toggle buttons: FPS and fullscreen
-        self.fps_button_off_image = pygame.transform.scale_by(
-            load_image(FPS_OFF_PATH), 0.5
-        )
-        self.fps_button_on_image = pygame.transform.scale_by(
-            load_image(FPS_ON_PATH), 0.5
+        # Toggle Buttons
+        self.fps_button = TextButton(
+            FPS_LABEL.format(_on_off(settings.get_setting("fps_enabled"))),
+            self.button_font,
+            (SCREEN_WIDTH // 2, FPS_BUTTON_Y),
+            outline_color=GRAY,
         )
 
-        initial_fps_image = (
-            self.fps_button_on_image
-            if settings.get_setting("fps_enabled")
-            else self.fps_button_off_image
+        self.full_screen_button = TextButton(
+            FULL_SCREEN_LABEL.format(
+                _on_off(settings.get_setting("full_screen_enabled"))
+            ),
+            self.button_font,
+            (SCREEN_WIDTH // 2, FULL_SCREEN_BUTTON_Y),
+            outline_color=GRAY,
         )
-        self.fps_button = Button(initial_fps_image, pos=(450, 200))
 
-        self.full_screen_button = Button(load_image(TEMP_BUTTON_PATH), pos=(100, 300))
+        self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.overlay.fill((0, 0, 0, OVERLAY_ALPHA))
 
     def can_go_back(self):
         return self.game_state_manager.get_previous_state() == "level"
 
     def draw(self, screen):
-        screen.blit(self.image, (0, 0))
+        if self.can_go_back():
+            self.game_state_manager.states["level"].draw(screen)
+            screen.blit(self.overlay, (0, 0))
+        else:
+            screen.fill(MENU_BACKGROUND_COLOR)
+
+        screen.blit(self.title_image, self.title_pos)
 
         self.main_menu_button.draw(screen)
         self.full_screen_button.draw(screen)
@@ -130,13 +171,14 @@ class Options:
         if self.fps_button.is_clicked():
             fps_enabled = not settings.get_setting("fps_enabled")
             settings.set_setting("fps_enabled", fps_enabled)
-            self.fps_button.set_image(
-                self.fps_button_on_image if fps_enabled else self.fps_button_off_image
-            )
+            self.fps_button.set_text(FPS_LABEL.format(_on_off(fps_enabled)))
 
         if self.full_screen_button.is_clicked():
             fullscreen = not settings.get_setting("full_screen_enabled")
             settings.set_setting("full_screen_enabled", fullscreen)
+            self.full_screen_button.set_text(
+                FULL_SCREEN_LABEL.format(_on_off(fullscreen))
+            )
             create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)
 
         # Apply a volume change when a slider moves

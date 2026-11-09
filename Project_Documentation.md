@@ -119,7 +119,7 @@ A *state* is any object with `update(dt)` and `draw(screen)`. `GameStateManager`
 
 - **Start** (`states/menus/start.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally.
 - **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `Pause` sound. When the player's health reaches 0 it switches to `"game_over"` (section 7, step 6).
-- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to start. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". Both buttons save the settings file.
+- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to start. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file.
 - **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` first, then switch to `"level"` or `"start"`.
 
 All four states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exception is a death. `GameOver.start_new_run()` builds a brand new `Level(game_state_manager, DUNGEON_LEVEL_ONE)` and registers it under `"level"` with `add_state`, which replaces the dead one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
@@ -129,7 +129,7 @@ All four states are built once at startup and kept alive, so leaving and returni
 ### Root
 
 - **`main.py`**: `Game`, the startup and main loop described above.
-- **`globals.py`**: shared constants only. Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), `DUNGEON_LEVEL_ONE` (the map path), and `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`).
+- **`globals.py`**: shared constants only. Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), `MENU_BACKGROUND_COLOR` (`(37, 19, 26)`, the fill color of the Start and Options screens), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -165,9 +165,17 @@ All four states are built once at startup and kept alive, so leaving and returni
   - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
   - `find_player_spawn` and `find_enemy_spawns` read spawn objects.
 - **`map/tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id`.
-- **`menus/start.py`** and **`menus/options.py`**: the menus (section 5).
+- **`menus/start.py`**: `Start(game_state_manager)`, the title screen (section 5).
+  - `draw` fills the screen with `MENU_BACKGROUND_COLOR`, then draws the "DUNGEON SPRINT" title (`TITLE_FONT_SIZE` 96, at `TITLE_Y` 50, centered with `(SCREEN_WIDTH - width) // 2`) and the buttons.
+  - Start, Options and Exit are `TextButton`s with a gray outline, centered and stacked at `START_BUTTON_Y` (300), `OPTIONS_BUTTON_Y` (380) and `EXIT_BUTTON_Y` (460).
+- **`menus/options.py`**: `Options(game_state_manager)`, the options menu (section 5).
+  - It uses the same size of text title ("OPTIONS") as the Start screen. All buttons are `TextButton`s with a gray outline.
+  - The background depends on where the menu was opened from. When `can_go_back()` is true (opened from the level with ESC), `draw` first draws the paused Level, looked up from `game_state_manager.states["level"]`, then a full-screen black overlay at `OVERLAY_ALPHA` (160 of 255), the same way as the game-over screen. Otherwise it fills the screen with `MENU_BACKGROUND_COLOR`.
+  - The FPS and Fullscreen toggles are centered at `FPS_BUTTON_Y` (220) and `FULL_SCREEN_BUTTON_Y` (300). Their text comes from `FPS_LABEL` and `FULL_SCREEN_LABEL` (`"FPS: {}"`, `"Fullscreen: {}"`) filled in by `_on_off(enabled)`, which returns `"On"` or `"Off"`. When clicked, the setting flips and `set_text` shows the new state.
+  - Main Menu and Back are created without a position, then placed in the bottom corners by setting `rect.bottomleft` and `rect.bottomright`, `NAVIGATION_BUTTON_MARGIN` (20) pixels from the screen edges.
+  - The SFX and music sliders are centered at `SLIDER_X` (640) on `SFX_SLIDER_Y` (475) and `MUSIC_SLIDER_Y` (575), and are `SLIDER_WIDTH` x `SLIDER_HEIGHT` (300x20). Their labels use a separate Silkscreen font at `LABEL_FONT_SIZE` (24), so "Music Volume: 100" fits within the track width. Each label is left-aligned with its track's left edge (`SLIDER_LABEL_X`), and its y is the slider's y minus `SLIDER_LABEL_OFFSET_Y` (45), so a label moves with its slider.
 - **`menus/game_over.py`**: `GameOver(game_state_manager)`, the screen shown on death (section 5).
-  - The title and both buttons are rendered from `FONT_PATH` (sizes `TITLE_FONT_SIZE` 64 and `BUTTON_FONT_SIZE` 32) and centered horizontally with `(SCREEN_WIDTH - width) // 2`. The buttons are ordinary `Button`s built from the rendered text surfaces, with a green outline.
+  - The title is rendered from `FONT_PATH` at `TITLE_FONT_SIZE` (64) and centered horizontally with `(SCREEN_WIDTH - width) // 2`. Restart and Main Menu are `TextButton`s using the shared `BUTTON_FONT_SIZE`, placed by their midtop point `(SCREEN_WIDTH // 2, y)`, with a green outline.
   - `draw` first draws the current Level, looked up from `game_state_manager.states["level"]`, then a full-screen black overlay at `OVERLAY_ALPHA` (160 of 255), then the title and buttons. The level has to be redrawn every frame, because a translucent overlay drawn on its own would stack up to solid black.
   - `start_new_run()` builds a fresh `Level` and registers it as `"level"`.
 
@@ -200,9 +208,13 @@ Some systems hold module-level state that is shared by everyone who imports them
 
 ### `ui_objects/`
 
-- **`button.py`**: `Button(image, pos, outline_color=WHITE)`. `image` can be any surface, including text from `font.render`. Plays `Button_Hover` when the mouse enters and draws an outline in `outline_color` while hovered. The outline is drawn first and the image on top of it, so only the ring just outside the shape shows. Drawn the other way round, the outline covers thin shapes such as letters. On a left click it plays `Button_Click` and sets `clicked_this_frame`, which `is_clicked()` returns. `set_image` swaps the picture (used by the FPS toggle).
-- **`slider.py`**: `Slider`, a draggable knob on a track between `min_value` and `max_value`. `get_current_value()` returns the value as an int.
-- **`text_label.py`**: `TextLabel`, rendered text at a position. `update_text` re-renders it. Text is drawn without anti-aliasing for a pixel look.
+- **`button.py`**: `Button(image, pos, outline_color=WHITE)`. `image` can be any surface, including text from `font.render`. Plays `Button_Hover` when the mouse enters and draws an outline in `outline_color` while hovered. The outline is drawn first and the image on top of it, so only the ring just outside the shape shows. Drawn the other way round, the outline covers thin shapes such as letters. On a left click it plays `Button_Click` and sets `clicked_this_frame`, which `is_clicked()` returns. `set_image` swaps the picture and rebuilds the outline. The new rect keeps the old `topleft`, so text that changes width would drift off center. `TextButton.set_text` corrects for that.
+- **`text_button.py`**: `TextButton(text, font, midtop=(0, 0), text_color=WHITE, outline_color=WHITE)`, a `Button` subclass whose picture is rendered text.
+  - The font is passed in rather than created here. Each state creates its fonts once in `__init__`, because building a `Font` reads the font file from disk.
+  - It is placed by its `midtop` point (the middle of its top edge), so passing `(SCREEN_WIDTH // 2, y)` centers it. For any other placement, leave out `midtop` and set another anchor on `rect` afterwards, such as `rect.bottomleft`.
+  - `set_text(text)` re-renders the text, then puts `midtop` back where it was, so a toggle like "FPS: On"/"FPS: Off" stays centered when its width changes.
+- **`slider.py`**: `Slider`, a draggable knob on a track between `min_value` and `max_value`. `pos` is the **center** of the track, not its top-left, so the track's left edge is `pos[0] - size[0] // 2`. The part left of the knob is drawn in `track_color` and the rest in gray. The knob is drawn in `knob_color`, or white while hovered or dragged. The track and knob have rounded corners. `get_current_value()` returns the value as an int.
+- **`text_label.py`**: `TextLabel`, rendered text at a position (its top-left). `update_text` re-renders it. Text is drawn without anti-aliasing for a pixel look. By default it builds its font with `SysFont(font_name, font_size)`, which only finds installed system fonts and cannot load a `.ttf` path such as `FONT_PATH`. Pass a ready-made `font` (for example `pygame.font.Font(FONT_PATH, 24)`) to use that instead, in which case `font_name` and `font_size` are ignored. The options menu labels use this. The FPS counter and the inventory labels use the default.
 - **`inventory_ui.py`**: `InventoryUI`, the inventory screen (section 7).
 - **`health_bar.py`**: `draw_health_bar(screen, health, x, y, width, height)`. Gray background with a fill that is green, or red at 30% health or below.
 - **`create_outline.py`**: `make_outline` builds a one-pixel outline surface from an image's mask. It outlines each separate shape in the mask (`mask.connected_components()`), because `mask.outline()` alone only traces the first shape, which for text would be just the first letter. Holes inside a shape, like the inside of an "A", are not outlined. `draw_outline` blits it shifted one pixel in each direction to make a thicker outline.
@@ -395,6 +407,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 1. Create a class with `update(dt)` and `draw(screen)` that takes `game_state_manager`.
 2. Build it in `Game.__init__` and register it with `add_state("name", state)`.
 3. Switch to it from another state with `set_state("name")`.
+4. For a menu, follow the existing ones: fill the screen with `MENU_BACKGROUND_COLOR`, create the fonts once in `__init__` from `FONT_PATH`, and use `TextButton`s with `BUTTON_FONT_SIZE`.
 
 **A new level.** Make a TMX map using the layer names in section 8, add its path to `globals.py`, and build a `Level` with that path. There is no level-to-level transition yet.
 
