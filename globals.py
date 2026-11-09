@@ -33,3 +33,5 @@ OPTION_MENU_BUTTON_FOREGROUND = (37, 19, 26)
 
 
 DUNGEON_LEVEL_ONE = "Assets/Maps/Dungeon_Level_One.tmx"
+
+FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"

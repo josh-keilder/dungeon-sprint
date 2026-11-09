@@ -94,6 +94,11 @@ class Level:
             if is_dead(enemy.health):
                 self.enemies.remove(enemy)
 
+        if is_dead(self.player.health):
+            self.game_state_manager.set_state("game_over")
+            sound.play_sfx("Pause")
+            return
+
         self.ground_items.update(dt)
         center_camera(self.player.rect.center)
 

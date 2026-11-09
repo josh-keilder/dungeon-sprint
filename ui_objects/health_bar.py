@@ -1,4 +1,5 @@
 import pygame
+
 from globals import GRAY, GREEN, RED
 
 LOW_HEALTH_RATIO = 0.3

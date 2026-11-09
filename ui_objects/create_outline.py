@@ -3,11 +3,11 @@ import pygame
 
 def make_outline(image, color):
     mask = pygame.mask.from_surface(image)
-    outline_points = mask.outline()
     outline_surface = pygame.Surface(image.get_size(), pygame.SRCALPHA)
 
-    for point in outline_points:
-        outline_surface.set_at(point, color)
+    for component in mask.connected_components():
+        for point in component.outline():
+            outline_surface.set_at(point, color)
 
     outline_surface.set_colorkey((0, 0, 0))
     return outline_surface
