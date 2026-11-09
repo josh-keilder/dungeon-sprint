@@ -79,7 +79,7 @@ Use `--check` to see whether anything needs formatting without changing files.
 4. The system mouse is hidden and a `Cursor` is built from `Assets/Cursors/01.png` at half scale.
 5. Sound: all sound effects and music are loaded, the saved volumes are applied, and the title music (`JuiceWrldChasingTheDragon`) starts. It plays once and does not loop.
 6. The FPS label (`TextLabel` at the top right) and its timer are created.
-7. A `GameStateManager` starting on `"start"` is created, then the four states (`Start`, `Options`, `Level`, `GameOver`) are built and registered under the names `"start"`, `"options"`, `"level"` and `"game_over"`.
+7. A `GameStateManager` starting on `"main_menu"` is created, then the four states (`MainMenu`, `Options`, `Level`, `GameOver`) are built and registered under the names `"main_menu"`, `"options"`, `"level"` and `"game_over"`.
 
 `run()` loops `update()` then `draw()` until `self.running` is false.
 
@@ -108,19 +108,19 @@ A *state* is any object with `update(dt)` and `draw(screen)`. `GameStateManager`
 `set_state(name)` moves `current` into `previous` and switches to `name`. An unknown name raises `ValueError`, so a typo fails loudly instead of silently. `go_back()` switches to `previous`.
 
 ```
-            Start ──"Start"──▶ Level ──player at 0 HP──▶ GameOver
+         MainMenu ──"Start"──▶ Level ──player at 0 HP──▶ GameOver
               │                  │                          │
           "Options"          ESC (plays "Pause")    "Restart" ──▶ new Level
-              ▼                  ▼                  "Main Menu" ──▶ new Level, then Start
+              ▼                  ▼                  "Main Menu" ──▶ new Level, then MainMenu
            Options ◀─────────────┘
               │
-   "Main Menu" ──▶ Start      "Back" ──▶ Level  (only shown when previous == "level")
+   "Main Menu" ──▶ MainMenu   "Back" ──▶ Level  (only shown when previous == "level")
 ```
 
-- **Start** (`states/menus/start.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally.
+- **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally.
 - **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `Pause` sound. When the player's health reaches 0 it switches to `"game_over"` (section 7, step 6).
-- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to start. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file.
-- **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` first, then switch to `"level"` or `"start"`.
+- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file.
+- **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` first, then switch to `"level"` or `"main_menu"`.
 
 All four states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exception is a death. `GameOver.start_new_run()` builds a brand new `Level(game_state_manager, DUNGEON_LEVEL_ONE)` and registers it under `"level"` with `add_state`, which replaces the dead one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
 
@@ -129,7 +129,7 @@ All four states are built once at startup and kept alive, so leaving and returni
 ### Root
 
 - **`main.py`**: `Game`, the startup and main loop described above.
-- **`globals.py`**: shared constants only. Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), `MENU_BACKGROUND_COLOR` (`(37, 19, 26)`, the fill color of the Start and Options screens), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+- **`globals.py`**: shared constants only. Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), `MENU_BACKGROUND_COLOR` (`(37, 19, 26)`, the fill color of the Main Menu and Options screens), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -165,11 +165,11 @@ All four states are built once at startup and kept alive, so leaving and returni
   - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
   - `find_player_spawn` and `find_enemy_spawns` read spawn objects.
 - **`map/tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id`.
-- **`menus/start.py`**: `Start(game_state_manager)`, the title screen (section 5).
+- **`menus/main_menu.py`**: `MainMenu(game_state_manager)`, the title screen (section 5).
   - `draw` fills the screen with `MENU_BACKGROUND_COLOR`, then draws the "DUNGEON SPRINT" title (`TITLE_FONT_SIZE` 96, at `TITLE_Y` 50, centered with `(SCREEN_WIDTH - width) // 2`) and the buttons.
   - Start, Options and Exit are `TextButton`s with a gray outline, centered and stacked at `START_BUTTON_Y` (300), `OPTIONS_BUTTON_Y` (380) and `EXIT_BUTTON_Y` (460).
 - **`menus/options.py`**: `Options(game_state_manager)`, the options menu (section 5).
-  - It uses the same size of text title ("OPTIONS") as the Start screen. All buttons are `TextButton`s with a gray outline.
+  - It uses the same size of text title ("OPTIONS") as the Main Menu screen. All buttons are `TextButton`s with a gray outline.
   - The background depends on where the menu was opened from. When `can_go_back()` is true (opened from the level with ESC), `draw` first draws the paused Level, looked up from `game_state_manager.states["level"]`, then a full-screen black overlay at `OVERLAY_ALPHA` (160 of 255), the same way as the game-over screen. Otherwise it fills the screen with `MENU_BACKGROUND_COLOR`.
   - The FPS and Fullscreen toggles are centered at `FPS_BUTTON_Y` (220) and `FULL_SCREEN_BUTTON_Y` (300). Their text comes from `FPS_LABEL` and `FULL_SCREEN_LABEL` (`"FPS: {}"`, `"Fullscreen: {}"`) filled in by `_on_off(enabled)`, which returns `"On"` or `"Off"`. When clicked, the setting flips and `set_text` shows the new state.
   - Main Menu and Back are created without a position, then placed in the bottom corners by setting `rect.bottomleft` and `rect.bottomright`, `NAVIGATION_BUTTON_MARGIN` (20) pixels from the screen edges.

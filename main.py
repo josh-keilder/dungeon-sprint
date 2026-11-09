@@ -3,8 +3,8 @@ import pygame
 from globals import DUNGEON_LEVEL_ONE, FRAME_RATE, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE
 from states.map.level import Level
 from states.menus.game_over import GameOver
+from states.menus.main_menu import MainMenu
 from states.menus.options import Options
-from states.menus.start import Start
 from states.state_manager import GameStateManager
 from systems import settings, sound
 from systems.assets import load_image
@@ -50,15 +50,15 @@ class Game:
         self.fps_text = TextLabel("", font_size=15, pos=(1215, 0), color=WHITE)
 
         # Screens, and the manager that switches between them
-        self.game_state_manager = GameStateManager("start")
-        self.start_menu = Start(self.game_state_manager)
+        self.game_state_manager = GameStateManager("main_menu")
+        self.main_menu = MainMenu(self.game_state_manager)
         self.options_menu = Options(self.game_state_manager)
         self.level = Level(self.game_state_manager, DUNGEON_LEVEL_ONE)
         self.game_over_screen = GameOver(self.game_state_manager)
 
         self.game_state_manager.add_state("level", self.level)
         self.game_state_manager.add_state("options", self.options_menu)
-        self.game_state_manager.add_state("start", self.start_menu)
+        self.game_state_manager.add_state("main_menu", self.main_menu)
         self.game_state_manager.add_state("game_over", self.game_over_screen)
 
     def run(self):

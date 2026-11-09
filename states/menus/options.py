@@ -164,7 +164,7 @@ class Options:
 
         # State Navigation
         if self.main_menu_button.is_clicked():
-            self.game_state_manager.set_state("start")
+            self.game_state_manager.set_state("main_menu")
             settings.save_settings()
 
         # Settings Toggles

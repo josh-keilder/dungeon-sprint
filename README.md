@@ -6,7 +6,7 @@ Dungeon Sprint is a 2D top-down dungeon adventure built with Python and Pygame. 
 
 The game currently includes:
 
-- A start menu, options menu, and dungeon gameplay state
+- A main menu, options menu, and dungeon gameplay state
 - Player movement with rolling, interaction, healing, and inventory controls
 - Enemies, chests, doors, and collectible items
 - A camera system that tracks the player across the dungeon
