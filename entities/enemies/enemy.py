@@ -7,8 +7,8 @@ from systems.assets import load_animations
 from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_velocity
 from systems.health import new_health
 from systems.hitbox import draw_hitbox
-from systems.invulnerability import advance_invulnerability
 from systems.movement import move_and_collide
+from systems.timer import advance_timer, new_timer
 from ui_objects.health_bar import draw_health_bar
 
 ENEMY_HEALTH_BAR_WIDTH = TILE_SIZE
@@ -31,7 +31,7 @@ class Enemy:
 
         self.health = new_health(type_data["max_health"])
 
-        self.invulnerability = {"timer": 0.0}
+        self.invulnerability = new_timer()
 
         self.flee_timer = 0.0
         self.return_timer = 0.0
@@ -40,7 +40,7 @@ class Enemy:
     def update(self, dt, walls, target_pos):
         self.image = advance_animation(self.animation, dt)
         self.update_movement(dt, walls, target_pos)
-        advance_invulnerability(self.invulnerability, dt)
+        advance_timer(self.invulnerability, dt)
         self.pos.xy = self.rect.topleft
 
     def update_movement(self, dt, walls, target_pos):

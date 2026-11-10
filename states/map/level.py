@@ -15,6 +15,7 @@ from systems.combat import resolve_contact
 from systems.health import is_dead
 from systems.hitbox import draw_hitbox
 from systems.input import read_input
+from systems.timer import advance_timer, is_running, new_timer, start_timer
 from ui_objects.health_bar import draw_health_bar
 from ui_objects.inventory_ui import InventoryUI
 
@@ -61,15 +62,15 @@ class Level:
         self.inventory_ui = InventoryUI()
 
         self.dying = False
-        self.death_timer = {"timer": 0.0}
+        self.death_timer = new_timer()
 
     def enter(self):
         sound.play_music(LEVEL_MUSIC)
 
     def update(self, dt):
         if self.dying:
-            self.death_timer["timer"] -= dt
-            if self.death_timer["timer"] <= 0:
+            advance_timer(self.death_timer, dt)
+            if not is_running(self.death_timer):
                 self.game_state_manager.set_state("game_over")
             return
 
@@ -112,7 +113,7 @@ class Level:
 
         if is_dead(self.player.health) and not self.dying:
             self.dying = True
-            self.death_timer["timer"] = DEATH_DELAY
+            start_timer(self.death_timer, DEATH_DELAY)
             sound.stop_music()
             sound.play_sfx("death")
             return
