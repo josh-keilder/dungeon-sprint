@@ -3,13 +3,14 @@ import pygame
 from globals import GREEN
 from systems import debug
 from systems.animation import advance_animation, new_animation, set_animation
-from systems.consumables import use_small_health_potion
+from systems.consumables import advance_heal_cooldown, use_small_health_potion
 from systems.health import new_health, set_max_health
 from systems.hitbox import draw_hitbox
 from systems.inventory import new_inventory
 from systems.invulnerability import advance_invulnerability, is_invulnerable
 from systems.movement import move_and_collide, steer
 from systems.roll import advance_roll, try_start_roll
+from systems.sound import play_sfx
 from systems.stats import compute_stats
 
 BLINK_INTERVAL = 0.1
@@ -43,6 +44,7 @@ class Player:
         }
 
         self.invulnerability = {"timer": 0.0}
+        self.heal_cooldown = {"timer": 0.0}
 
         # Animation and sprite
         self.animation = new_animation(animations, "player_idle_down")
@@ -77,11 +79,16 @@ class Player:
             try_start_roll(self.roll, move_direction)
 
         if self.intent["heal"]:
-            use_small_health_potion(self.health, self.inventory)
+            healed = use_small_health_potion(
+                self.health, self.inventory, self.heal_cooldown
+            )
+            if healed:
+                play_sfx("heal")
 
         self.update_movement(dt, walls)
         self.update_roll(dt, walls)
         advance_invulnerability(self.invulnerability, dt)
+        advance_heal_cooldown(self.heal_cooldown, dt)
 
         self.handle_animation_state()
         self.image = advance_animation(self.animation, dt)
