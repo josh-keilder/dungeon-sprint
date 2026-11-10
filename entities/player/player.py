@@ -30,7 +30,7 @@ class Player:
             "attack": 5,
             "defense": 0,
             "max_speed": 70,
-            "health": 500,
+            "health": 250,
             "roll_speed": 200,
             "acceleration": 47,
             "friction": 3000,

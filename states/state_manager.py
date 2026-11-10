@@ -16,6 +16,7 @@ class GameStateManager:
 
         self.previous = self.current
         self.current = name
+        self.states[name].enter()
 
     def get_previous_state(self):
         return self.previous

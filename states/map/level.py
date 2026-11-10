@@ -24,6 +24,8 @@ LOOT_SCATTER_Y = 5
 PLAYER_HEALTH_BAR_POS = (20, 20)
 PLAYER_HEALTH_BAR_SIZE = (200, 10)
 
+LEVEL_MUSIC = "level_music"
+
 
 class Level:
     def __init__(self, game_state_manager, map_path):
@@ -55,6 +57,9 @@ class Level:
 
         self.show_inventory = False
         self.inventory_ui = InventoryUI()
+
+    def enter(self):
+        sound.play_music(LEVEL_MUSIC)
 
     def update(self, dt):
         self.player.intent = read_input()

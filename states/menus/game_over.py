@@ -10,12 +10,15 @@ from globals import (
     SCREEN_WIDTH,
 )
 from states.new_run import start_new_run
+from systems import sound
 from ui_objects.text_button import TextButton
 
 TITLE_FONT_SIZE = 64
 TITLE_Y = 200
 RESTART_BUTTON_Y = 380
 MAIN_MENU_BUTTON_Y = 460
+
+GAME_OVER_MUSIC = "game_over"
 
 
 class GameOver:
@@ -44,6 +47,10 @@ class GameOver:
 
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, OVERLAY_ALPHA))
+
+    def enter(self):
+        sound.stop_music()
+        sound.play_music(GAME_OVER_MUSIC, loops=0)
 
     def update(self, dt):
         self.restart_button.update()

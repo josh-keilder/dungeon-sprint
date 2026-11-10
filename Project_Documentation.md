@@ -78,9 +78,10 @@ Use `--check` to see whether anything needs formatting without changing files.
 2. `settings.load_settings()` reads `settings.json`. It must run before the window is created, because the window needs the fullscreen setting.
 3. `create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)` opens the window. It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display.
 4. The system mouse is hidden and a `Cursor` is built from `Assets/Cursors/01.png` at half scale.
-5. Sound: all sound effects and music are loaded, the saved volumes are applied, and the menu music (`menu_music`) starts. It plays once and does not loop. `level_music` is loaded too but isn't played yet.
+5. Sound: all sound effects and music are loaded and the saved volumes are applied. No music starts here.
 6. The FPS label (`TextLabel` at the top right) and its timer are created.
 7. A `GameStateManager` starting on `"main_menu"` is created, then the four states (`MainMenu`, `Options`, `Level`, `GameOver`) are built and registered under the names `"main_menu"`, `"options"`, `"level"` and `"game_over"`.
+8. `self.game_state_manager.get_state().enter()` runs the first screen's `enter()`, which starts the menu music. The first state is set directly in `GameStateManager.__init__`, not through `set_state`, so its `enter()` has to be called by hand. It must come after the `add_state` calls, because `get_state()` looks the state up in the dict.
 
 `run()` loops `update()` then `draw()` until `self.running` is false.
 
@@ -101,12 +102,12 @@ The window uses `pygame.SCALED`. The game always draws to a 1280x720 surface and
 
 ## 5. State flow
 
-A *state* is any object with `update(dt)` and `draw(screen)`. `GameStateManager` (`states/state_manager.py`) holds:
+A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter()` runs once each time the game switches to that state, and is where a state does its "on arrival" work, such as starting its music. A state with nothing to do on arrival still needs an `enter` whose body is `pass`, or the switch crashes with `AttributeError`. `GameStateManager` (`states/state_manager.py`) holds:
 - `states`: a dict of name to state object.
 - `current`: the name of the active state.
 - `previous`: the name of the state before it.
 
-`set_state(name)` moves `current` into `previous` and switches to `name`. An unknown name raises `ValueError`, so a typo fails loudly instead of silently. `go_back()` switches to `previous`.
+`set_state(name)` moves `current` into `previous`, switches to `name`, then calls the new state's `enter()`. An unknown name raises `ValueError`, so a typo fails loudly instead of silently. `go_back()` switches to `previous` through `set_state`, so it calls `enter()` too.
 
 ```
          MainMenu ──"Start"──▶ Level ──player at 0 HP──▶ GameOver
@@ -118,10 +119,10 @@ A *state* is any object with `update(dt)` and `draw(screen)`. `GameStateManager`
    "Main Menu" ──▶ MainMenu   "Back" ──▶ Level  (only shown when previous == "level")
 ```
 
-- **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally.
-- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it switches to `"game_over"` (section 7, step 6).
-- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the level, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the level. In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file.
-- **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`.
+- **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally. `enter()` plays `MAIN_MENU_MUSIC` (`"menu_music"`).
+- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it switches to `"game_over"` (section 7, step 6). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
+- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the level, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the level. In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file. `enter()` does nothing, so the pause menu keeps playing whatever music was already on.
+- **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`. `enter()` stops the current music and plays `GAME_OVER_MUSIC` (`"game_over"`) once, with `loops=0`. Because a different track was playing, Restart starts the level music again from the beginning.
 
 All four states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exceptions are a death, and quitting to the main menu from the pause menu. `start_new_run(game_state_manager)` in `states/new_run.py` builds a brand new `Level(game_state_manager, DUNGEON_LEVEL_ONE)` and registers it under `"level"` with `add_state`, which replaces the old one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
 
@@ -204,7 +205,7 @@ All four states are built once at startup and kept alive, so leaving and returni
 | `camera.py` | The shared camera rect | `camera`, `center_camera`, `is_on_screen` |
 | `display.py` | Creating the window | `create_window` |
 | `debug.py` | Debug flags | `show_hitboxes`, `toggle_hitboxes` |
-| `sound.py` | Loading and playing audio | `load_sfx`, `load_music`, `play_sfx`, `play_music`, `stop_music`, `set_sfx_volume`, `set_music_volume` |
+| `sound.py` | Loading and playing audio. `play_music(name, loops=-1)` loops forever by default and remembers the track in `_current_music_name`. Asking for the track that is already playing does nothing, so it doesn't restart. `stop_music` clears the remembered name. | `load_sfx`, `load_music`, `play_sfx`, `play_music`, `stop_music`, `set_sfx_volume`, `set_music_volume` |
 | `settings.py` | Reading and saving `settings.json` | `load_settings`, `save_settings`, `get_setting`, `set_setting` |
 
 Some systems hold module-level state that is shared by everyone who imports them: `camera.camera`, `debug.show_hitboxes`, `settings.SETTINGS`, `sound.SFX` and `sound.MUSIC`, and the caches in `assets` and `hitbox`. Read flags through the module (`debug.show_hitboxes`), not with `from systems.debug import show_hitboxes`. A `from` import copies the value once at import time and never sees later toggles.
@@ -313,7 +314,7 @@ The window lasts `INVULNERABILITY_DURATION` (1 s), so each side can be hit at mo
 | `attack` | 5 | Not used yet |
 | `defense` | 0 | Not used yet |
 | `max_speed` | 70 | Speed cap in `steer` (pixels/second) |
-| `health` | 500 | Max health |
+| `health` | 250 | Max health |
 | `roll_speed` | 200 | Extra speed during a roll |
 | `acceleration` | 47 | Speed gained per second of input |
 | `friction` | 3000 | Braking and stopping strength |
@@ -377,7 +378,7 @@ Results are cached by the set of animation names plus `crop_size`. Two texture d
 
 Missing keys fall back to the defaults in `systems/settings.py`. A corrupted file prints a warning and uses the defaults.
 
-**Sounds.** Every `.wav` or `.ogg` in `Assets/Sounds` and `Assets/Music` is loaded and named by its filename without the extension. Sound files are named in lowercase snake_case, so their keys are too. Names currently used: `button_hover`, `button_click`, `pause` and `heal` (SFX), and `menu_music` (music). `level_music` is loaded but not played yet. A missing name prints a message instead of crashing.
+**Sounds.** Every `.wav` or `.ogg` in `Assets/Sounds` and `Assets/Music` is loaded and named by its filename without the extension. Sound files are named in lowercase snake_case, so their keys are too. Names currently used: `button_hover`, `button_click`, `pause` and `heal` (SFX), and `menu_music`, `level_music` and `game_over` (music). Each state picks its own track in `enter()` (section 5). A missing name prints a message instead of crashing.
 
 **The map** (`Assets/Maps/Dungeon_Level_One.tmx`, made in Tiled, 16x16 tiles). The loader looks for these names:
 
@@ -412,14 +413,14 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 **A new key binding.** Add a field to the dict returned by `read_input`, then react to it in `Level.update` (level-wide actions) or `Player.update` (player actions).
 
 **A new state or menu.**
-1. Create a class with `update(dt)` and `draw(screen)` that takes `game_state_manager`.
+1. Create a class with `enter()`, `update(dt)` and `draw(screen)` that takes `game_state_manager`. Put its music in `enter()`, or use `pass` to keep whatever is playing.
 2. Build it in `Game.__init__` and register it with `add_state("name", state)`.
 3. Switch to it from another state with `set_state("name")`.
 4. For a menu, follow the existing ones: fill the screen with `MENU_BACKGROUND_COLOR`, create the fonts once in `__init__` from `FONT_PATH`, and use `TextButton`s with `BUTTON_FONT_SIZE`.
 
 **A new level.** Make a TMX map using the layer names in section 8, add its path to `globals.py`, and build a `Level` with that path. There is no level-to-level transition yet.
 
-**A new sound or music track.** Drop a `.wav` or `.ogg` into `Assets/Sounds` or `Assets/Music` and play it by filename: `sound.play_sfx("Name")` or `sound.play_music("Name")`.
+**A new sound or music track.** Drop a `.wav` or `.ogg` into `Assets/Sounds` or `Assets/Music` and play it by filename: `sound.play_sfx("name")` or `sound.play_music("name")`. To give a screen its own track, call `play_music` in that state's `enter()`.
 
 ## 10. Debug tools
 
@@ -435,8 +436,6 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - `attack` and `defense` stats exist but aren't used yet.
 
 **Movement:** tuning is planned. It may include a drift feel and a "grip" stat.
-
-**Audio:** only the menu track plays, once. `level_music.wav` is ready for when per-screen music is added. Per-screen music (each state starting its own track on `enter()`) is planned.
 
 **Content and map:**
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.

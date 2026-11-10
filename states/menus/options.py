@@ -131,6 +131,9 @@ class Options:
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, OVERLAY_ALPHA))
 
+    def enter(self):
+        pass
+
     def can_go_back(self):
         return self.game_state_manager.get_previous_state() == "level"
 

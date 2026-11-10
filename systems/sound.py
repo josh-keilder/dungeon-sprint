@@ -6,6 +6,7 @@ SFX = {}
 MUSIC = {}
 _current_sfx_volume = 0.5
 _current_music_volume = 0.5
+_current_music_name = None
 
 
 def load_sfx():
@@ -38,8 +39,10 @@ def play_sfx(name, volume=None):
         print(f"Sound '{name}' not found")
 
 
-def play_music(name=None, loops=0, volume=None):
-    if pygame.mixer.music.get_busy() and name is None:
+def play_music(name, loops=-1, volume=None):
+    global _current_music_name
+
+    if pygame.mixer.music.get_busy() and name == _current_music_name:
         return
 
     if name in MUSIC:
@@ -49,11 +52,15 @@ def play_music(name=None, loops=0, volume=None):
         pygame.mixer.music.load(MUSIC[name])
         pygame.mixer.music.set_volume(volume)
         pygame.mixer.music.play(loops)
+
+        _current_music_name = name
     else:
         print(f"Music track '{name}' not found")
 
 
 def stop_music():
+    global _current_music_name
+    _current_music_name = None
     pygame.mixer.music.stop()
 
 

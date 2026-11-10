@@ -12,8 +12,6 @@ from systems.display import create_window
 from ui_objects.cursor import Cursor
 from ui_objects.text_label import TextLabel
 
-MENU_MUSIC = "menu_music"
-
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 
 FPS_REFRESH_INTERVAL = 0.5
@@ -36,14 +34,13 @@ class Game:
         cursor_image = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
         self.cursor = Cursor(cursor_image)
 
-        # Sound: load files, apply saved volumes, start the menu music
+        # Sound: load files and apply saved volumes
         music_volume = settings.get_setting("music_volume")
         sfx_volume = settings.get_setting("sfx_volume")
         sound.load_sfx()
         sound.load_music()
         sound.set_sfx_volume(sfx_volume)
         sound.set_music_volume(music_volume)
-        sound.play_music(MENU_MUSIC)
 
         # FPS counter
         self.fps_timer = 0.0
@@ -60,6 +57,8 @@ class Game:
         self.game_state_manager.add_state("options", self.options_menu)
         self.game_state_manager.add_state("main_menu", self.main_menu)
         self.game_state_manager.add_state("game_over", self.game_over_screen)
+
+        self.game_state_manager.get_state().enter()
 
     def run(self):
         while self.running:

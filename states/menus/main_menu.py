@@ -8,6 +8,7 @@ from globals import (
     SCREEN_WIDTH,
     WHITE,
 )
+from systems import sound
 from ui_objects.text_button import TextButton
 
 TITLE_FONT_SIZE = 96
@@ -15,6 +16,8 @@ TITLE_Y = 50
 START_BUTTON_Y = 300
 OPTIONS_BUTTON_Y = 380
 EXIT_BUTTON_Y = 460
+
+MAIN_MENU_MUSIC = "menu_music"
 
 
 class MainMenu:
@@ -45,6 +48,9 @@ class MainMenu:
             (SCREEN_WIDTH // 2, EXIT_BUTTON_Y),
             outline_color=GRAY,
         )
+
+    def enter(self):
+        sound.play_music(MAIN_MENU_MUSIC)
 
     def draw(self, screen):
         screen.fill(MENU_BACKGROUND_COLOR)
