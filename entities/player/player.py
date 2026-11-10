@@ -7,9 +7,12 @@ from systems.consumables import use_small_health_potion
 from systems.health import new_health, set_max_health
 from systems.hitbox import draw_hitbox
 from systems.inventory import new_inventory
+from systems.invulnerability import advance_invulnerability, is_invulnerable
 from systems.movement import move_and_collide, steer
 from systems.roll import advance_roll, try_start_roll
 from systems.stats import compute_stats
+
+BLINK_INTERVAL = 0.1
 
 
 class Player:
@@ -38,6 +41,8 @@ class Player:
             "timer": 0.0,
             "cooldown": 0.0,
         }
+
+        self.invulnerability = {"timer": 0.0}
 
         # Animation and sprite
         self.animation = new_animation(animations, "player_idle_down")
@@ -76,6 +81,7 @@ class Player:
 
         self.update_movement(dt, walls)
         self.update_roll(dt, walls)
+        advance_invulnerability(self.invulnerability, dt)
 
         self.handle_animation_state()
         self.image = advance_animation(self.animation, dt)
@@ -83,10 +89,16 @@ class Player:
         self.pos = pygame.math.Vector2(self.rect.topleft)
 
     def draw(self, screen, camera=None):
-        if camera:
-            screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-        else:
-            screen.blit(self.image, self.rect.topleft)
+        blink_phase = int(self.invulnerability["timer"] / BLINK_INTERVAL)
+        blink_hidden = is_invulnerable(self.invulnerability) and blink_phase % 2 == 1
+
+        if not blink_hidden:
+            if camera:
+                screen.blit(
+                    self.image, (self.rect.x - camera.x, self.rect.y - camera.y)
+                )
+            else:
+                screen.blit(self.image, self.rect.topleft)
 
         if debug.show_hitboxes:
             draw_hitbox(screen, self.image, self.rect, camera, GREEN)
