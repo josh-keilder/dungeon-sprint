@@ -78,7 +78,7 @@ Use `--check` to see whether anything needs formatting without changing files.
 2. `settings.load_settings()` reads `settings.json`. It must run before the window is created, because the window needs the fullscreen setting.
 3. `create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)` opens the window. It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display.
 4. The system mouse is hidden and a `Cursor` is built from `Assets/Cursors/01.png` at half scale.
-5. Sound: all sound effects and music are loaded, the saved volumes are applied, and the title music (`JuiceWrldChasingTheDragon`) starts. It plays once and does not loop.
+5. Sound: all sound effects and music are loaded, the saved volumes are applied, and the menu music (`menu_music`) starts. It plays once and does not loop. `level_music` is loaded too but isn't played yet.
 6. The FPS label (`TextLabel` at the top right) and its timer are created.
 7. A `GameStateManager` starting on `"main_menu"` is created, then the four states (`MainMenu`, `Options`, `Level`, `GameOver`) are built and registered under the names `"main_menu"`, `"options"`, `"level"` and `"game_over"`.
 
@@ -111,7 +111,7 @@ A *state* is any object with `update(dt)` and `draw(screen)`. `GameStateManager`
 ```
          MainMenu ──"Start"──▶ Level ──player at 0 HP──▶ GameOver
               │                  │                          │
-          "Options"          ESC (plays "Pause")    "Restart" ──▶ new Level
+          "Options"          ESC (plays "pause")    "Restart" ──▶ new Level
               ▼                  ▼                  "Main Menu" ──▶ new Level, then MainMenu
            Options ◀─────────────┘
               │
@@ -119,11 +119,11 @@ A *state* is any object with `update(dt)` and `draw(screen)`. `GameStateManager`
 ```
 
 - **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally.
-- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `Pause` sound. When the player's health reaches 0 it switches to `"game_over"` (section 7, step 6).
-- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file.
-- **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` first, then switch to `"level"` or `"main_menu"`.
+- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it switches to `"game_over"` (section 7, step 6).
+- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the level, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the level. In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file.
+- **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`.
 
-All four states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exception is a death. `GameOver.start_new_run()` builds a brand new `Level(game_state_manager, DUNGEON_LEVEL_ONE)` and registers it under `"level"` with `add_state`, which replaces the dead one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
+All four states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exceptions are a death, and quitting to the main menu from the pause menu. `start_new_run(game_state_manager)` in `states/new_run.py` builds a brand new `Level(game_state_manager, DUNGEON_LEVEL_ONE)` and registers it under `"level"` with `add_state`, which replaces the old one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
 
 ## 6. Folder-by-folder reference
 
@@ -157,6 +157,7 @@ All four states are built once at startup and kept alive, so leaving and returni
 ### `states/`
 
 - **`state_manager.py`**: `GameStateManager` (section 5).
+- **`new_run.py`**: `start_new_run(game_state_manager)` builds a fresh `Level` for `DUNGEON_LEVEL_ONE` and registers it as `"level"`, replacing the old run. It's a plain function in its own module so any menu can start a new run without depending on another menu. Used by `GameOver` (Restart and Main Menu) and `Options` (Main Menu from a paused run).
 - **`map/level.py`**: `Level(game_state_manager, map_path)`. Loads the map, item database, player and enemies. Runs and draws gameplay. Helpers that systems call back into:
   - `unlock_door(door_id)` removes every door tile with that id.
   - `refresh_walls()` rebuilds `solid_tiles` (walls plus remaining doors).
@@ -178,7 +179,7 @@ All four states are built once at startup and kept alive, so leaving and returni
 - **`menus/game_over.py`**: `GameOver(game_state_manager)`, the screen shown on death (section 5).
   - The title is rendered from `FONT_PATH` at `TITLE_FONT_SIZE` (64) and centered horizontally with `(SCREEN_WIDTH - width) // 2`. Restart and Main Menu are `TextButton`s using the shared `BUTTON_FONT_SIZE`, placed by their midtop point `(SCREEN_WIDTH // 2, y)`, with a green outline.
   - `draw` first draws the current Level, looked up from `game_state_manager.states["level"]`, then a full-screen black overlay at `OVERLAY_ALPHA` (160 of 255), then the title and buttons. The level has to be redrawn every frame, because a translucent overlay drawn on its own would stack up to solid black.
-  - `start_new_run()` builds a fresh `Level` and registers it as `"level"`.
+  - Restart and Main Menu both call `start_new_run(self.game_state_manager)` from `states/new_run.py` before switching state.
 
 ### `systems/`
 
@@ -210,7 +211,7 @@ Some systems hold module-level state that is shared by everyone who imports them
 
 ### `ui_objects/`
 
-- **`button.py`**: `Button(image, pos, outline_color=WHITE)`. `image` can be any surface, including text from `font.render`. Plays `Button_Hover` when the mouse enters and draws an outline in `outline_color` while hovered. The outline is drawn first and the image on top of it, so only the ring just outside the shape shows. Drawn the other way round, the outline covers thin shapes such as letters. On a left click it plays `Button_Click` and sets `clicked_this_frame`, which `is_clicked()` returns. `set_image` swaps the picture and rebuilds the outline. The new rect keeps the old `topleft`, so text that changes width would drift off center. `TextButton.set_text` corrects for that.
+- **`button.py`**: `Button(image, pos, outline_color=WHITE)`. `image` can be any surface, including text from `font.render`. Plays `button_hover` when the mouse enters and draws an outline in `outline_color` while hovered. The outline is drawn first and the image on top of it, so only the ring just outside the shape shows. Drawn the other way round, the outline covers thin shapes such as letters. On a left click it plays `button_click` and sets `clicked_this_frame`, which `is_clicked()` returns. `set_image` swaps the picture and rebuilds the outline. The new rect keeps the old `topleft`, so text that changes width would drift off center. `TextButton.set_text` corrects for that.
 - **`text_button.py`**: `TextButton(text, font, midtop=(0, 0), text_color=WHITE, outline_color=WHITE)`, a `Button` subclass whose picture is rendered text.
   - The font is passed in rather than created here. Each state creates its fonts once in `__init__`, because building a `Font` reads the font file from disk.
   - It is placed by its `midtop` point (the middle of its top edge), so passing `(SCREEN_WIDTH // 2, y)` centers it. For any other placement, leave out `midtop` and set another anchor on `rect` afterwards, such as `rect.bottomleft`.
@@ -246,7 +247,7 @@ This is `Level.update(dt)` followed by `Level.draw(screen)`.
 "Pressed this frame" uses pygame-ce's `get_just_pressed`, so holding a key triggers it only once.
 
 **2. Level-wide intents.**
-- `pause`: switch to options, play `Pause`, and stop this frame's update.
+- `pause`: switch to options, play `pause`, and stop this frame's update.
 - `debug`: toggle hitbox drawing.
 - `interact`: run `interact.interact(player, level)` (below).
 - `inventory`: open the inventory. When closing, any held item goes back into the inventory first. If it doesn't fit, the inventory stays open.
@@ -280,7 +281,7 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 
 The window lasts `INVULNERABILITY_DURATION` (1 s), so each side can be hit at most once per second however long the sprites overlap. If several enemies touch the player on the same frame, the first one's hit starts the window and the rest are skipped, because the contacts are resolved one at a time. A roll blocks damage for its 0.4 s but doesn't start a window. Enemies at 0 health are removed.
 
-**6. Player death.** After all contacts are resolved, `is_dead(player.health)` is checked once. If the player is at 0, the level switches to `"game_over"`, plays the `Pause` sound as a stand-in death sound, and stops this frame's update, so the ground items and camera don't update. The check is here rather than in `systems/health.py` because `is_dead` is the rule and switching state is the level's decision. Because `set_state` only changes the name, `Game.draw` draws the game-over screen on this same frame.
+**6. Player death.** After all contacts are resolved, `is_dead(player.health)` is checked once. If the player is at 0, the level switches to `"game_over"`, plays the `pause` sound as a stand-in death sound, and stops this frame's update, so the ground items and camera don't update. The check is here rather than in `systems/health.py` because `is_dead` is the rule and switching state is the level's decision. Because `set_state` only changes the name, `Game.draw` draws the game-over screen on this same frame.
 
 **7. Ground items and camera.** Ground items advance their animation, and the camera centers on the player.
 
@@ -376,7 +377,7 @@ Results are cached by the set of animation names plus `crop_size`. Two texture d
 
 Missing keys fall back to the defaults in `systems/settings.py`. A corrupted file prints a warning and uses the defaults.
 
-**Sounds.** Every `.wav` or `.ogg` in `Assets/Sounds` and `Assets/Music` is loaded and named by its filename without the extension. Names currently used: `Button_Hover`, `Button_Click`, `Pause` and `heal` (SFX), and `JuiceWrldChasingTheDragon` (music). A missing name prints a message instead of crashing.
+**Sounds.** Every `.wav` or `.ogg` in `Assets/Sounds` and `Assets/Music` is loaded and named by its filename without the extension. Sound files are named in lowercase snake_case, so their keys are too. Names currently used: `button_hover`, `button_click`, `pause` and `heal` (SFX), and `menu_music` (music). `level_music` is loaded but not played yet. A missing name prints a message instead of crashing.
 
 **The map** (`Assets/Maps/Dungeon_Level_One.tmx`, made in Tiled, 16x16 tiles). The loader looks for these names:
 
@@ -428,18 +429,21 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 ## 11. Known gaps and planned work
 
 **Combat:**
-- Death has no animation or sound of its own yet. It reuses `Pause` and switches screens on the same frame, with no delay or fade.
+- Death has no animation or sound of its own yet. It reuses `pause` and switches screens on the same frame, with no delay or fade.
 - Damage based on dash or roll speed is planned.
 - A per-enemy speed drain on contact (set in `ENEMY_TYPES`) is planned.
 - `attack` and `defense` stats exist but aren't used yet.
 
 **Movement:** tuning is planned. It may include a drift feel and a "grip" stat.
 
-**Audio:** only the title track plays, once. Per-screen music (each state starting its own track on `enter()`) is planned.
+**Audio:** only the menu track plays, once. `level_music.wav` is ready for when per-screen music is added. Per-screen music (each state starting its own track on `enter()`) is planned.
 
 **Content and map:**
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
 - The map has a `Keys` tile layer and an `Items` object layer (with placed `gold_key` and `small_health_potion` objects) that the loader doesn't read yet. Items currently only come from chests.
-- Only a death starts a new run. Pausing, choosing Main Menu in Options, then Start resumes the same run.
-- `start_new_run()` reloads the map inside `GameOver.update`, so the first frame of the new run gets a large `dt` covering the load time.
+- `start_new_run()` reloads the map inside the update of whichever menu calls it (`GameOver` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
 - There is only one level, with no win condition or exit.
+
+**Menus and saving:**
+- Choosing Main Menu from the pause menu throws the run away with no warning. A confirmation box that tells the player their progress won't be saved is planned. It would go in the Options Main Menu branch, before `start_new_run`.
+- There is no saving system yet, so a run can't be saved and resumed later. Once saving exists, the confirmation box can change its wording, or save first.

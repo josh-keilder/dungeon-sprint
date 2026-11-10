@@ -61,7 +61,7 @@ class Level:
 
         if self.player.intent["pause"]:
             self.game_state_manager.set_state("options")
-            sound.play_sfx("Pause")
+            sound.play_sfx("pause")
             return
 
         if self.player.intent["debug"]:
@@ -96,7 +96,7 @@ class Level:
 
         if is_dead(self.player.health):
             self.game_state_manager.set_state("game_over")
-            sound.play_sfx("Pause")
+            sound.play_sfx("pause")
             return
 
         self.ground_items.update(dt)

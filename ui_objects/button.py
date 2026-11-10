@@ -26,7 +26,7 @@ class Button:
 
         if self.rect.collidepoint(mouse_pos):
             if not self.hovered:
-                sound.play_sfx("Button_Hover")
+                sound.play_sfx("button_hover")
                 self.hovered = True
         else:
             self.hovered = False
@@ -34,7 +34,7 @@ class Button:
         self.clicked_this_frame = self.hovered and pygame.mouse.get_just_pressed()[0]
 
         if self.clicked_this_frame:
-            sound.play_sfx("Button_Click")
+            sound.play_sfx("button_click")
 
     def is_clicked(self):
         return self.clicked_this_frame

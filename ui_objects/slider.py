@@ -59,7 +59,7 @@ class Slider:
             mouse_pos
         ):
             if not self.hovered:
-                sound.play_sfx("Button_Hover")
+                sound.play_sfx("button_hover")
             self.hovered = True
         else:
             self.hovered = False

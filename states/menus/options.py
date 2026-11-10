@@ -11,8 +11,10 @@ from globals import (
     SCREEN_WIDTH,
     WHITE,
 )
+from states.new_run import start_new_run
 from systems import settings, sound
 from systems.display import create_window
+from systems.input import read_input
 from ui_objects.slider import Slider
 from ui_objects.text_button import TextButton
 from ui_objects.text_label import TextLabel
@@ -156,6 +158,8 @@ class Options:
             self.back_button.draw(screen)
 
     def update(self, dt):
+        intent = read_input()
+
         self.main_menu_button.update()
         self.fps_button.update()
         self.full_screen_button.update()
@@ -164,6 +168,8 @@ class Options:
 
         # State Navigation
         if self.main_menu_button.is_clicked():
+            if self.can_go_back():
+                start_new_run(self.game_state_manager)
             self.game_state_manager.set_state("main_menu")
             settings.save_settings()
 
@@ -198,9 +204,9 @@ class Options:
             sound.set_sfx_volume(self.sfx_slider_value / 100.0)
             settings.set_setting("sfx_volume", self.sfx_slider_value / 100.0)
 
-        # Back button, only when we came from the level
+        # Back button or ESC, only when we came from the level
         if self.can_go_back():
             self.back_button.update()
-            if self.back_button.is_clicked():
+            if self.back_button.is_clicked() or intent["pause"]:
                 self.game_state_manager.go_back()
                 settings.save_settings()

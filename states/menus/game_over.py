@@ -2,7 +2,6 @@ import pygame
 
 from globals import (
     BUTTON_FONT_SIZE,
-    DUNGEON_LEVEL_ONE,
     FONT_PATH,
     GRAY,
     OVERLAY_ALPHA,
@@ -10,7 +9,7 @@ from globals import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
-from states.map.level import Level
+from states.new_run import start_new_run
 from ui_objects.text_button import TextButton
 
 TITLE_FONT_SIZE = 64
@@ -46,21 +45,16 @@ class GameOver:
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, OVERLAY_ALPHA))
 
-    def start_new_run(self):
-        new_level = Level(self.game_state_manager, DUNGEON_LEVEL_ONE)
-
-        self.game_state_manager.add_state("level", new_level)
-
     def update(self, dt):
         self.restart_button.update()
         self.main_menu_button.update()
 
         if self.main_menu_button.is_clicked():
-            self.start_new_run()
+            start_new_run(self.game_state_manager)
             self.game_state_manager.set_state("main_menu")
 
         if self.restart_button.is_clicked():
-            self.start_new_run()
+            start_new_run(self.game_state_manager)
             self.game_state_manager.set_state("level")
 
     def draw(self, screen):
