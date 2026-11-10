@@ -120,7 +120,7 @@ A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter(
 ```
 
 - **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally. `enter()` plays `MAIN_MENU_MUSIC` (`"menu_music"`).
-- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it switches to `"game_over"` (section 7, step 6). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
+- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
 - **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the level, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the level. In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file. `enter()` does nothing, so the pause menu keeps playing whatever music was already on.
 - **GameOver** (`states/menus/game_over.py`): a "You Died!" title and two text buttons drawn over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`. `enter()` stops the current music and plays `GAME_OVER_MUSIC` (`"game_over"`) once, with `loops=0`. Because a different track was playing, Restart starts the level music again from the beginning.
 
@@ -163,6 +163,7 @@ All four states are built once at startup and kept alive, so leaving and returni
   - `unlock_door(door_id)` removes every door tile with that id.
   - `refresh_walls()` rebuilds `solid_tiles` (walls plus remaining doors).
   - `spawn_loot(drops, center)` creates `WorldItem`s scattered randomly around a point.
+  - `dying` (starts `False`) is the flag that says the death sequence has started, and `death_timer` (`{"timer": 0.0}`) holds the seconds left before the game-over screen.
 - **`map/map_loader.py`**: reads the TMX file with pytmx.
   - `load_level_data(map_path)` returns one dict with everything the level needs.
   - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
@@ -282,7 +283,11 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 
 The window lasts `INVULNERABILITY_DURATION` (1 s), so each side can be hit at most once per second however long the sprites overlap. If several enemies touch the player on the same frame, the first one's hit starts the window and the rest are skipped, because the contacts are resolved one at a time. A roll blocks damage for its 0.4 s but doesn't start a window. Enemies at 0 health are removed.
 
-**6. Player death.** After all contacts are resolved, `is_dead(player.health)` is checked once. If the player is at 0, the level switches to `"game_over"`, plays the `pause` sound as a stand-in death sound, and stops this frame's update, so the ground items and camera don't update. The check is here rather than in `systems/health.py` because `is_dead` is the rule and switching state is the level's decision. Because `set_state` only changes the name, `Game.draw` draws the game-over screen on this same frame.
+**6. Player death.** After all contacts are resolved, the level checks `is_dead(player.health) and not self.dying`. The check is here rather than in `systems/health.py` because `is_dead` is the rule and what happens next is the level's decision.
+
+`is_dead` is a condition that stays true on every frame once health is 0, but the death sequence must start only once, at the moment of death. The `dying` flag handles that: on the first dead frame the level sets `dying = True`, sets `death_timer["timer"]` to `DEATH_DELAY`, stops the music, plays the `death` sound, and returns early so the ground items and camera don't update. On later frames `not self.dying` is false, so none of it repeats.
+
+While `dying` is true, the very first thing `Level.update` does is count `death_timer` down by `dt` and return. Because that check comes before `read_input()`, input, movement, enemies and contacts are all skipped, so ESC can't pause and Q can't heal during the freeze. `Level.draw` still runs every frame, so the world stays on screen, frozen as it was. When the timer reaches 0 the level switches to `"game_over"`. Restart and Main Menu build a brand new `Level`, so `dying` and the timer reset on their own.
 
 **7. Ground items and camera.** Ground items advance their animation, and the camera centers on the player.
 
@@ -378,7 +383,7 @@ Results are cached by the set of animation names plus `crop_size`. Two texture d
 
 Missing keys fall back to the defaults in `systems/settings.py`. A corrupted file prints a warning and uses the defaults.
 
-**Sounds.** Every `.wav` or `.ogg` in `Assets/Sounds` and `Assets/Music` is loaded and named by its filename without the extension. Sound files are named in lowercase snake_case, so their keys are too. Names currently used: `button_hover`, `button_click`, `pause` and `heal` (SFX), and `menu_music`, `level_music` and `game_over` (music). Each state picks its own track in `enter()` (section 5). A missing name prints a message instead of crashing.
+**Sounds.** Every `.wav` or `.ogg` in `Assets/Sounds` and `Assets/Music` is loaded and named by its filename without the extension. Sound files are named in lowercase snake_case, so their keys are too. Names currently used: `button_hover`, `button_click`, `pause`, `heal` and `death` (SFX), and `menu_music`, `level_music` and `game_over` (music). Each state picks its own track in `enter()` (section 5). A missing name prints a message instead of crashing.
 
 **The map** (`Assets/Maps/Dungeon_Level_One.tmx`, made in Tiled, 16x16 tiles). The loader looks for these names:
 
@@ -430,7 +435,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 ## 11. Known gaps and planned work
 
 **Combat:**
-- Death has no animation or sound of its own yet. It reuses `pause` and switches screens on the same frame, with no delay or fade.
+- Death has no animation or fade yet. The world just freezes during the delay.
 - Damage based on dash or roll speed is planned.
 - A per-enemy speed drain on contact (set in `ENEMY_TYPES`) is planned.
 - `attack` and `defense` stats exist but aren't used yet.

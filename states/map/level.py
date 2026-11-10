@@ -26,6 +26,8 @@ PLAYER_HEALTH_BAR_SIZE = (200, 10)
 
 LEVEL_MUSIC = "level_music"
 
+DEATH_DELAY = 3.0
+
 
 class Level:
     def __init__(self, game_state_manager, map_path):
@@ -58,10 +60,19 @@ class Level:
         self.show_inventory = False
         self.inventory_ui = InventoryUI()
 
+        self.dying = False
+        self.death_timer = {"timer": 0.0}
+
     def enter(self):
         sound.play_music(LEVEL_MUSIC)
 
     def update(self, dt):
+        if self.dying:
+            self.death_timer["timer"] -= dt
+            if self.death_timer["timer"] <= 0:
+                self.game_state_manager.set_state("game_over")
+            return
+
         self.player.intent = read_input()
 
         if self.player.intent["pause"]:
@@ -99,9 +110,11 @@ class Level:
             if is_dead(enemy.health):
                 self.enemies.remove(enemy)
 
-        if is_dead(self.player.health):
-            self.game_state_manager.set_state("game_over")
-            sound.play_sfx("pause")
+        if is_dead(self.player.health) and not self.dying:
+            self.dying = True
+            self.death_timer["timer"] = DEATH_DELAY
+            sound.stop_music()
+            sound.play_sfx("death")
             return
 
         self.ground_items.update(dt)
