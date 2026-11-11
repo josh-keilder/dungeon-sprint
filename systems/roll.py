@@ -1,7 +1,8 @@
-from systems.timer import advance_timer, is_running, start_timer
+from systems.timer import advance_timer, is_running, start_timer, time_left
 
 ROLL_DURATION = 0.4
 ROLL_COOLDOWN = 1.0
+ROLL_EASE_OUT_START = 0.7
 
 
 def try_start_roll(roll, direction):
@@ -24,3 +25,12 @@ def advance_roll(roll, dt):
 
 def is_rolling(roll):
     return is_running(roll["active_timer"])
+
+
+def roll_speed_multiplier(roll):
+    progress = 1 - time_left(roll["active_timer"]) / ROLL_DURATION
+
+    if progress < ROLL_EASE_OUT_START:
+        return 1.0
+    else:
+        return (1 - progress) / (1 - ROLL_EASE_OUT_START)

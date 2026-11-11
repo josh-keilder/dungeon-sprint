@@ -12,3 +12,7 @@ def advance_timer(timer, dt):
 
 def is_running(timer):
     return timer["timer"] > 0
+
+
+def time_left(timer):
+    return max(0.0, timer["timer"])

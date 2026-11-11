@@ -8,10 +8,10 @@ from systems.health import new_health, set_max_health
 from systems.hitbox import draw_hitbox
 from systems.inventory import new_inventory
 from systems.movement import move_and_collide, steer
-from systems.roll import advance_roll, is_rolling, try_start_roll
+from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
 from systems.sound import play_sfx
 from systems.stats import compute_stats
-from systems.timer import advance_timer, is_running, new_timer
+from systems.timer import advance_timer, is_running, new_timer, time_left
 
 BLINK_INTERVAL = 0.1
 
@@ -29,7 +29,6 @@ class Player:
 
         # Base values before equipment bonuses
         self.base_stats = {
-            "attack": 5,
             "defense": 0,
             "health": 25,
             "roll_speed": 200,
@@ -106,7 +105,7 @@ class Player:
         self.pos = pygame.math.Vector2(self.rect.topleft)
 
     def draw(self, screen, camera=None):
-        blink_phase = int(self.invulnerability["timer"] / BLINK_INTERVAL)
+        blink_phase = int(time_left(self.invulnerability) / BLINK_INTERVAL)
         blink_hidden = is_running(self.invulnerability) and blink_phase % 2 == 1
 
         if not blink_hidden:
@@ -161,7 +160,12 @@ class Player:
 
     def update_roll(self, dt, walls):
         if is_rolling(self.roll):
-            displacement = self.roll["direction"] * self.stats["roll_speed"] * dt
+            displacement = (
+                self.roll["direction"]
+                * self.stats["roll_speed"]
+                * roll_speed_multiplier(self.roll)
+                * dt
+            )
 
             hit_x, hit_y = move_and_collide(self.rect, displacement, walls)
 

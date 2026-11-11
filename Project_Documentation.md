@@ -191,11 +191,11 @@ All four states are built once at startup and kept alive, so leaving and returni
 | --- | --- | --- |
 | `input.py` | Turns keyboard and mouse into an intent dict | `read_input` |
 | `movement.py` | Velocity steering and wall collision | `steer`, `approach_fraction`, `move_and_collide` |
-| `roll.py` | Roll start, duration and cooldown | `try_start_roll`, `advance_roll`, `is_rolling` |
+| `roll.py` | Roll start, duration, cooldown and ease-out | `try_start_roll`, `advance_roll`, `is_rolling`, `roll_speed_multiplier` |
 | `enemy_ai.py` | Enemy behaviours and line of sight | `fly_velocity`, `wander_chase_velocity`, `trigger_flee`, `has_line_of_sight`, `random_idle_direction` |
 | `collision.py` | Finds enemies touching the player | `find_player_contacts` |
 | `combat.py` | What happens on contact. `resolve_contact` returns whether the enemy was hit. | `resolve_contact` |
-| `timer.py` | Countdown timers: a `{"timer"}` dict counted down by `dt` | `new_timer`, `start_timer`, `advance_timer`, `is_running` |
+| `timer.py` | Countdown timers: a `{"timer"}` dict counted down by `dt` | `new_timer`, `start_timer`, `advance_timer`, `is_running`, `time_left` |
 | `health.py` | Health dict rules | `new_health`, `take_damage`, `heal`, `is_dead`, `set_max_health` |
 | `stats.py` | Base stats plus equipment bonuses | `compute_stats` |
 | `inventory.py` | Inventory dict rules | `new_inventory`, `add_item`, `remove_item`, `has_item`, `count_item`, `can_equip` |
@@ -265,7 +265,7 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 3. `roll` intent → `try_start_roll`. A roll needs a move direction, can't start during another roll (`is_rolling`), and can't start while `cooldown_timer` is running. Starting one starts both `active_timer` and `cooldown_timer`.
 4. `heal` intent → `use_small_health_potion`. Heals 70, removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player play the `heal` sound. The sound is played here rather than in `systems/consumables.py` because it is feedback, not a rule.
 5. `update_movement`: `steer` computes the new velocity from the move direction and the `max_speed`, `acceleration_rate`, `deceleration_rate` and `grip` stats, then `move_and_collide` moves the rect. Hitting a wall zeros velocity on that axis.
-6. `update_roll`: while rolling, the player is also moved by `roll_speed` in the roll direction (on top of normal movement), then `advance_roll` counts down `active_timer` and `cooldown_timer`.
+6. `update_roll`: while rolling, the player is also moved by `roll_speed` in the roll direction (on top of normal movement), scaled by `roll_speed_multiplier` so the push fades out at the end of the roll (see below), then `advance_roll` counts down `active_timer` and `cooldown_timer`.
    Then the player's `speed` is measured. At the very start of `update`, the player's center is copied into `start_pos`, before anything moves. After `update_movement` and `update_roll`, the distance from `start_pos` to the new center, divided by `dt`, gives the actual speed in pixels per second. Because it is measured rather than calculated, it includes walls: rolling into a wall gives a low speed.
 7. `advance_timer` counts down the invulnerability timer, then the heal cooldown.
 8. Picks the animation `player_{idle|walk|roll}_{direction}` and advances it.
@@ -276,7 +276,38 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 - **The fraction.** `approach_fraction(rate, dt)` returns `1 - exp(-rate * dt)`. Closing a fixed fraction of the gap per *frame* would feel snappier at higher frame rates, but this formula gives the same motion at any frame rate, because two frames of `dt` multiply out to exactly one frame of `2 * dt`. A higher `rate` is snappier. As a rule of thumb, the velocity is 95 % of the way to its target after about `3 / rate` seconds.
 - **Acceleration scales by itself.** Because a fraction of the *gap* is closed, the player gains a lot of speed when standing still (big gap) and very little near `max_speed` (small gap), easing in without overshooting. No speed cap is needed.
 - **Grip.** With input, the velocity is split using the dot product: `along_speed = velocity.dot(direction)` is the speed in the input direction, `along_velocity` is that part as a vector, and `across_velocity` is everything left over (sideways motion from the previous heading). The along part approaches the target at `acceleration_rate`. The across part is removed at the `grip` rate, so turns don't drift. When `along_speed` is negative (the player is reversing), the along part uses `grip` too, so turning around is as snappy as turning sideways.
+
+  The split, with the input pointing up and the old velocity still heading right:
+
+  ```
+                direction (your input, length 1)
+                ↑
+                |   velocity
+                |  ↗
+    along part  | /
+                |/____→ across part (sideways)
+  ```
+
+  The along part speeds up toward `max_speed`. The across part is the leftover from the previous heading, and grip removes it.
 - **Stopping.** With no input, the velocity is multiplied by `1 - approach_fraction(deceleration_rate, dt)`, which collapses it within a few frames. Below `STOP_SPEED` (1.0 px/s) it snaps to exactly 0, because closing a fraction of the gap never quite reaches zero.
+
+**How the roll eases out.** The roll push isn't constant. `roll_speed_multiplier(roll)` (`systems/roll.py`) scales it, holding at 1.0 for most of the roll and then fading to 0.0 just as the roll ends, so the player slides back into walking speed instead of dropping to it in one frame.
+
+```
+multiplier
+1.0 ┤████████████████████▄
+    │                     ▀▄
+    │                       ▀▄
+0.0 ┤                         ▀
+    └──────────────────────────
+    0 %      roll progress    100 %
+                     ↑
+           ROLL_EASE_OUT_START (0.7)
+```
+
+- **Progress.** `active_timer` counts down from `ROLL_DURATION` (0.4) to 0, so the fraction of the roll done is `1 - time_left(active_timer) / ROLL_DURATION`: 0.0 at the start, 1.0 at the end. `time_left` clamps at 0, because a timer that has counted below zero would otherwise give progress above 1.0 and a negative multiplier.
+- **The fade.** Before `ROLL_EASE_OUT_START` the multiplier is 1.0. After it, it is `(1 - progress) / (1 - ROLL_EASE_OUT_START)`, a straight line from 1.0 at progress 0.7 to 0.0 at progress 1.0. With a 0.4 s roll, the fade covers the last 0.12 s.
+- **Measured example.** Rolling from full walking speed, the player's `speed` sampled every 0.05 s is `270, 270, 270, 270, 270, 244, 160, 77`, then 70 on the first frame after the roll.
 
 **How `move_and_collide` works.** It moves on X, pushes the rect out of the first wall it overlaps, then does the same on Y. Doing the axes separately lets you slide along walls. Walls whose center is more than 64 pixels away on that axis are skipped for speed. It returns `(hit_x, hit_y)`.
 
@@ -291,7 +322,7 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 
 The window lasts `INVULNERABILITY_DURATION` (1 s), so each side can be hit at most once per second however long the sprites overlap. If several enemies touch the player on the same frame, the first one's hit starts the window and the rest are skipped, because the contacts are resolved one at a time. A roll blocks damage for its 0.4 s but doesn't start a window. Enemies at 0 health are removed.
 
-`ROLL_DAMAGE_PER_SPEED` is 0.15, so a roll at about 204 pixels per second deals 31, and a 100 health enemy takes about 3 rolls. Because an enemy's invulnerability (1 s) lasts longer than a roll (0.4 s), each enemy can be hit at most once per roll, but different enemies each have their own window, so rolling through a group hits them all. `resolve_contact` returns `True` when the enemy was hit, and `Level.update` then plays the `roll_hit` sound. The sound is played in the level rather than in `systems/combat.py` because it is feedback, not a rule.
+`ROLL_DAMAGE_PER_SPEED` is 0.15, so a roll at about 204 pixels per second deals 31, and a 100 health enemy takes about 3 rolls. Because damage comes from measured speed and the roll push fades out, a hit near the end of a roll does less damage than one early in it, which rewards rolling *into* enemies. Because an enemy's invulnerability (1 s) lasts longer than a roll (0.4 s), each enemy can be hit at most once per roll, but different enemies each have their own window, so rolling through a group hits them all. `resolve_contact` returns `True` when the enemy was hit, and `Level.update` then plays the `roll_hit` sound. The sound is played in the level rather than in `systems/combat.py` because it is feedback, not a rule.
 
 **6. Player death.** After all contacts are resolved, the level checks `is_dead(player.health) and not self.dying`. The check is here rather than in `systems/health.py` because `is_dead` is the rule and what happens next is the level's decision.
 
@@ -326,7 +357,6 @@ While `dying` is true, the very first thing `Level.update` does is count `death_
 
 | Stat | Value | Used for |
 | --- | --- | --- |
-| `attack` | 5 | Not used yet (could later scale roll damage) |
 | `defense` | 0 | Not used yet |
 | `max_speed` | 70 | Target speed in `steer` (pixels/second) |
 | `health` | 25 | Max health (kept low for now while values are being worked out) |
@@ -335,11 +365,11 @@ While `dying` is true, the very first thing `Level.update` does is count `death_
 | `deceleration_rate` | 60 | How fast the player stops with no input (to a full stop in about 0.07 s) |
 | `grip` | 50 | How fast sideways and reversing velocity is removed (sideways drift gone in about 0.09 s) |
 
-Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 s (the cooldown starts when the roll starts).
+Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 s (the cooldown starts when the roll starts), and `ROLL_EASE_OUT_START` 0.7 (the push starts fading after 70 % of the roll).
 
 **`roll` dict** (player): `{"direction", "active_timer", "cooldown_timer"}`. `direction` is the move direction copied when the roll started. `active_timer` holds the seconds left in the current roll, and `cooldown_timer` the seconds before the next roll can start. Both are timers from `new_timer()`. There is no separate "active" flag: `is_rolling(roll)` is true while `active_timer` is running, and all code asks it that way.
 
-**Timers** (`systems/timer.py`). Every countdown in the game is a `{"timer": seconds_left}` dict made with `new_timer()`. `start_timer(timer, duration)` sets it, `advance_timer(timer, dt)` subtracts `dt` each frame, and `is_running(timer)` is true while it is `> 0`. The value keeps counting below 0, which is harmless because every check goes through `is_running`. The roll's `active_timer` and `cooldown_timer` are timers too. The one exception is animation, which is a different kind of timer that counts *up* to advance frames.
+**Timers** (`systems/timer.py`). Every countdown in the game is a `{"timer": seconds_left}` dict made with `new_timer()`. `start_timer(timer, duration)` sets it, `advance_timer(timer, dt)` subtracts `dt` each frame, and `is_running(timer)` is true while it is `> 0`. `time_left(timer)` returns the seconds left, never below 0, for code that needs the number itself, such as the roll ease-out and the player's blink. The value keeps counting below 0, which is harmless because every check goes through `is_running` or `time_left`. Only `timer.py` reads the `"timer"` key directly. The roll's `active_timer` and `cooldown_timer` are timers too. The one exception is animation, which is a different kind of timer that counts *up* to advance frames.
 
 **`invulnerability` dict** (player and enemies): a timer holding the seconds of invulnerability left. `INVULNERABILITY_DURATION` is 1.0 s (`systems/combat.py`), `BLINK_INTERVAL` is 0.1 s (`player.py`), and `ROLL_DAMAGE_PER_SPEED` is 0.15 (`systems/combat.py`), so an enemy with 100 health dies after about 3 rolls.
 
@@ -452,12 +482,11 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 **Combat:**
 - Death has no animation or fade yet. The world just freezes during the delay.
 - A per-enemy speed drain on contact (set in `ENEMY_TYPES`) is planned.
-- `attack` and `defense` stats exist but aren't used yet. `attack` could later scale roll damage.
+- The `defense` stat exists but isn't used yet.
 - With the current stats, roll speed only varies between about 200 and 270 pixels per second, so roll damage varies only a little until movement tuning and gear change it.
 
 **Movement:**
 - All movement values are first-pass numbers. They will be tuned once the basic gameplay features are in and levels are being built, with feedback from playtesters.
-- The roll push is added on top of the walking velocity and ends in a single frame, so speed drops from about 270 to walking speed at once. Easing the roll's speed out over its last few frames is a possible follow-up if that feels abrupt.
 
 **Content and map:**
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
