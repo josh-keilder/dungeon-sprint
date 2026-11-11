@@ -8,7 +8,7 @@ from systems.health import new_health, set_max_health
 from systems.hitbox import draw_hitbox
 from systems.inventory import new_inventory
 from systems.movement import move_and_collide, steer
-from systems.roll import advance_roll, try_start_roll
+from systems.roll import advance_roll, is_rolling, try_start_roll
 from systems.sound import play_sfx
 from systems.stats import compute_stats
 from systems.timer import advance_timer, is_running, new_timer
@@ -30,17 +30,16 @@ class Player:
             "attack": 5,
             "defense": 0,
             "max_speed": 70,
-            "health": 250,
+            "health": 25,
             "roll_speed": 200,
             "acceleration": 47,
             "friction": 3000,
         }
 
         self.roll = {
-            "active": False,
             "direction": pygame.Vector2(),
-            "timer": 0.0,
-            "cooldown": 0.0,
+            "active_timer": new_timer(),
+            "cooldown_timer": new_timer(),
         }
 
         self.invulnerability = new_timer()
@@ -64,7 +63,7 @@ class Player:
     def update(self, dt, walls):
         move_direction = self.intent["move"]
         self.walking = move_direction.length_squared() > 0
-        if self.walking and not self.roll["active"]:
+        if self.walking and not is_rolling(self.roll):
             self.update_facing(move_direction)
 
         self.stats = compute_stats(
@@ -111,7 +110,7 @@ class Player:
             draw_hitbox(screen, self.image, self.rect, camera, GREEN)
 
     def handle_animation_state(self):
-        if self.roll["active"]:
+        if is_rolling(self.roll):
             action = "roll"
         elif self.walking:
             action = "walk"
@@ -149,7 +148,7 @@ class Player:
             self.velocity.y = 0
 
     def update_roll(self, dt, walls):
-        if self.roll["active"]:
+        if is_rolling(self.roll):
             displacement = self.roll["direction"] * self.stats["roll_speed"] * dt
 
             hit_x, hit_y = move_and_collide(self.rect, displacement, walls)
