@@ -7,8 +7,8 @@ from entities.player.load_player import load_player
 from globals import (
     GAME_SCALE,
     MENU_BACKGROUND_COLOR,
+    PALETTE_STEEL,
     UNLOCK_DOOR_DISTANCE,
-    WHITE,
     WORLD_HEIGHT,
     WORLD_WIDTH,
     YELLOW,
@@ -172,7 +172,7 @@ class Level:
                                 sprite.image,
                                 sprite.rect,
                                 camera,
-                                WHITE,
+                                PALETTE_STEEL,
                             )
 
         if self.exit_rect is not None:

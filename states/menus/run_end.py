@@ -3,11 +3,11 @@ import pygame
 from globals import (
     BUTTON_FONT_SIZE,
     FONT_PATH,
-    GRAY,
     OVERLAY_ALPHA,
+    PALETTE_STEEL,
+    PALETTE_TORCH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    WHITE,
 )
 from states.new_run import start_new_run
 from systems import sound
@@ -38,14 +38,14 @@ class RunEndScreen:
             "Restart",
             self.button_font,
             (SCREEN_WIDTH // 2, RESTART_BUTTON_Y),
-            outline_color=GRAY,
+            hover_color=PALETTE_TORCH,
         )
 
         self.main_menu_button = TextButton(
             "Main Menu",
             self.button_font,
             (SCREEN_WIDTH // 2, MAIN_MENU_BUTTON_Y),
-            outline_color=GRAY,
+            hover_color=PALETTE_TORCH,
         )
 
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -63,7 +63,7 @@ class RunEndScreen:
 
     def render_run_time(self, run_time):
         self.run_time_image = self.button_font.render(
-            f"Time: {format_run_time(run_time)}", False, WHITE
+            f"Time: {format_run_time(run_time)}", False, PALETTE_STEEL
         )
         self.run_time_pos = (
             (SCREEN_WIDTH - self.run_time_image.get_width()) // 2,

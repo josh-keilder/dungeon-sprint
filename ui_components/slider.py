@@ -1,6 +1,6 @@
 import pygame
 
-from globals import GRAY, WHITE
+from globals import PALETTE_SHADOW, PALETTE_TORCH
 from systems import sound
 
 
@@ -79,7 +79,7 @@ class Slider:
 
     def draw(self, screen):
         # Main background track
-        pygame.draw.rect(screen, GRAY, self.track_rect, border_radius=5)
+        pygame.draw.rect(screen, PALETTE_SHADOW, self.track_rect, border_radius=5)
 
         # "Progress" fill: shows the distance between the start and the knob
         filled_rect = pygame.Rect(
@@ -91,7 +91,7 @@ class Slider:
         pygame.draw.rect(screen, self.track_color, filled_rect, border_radius=5)
 
         # Knob rendering with visual feedback for interaction
-        color = WHITE if self.hovered or self.dragging else self.knob_color
+        color = PALETTE_TORCH if self.hovered or self.dragging else self.knob_color
         pygame.draw.rect(screen, color, self.knob_rect, border_radius=3)
 
     def get_current_value(self):

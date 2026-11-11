@@ -4,10 +4,10 @@ from globals import (
     DUNGEON_LEVEL_ONE,
     FRAME_RATE,
     GREEN,
+    PALETTE_STEEL,
     RED,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    WHITE,
 )
 from states.map.level import Level
 from states.menus.main_menu import MainMenu
@@ -54,7 +54,7 @@ class Game:
 
         # FPS counter
         self.fps_timer = 0.0
-        self.fps_text = TextLabel("", font_size=15, pos=(1215, 0), color=WHITE)
+        self.fps_text = TextLabel("", font_size=15, pos=(1215, 0), color=PALETTE_STEEL)
 
         # Screens, and the manager that switches between them
         self.game_state_manager = GameStateManager("main_menu")

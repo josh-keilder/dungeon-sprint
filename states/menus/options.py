@@ -3,13 +3,13 @@ import pygame
 from globals import (
     BUTTON_FONT_SIZE,
     FONT_PATH,
-    GRAY,
-    LIGHT_GRAY,
     MENU_BACKGROUND_COLOR,
     OVERLAY_ALPHA,
+    PALETTE_ICE,
+    PALETTE_STEEL,
+    PALETTE_TORCH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    WHITE,
 )
 from states.new_run import start_new_run
 from systems import settings, sound
@@ -51,7 +51,7 @@ class Options:
         self.title_font = pygame.font.Font(FONT_PATH, TITLE_FONT_SIZE)
         self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
         self.label_font = pygame.font.Font(FONT_PATH, LABEL_FONT_SIZE)
-        self.title_image = self.title_font.render("OPTIONS", False, WHITE)
+        self.title_image = self.title_font.render("OPTIONS", False, PALETTE_STEEL)
         self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
 
         # Slider math: Convert 0.0-1.0 float to 0-100 integer for UI display
@@ -65,13 +65,13 @@ class Options:
             initial_value=float(self.music_slider_value),
             min_value=0.0,
             max_value=100.0,
-            track_color=WHITE,
-            knob_color=LIGHT_GRAY,
+            track_color=PALETTE_STEEL,
+            knob_color=PALETTE_ICE,
         )
         self.music_volume_text = TextLabel(
             MUSIC_LABEL.format(self.music_slider_value),
             pos=(SLIDER_LABEL_X, MUSIC_SLIDER_Y - SLIDER_LABEL_OFFSET_Y),
-            color=WHITE,
+            color=PALETTE_STEEL,
             font=self.label_font,
         )
 
@@ -81,13 +81,13 @@ class Options:
             initial_value=float(self.sfx_slider_value),
             min_value=0.0,
             max_value=100.0,
-            track_color=WHITE,
-            knob_color=LIGHT_GRAY,
+            track_color=PALETTE_STEEL,
+            knob_color=PALETTE_ICE,
         )
         self.sfx_volume_text = TextLabel(
             SFX_LABEL.format(self.sfx_slider_value),
             pos=(SLIDER_LABEL_X, SFX_SLIDER_Y - SLIDER_LABEL_OFFSET_Y),
-            color=WHITE,
+            color=PALETTE_STEEL,
             font=self.label_font,
         )
 
@@ -95,7 +95,7 @@ class Options:
         self.main_menu_button = TextButton(
             "Main Menu",
             self.button_font,
-            outline_color=GRAY,
+            hover_color=PALETTE_TORCH,
         )
         self.main_menu_button.rect.bottomleft = (
             NAVIGATION_BUTTON_MARGIN,
@@ -104,7 +104,7 @@ class Options:
         self.back_button = TextButton(
             "Back",
             self.button_font,
-            outline_color=GRAY,
+            hover_color=PALETTE_TORCH,
         )
         self.back_button.rect.bottomright = (
             SCREEN_WIDTH - NAVIGATION_BUTTON_MARGIN,
@@ -116,7 +116,7 @@ class Options:
             FPS_LABEL.format(_on_off(settings.get_setting("fps_enabled"))),
             self.button_font,
             (SCREEN_WIDTH // 2, FPS_BUTTON_Y),
-            outline_color=GRAY,
+            hover_color=PALETTE_TORCH,
         )
 
         self.full_screen_button = TextButton(
@@ -125,7 +125,7 @@ class Options:
             ),
             self.button_font,
             (SCREEN_WIDTH // 2, FULL_SCREEN_BUTTON_Y),
-            outline_color=GRAY,
+            hover_color=PALETTE_TORCH,
         )
 
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)

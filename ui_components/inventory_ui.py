@@ -1,6 +1,6 @@
 import pygame
 
-from globals import DARK_GRAY, SCREEN_WIDTH, WHITE
+from globals import DARK_GRAY, PALETTE_STEEL, SCREEN_WIDTH
 from systems.inventory import add_item, can_equip
 from ui_components.text_label import TextLabel
 
@@ -19,10 +19,10 @@ class InventoryUI:
         )
 
         self.quantity_label = TextLabel(
-            text="", font_name="Arial", font_size=10, color=WHITE
+            text="", font_name="Arial", font_size=10, color=PALETTE_STEEL
         )
         self.tooltip_name = TextLabel(
-            text="", font_name="Arial", font_size=14, color=WHITE
+            text="", font_name="Arial", font_size=14, color=PALETTE_STEEL
         )
         self.tooltip_description = TextLabel(
             text="", font_name="Arial", font_size=12, color=(200, 200, 200)
