@@ -65,7 +65,7 @@ class Level:
         center_camera(self.player.rect.center)
 
         # HUD setup
-        self.hud = HUD()
+        self.hud = HUD(self.item_database)
 
         # Enemy Spawning
         self.enemies = load_enemies(level_data["enemy_spawns"])

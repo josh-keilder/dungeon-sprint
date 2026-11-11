@@ -155,7 +155,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ```
 
   `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
-  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette for UI that should match the art (`PALETTE_VOID` (37, 19, 26), `PALETTE_SHADOW` (84, 55, 64), `PALETTE_BLOOD` (188, 76, 81), `PALETTE_STEEL` (173, 193, 207), added as the UI needs them), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette for UI that should match the art (`PALETTE_VOID` (37, 19, 26), `PALETTE_SHADOW` (84, 55, 64), `PALETTE_BLOOD` (188, 76, 81), `PALETTE_STEEL` (173, 193, 207), `PALETTE_TORCH` (191, 112, 77), added as the UI needs them), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -248,7 +248,17 @@ Some systems hold module-level state that is shared by everyone who imports them
   - It is placed by its `midtop` point (the middle of its top edge), so passing `(SCREEN_WIDTH // 2, y)` centers it. For any other placement, leave out `midtop` and set another anchor on `rect` afterwards, such as `rect.bottomleft`.
   - `set_text(text)` re-renders the text, then puts `midtop` back where it was, so a toggle like "FPS: On"/"FPS: Off" stays centered when its width changes.
 - **`slider.py`**: `Slider`, a draggable knob on a track between `min_value` and `max_value`. `pos` is the **center** of the track, not its top-left, so the track's left edge is `pos[0] - size[0] // 2`. The part left of the knob is drawn in `track_color` and the rest in gray. The knob is drawn in `knob_color`, or white while hovered or dragged. The track and knob have rounded corners. `get_current_value()` returns the value as an int.
-- **`text_label.py`**: `TextLabel`, rendered text at a position (its top-left). `update_text` re-renders it. Text is drawn without anti-aliasing for a pixel look. By default it builds its font with `SysFont(font_name, font_size)`, which only finds installed system fonts and cannot load a `.ttf` path such as `FONT_PATH`. Pass a ready-made `font` (for example `pygame.font.Font(FONT_PATH, 24)`) to use that instead, in which case `font_name` and `font_size` are ignored. The options menu labels use this. The FPS counter and the inventory labels use the default.
+- **`text_label.py`**: `TextLabel`, rendered text at a position (its top-left). `update_text` re-renders it, but does nothing if the text hasn't changed, so calling it every frame is cheap; `__init__` renders through `update_text` too, so there is one render path. With `outline_color` set (it defaults to `None`, so existing labels are unchanged), a copy of the text in that color is drawn one art pixel (`GAME_SCALE`) up, down, left and right first, then the text on top, giving it a dark rim that reads on any background:
+
+  ```
+     ░░░
+    ░▓▓▓░      ▓ = the text
+    ░▓░░░      ░ = the same text in the outline color, drawn 3 px up, down, left and right first
+    ░▓▓▓░
+     ░░░
+  ```
+
+  Text is drawn without anti-aliasing for a pixel look. By default it builds its font with `SysFont(font_name, font_size)`, which only finds installed system fonts and cannot load a `.ttf` path such as `FONT_PATH`. Pass a ready-made `font` (for example `pygame.font.Font(FONT_PATH, 24)`) to use that instead, in which case `font_name` and `font_size` are ignored. The options menu labels use this. The FPS counter and the inventory labels use the default.
 - **`inventory_ui.py`**: `InventoryUI`, the inventory screen (section 7).
 - **`time_format.py`**: `format_run_time(seconds)` turns seconds into `mm:ss.hh` text, e.g. 73.456 becomes `01:13.45`. It first truncates to whole hundredths (`int(seconds * 100) / 100`) instead of rounding, the way speedrun timers do, so it never shows a time that hasn't been reached and 59.996 can't round up to `00:60.00`. `//` (floor division) gives the minutes and `%` (remainder) the seconds left over. In the f-string, `02d` means a whole number padded to 2 digits, and `05.2f` a decimal with 2 places padded to 5 characters, the decimal point included. Shared by the level HUD and `RunEndScreen`.
 
@@ -313,6 +323,24 @@ Some systems hold module-level state that is shared by everyone who imports them
   start x     = panel_x + (panel width − sum of all cell widths) // 2
   glyph x     = cell x + (cell width − glyph width) // 2
   ```
+  - **Quick slots** (`draw_quick_slots`, `draw_quick_slot`): two `QUICK_SLOT_SIZE` (72×72) slots at the bottom left, `QUICK_SLOT_GAP` (12) apart, for potions and gold keys. 72 is the 12 px frame border on each side plus a 48 px icon (16 art pixels × 3). One `draw_quick_slot(screen, slot_pos, icon, count, count_label, cooldown_fraction=0.0)` draws any slot in order: frame, icon, cooldown shade, count, each on top of the one before; `draw_quick_slots` calls it once per slot with that slot's values.
+    - The icons come from the item database: `HUD(item_database)` takes `Level`'s database and scales each item's `.image` by `GAME_SCALE` once. The database is the one source for item images, so the HUD, the inventory and ground items always match.
+    - The counts (`x7`) are outlined `TextLabel`s, one per slot, placed by their visible ink (`get_bounding_rect()`) one art pixel inside the slot's bottom-right corner. The potion slot also shows an orange `Q` (`PALETTE_TORCH`) on its top-left corner, so the player knows which key heals.
+    - A slot whose count is 0 shows a faded copy of its icon (`EMPTY_ICON_ALPHA`, 80 of 255). The faded copies are made once with `copy()` and `set_alpha`, so the bright originals stay bright.
+    - While the heal cooldown runs, a dark see-through shade (`COOLDOWN_SHADE_ALPHA`, 160) covers the potion slot's inner window and shrinks upward as the cooldown runs out, so the icon "fills back up". It covers the whole inner window (`QUICK_SLOT_INNER_OFFSET` 9, `QUICK_SLOT_INNER_SIZE` 54×54), not just the icon, so it meets the frame's bevel on all four sides. Those two constants are tied to the panel art's border, the same as `PANEL_CORNER_SIZE`.
+
+      ```
+      cooldown just started     halfway          ready
+      ┌────────┐              ┌────────┐       ┌────────┐
+      │▓▓▓▓▓▓▓▓│              │▓▓▓▓▓▓▓▓│       │  icon  │
+      │▓▓▓▓▓▓▓▓│              │  icon  │       │  icon  │
+      └────────┘              └────────┘       └────────┘
+
+      cooldown fraction = time_left(heal_cooldown) ÷ HEAL_COOLDOWN
+      shade height      = inner window height × cooldown fraction      (snapped to the 3 px grid)
+      ```
+
+      One full-size shade is made once, and `screen.blit(shade, pos, area)` draws only its top `shade height` rows: `blit`'s third argument, `area`, is a rect inside the source, so only that part is drawn.
 - **`create_outline.py`**: `make_outline` builds a one-pixel outline surface from an image's mask. It outlines each separate shape in the mask (`mask.connected_components()`), because `mask.outline()` alone only traces the first shape, which for text would be just the first letter. Holes inside a shape, like the inside of an "A", are not outlined. `draw_outline` blits it shifted one pixel in each direction to make a thicker outline.
 - **`cursor.py`**: `Cursor`, the custom mouse cursor, drawn slightly down and right of the real mouse position.
 
@@ -518,7 +546,7 @@ So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay en
 5. Ground items and chests.
 6. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
 7. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
-8. The HUD, `self.hud.draw(screen, player, run_time)`: the health panel (top left) and the run timer (top center), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
+8. The HUD, `self.hud.draw(screen, player, run_time)`: the health panel (top left), the run timer (top center) and the quick slots (bottom left), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
 9. The inventory overlay, if open.
 
 The pause menu and the end-of-run screens call `level.draw(screen)` to show the frozen level behind them, so they get the scaled view automatically.
