@@ -35,10 +35,16 @@ GRAY = (128, 128, 128)
 LIGHT_GRAY = (192, 192, 192)
 DARK_GRAY = (64, 64, 64)
 
+# Tileset palette, for UI that should match the art
+PALETTE_VOID = (37, 19, 26)
+PALETTE_SHADOW = (84, 55, 64)
+PALETTE_BLOOD = (188, 76, 81)
+PALETTE_STEEL = (173, 193, 207)
+
 # Kept in case I need this specific color
 OPTION_MENU_BUTTON_BACKGROUND = (110, 74, 72)
 
-MENU_BACKGROUND_COLOR = (37, 19, 26)
+MENU_BACKGROUND_COLOR = PALETTE_VOID
 
 
 DUNGEON_LEVEL_ONE = "Assets/Maps/Dungeon_Level_One.tmx"

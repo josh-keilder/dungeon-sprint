@@ -70,6 +70,13 @@ Use `--check` to see whether anything needs formatting without changing files.
 
 **`tools/line_counter.py`.** Counts lines in every `.py` file (skipping `venv`, `.venv`, `.git` and `__pycache__`) and rewrites the "Project Statistics" section at the end of `README.md`.
 
+**`tools/make_panel_frame.py`.** Generates the UI panel frame art, `Assets/UI/panel_frame.png`. Run it from the project root after editing the art:
+
+```bash
+venv/Scripts/python tools/make_panel_frame.py
+```
+
+The art is written as text: `FRAME_ROWS` is a list of strings, one per pixel row, and each letter is one pixel. `FRAME_COLORS` maps each letter to a tileset color (`o` outline, `m` stone ring, `l` light edge, `s` shadow edge, `f` fill), and `.` is left transparent. The image size comes from the rows themselves, so editing the rows is all that's needed (every row must be the same length). The surface is created with `pygame.SRCALPHA`, which starts fully transparent, so skipped `.` pixels stay see-through; without it a new surface starts opaque black. The frame is saved at 1× (12×12) and scaled up by the game.
 **`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
 
 ## 4. Startup and the main loop
@@ -148,7 +155,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ```
 
   `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
-  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), `MENU_BACKGROUND_COLOR` (`(37, 19, 26)`, the fill color of the Main Menu and Options screens), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette for UI that should match the art (`PALETTE_VOID` (37, 19, 26), `PALETTE_SHADOW` (84, 55, 64), `PALETTE_BLOOD` (188, 76, 81), `PALETTE_STEEL` (173, 193, 207), added as the UI needs them), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -252,13 +259,67 @@ Some systems hold module-level state that is shared by everyone who imports them
   text              = f"{minutes:02d}:{remaining_seconds:05.2f}"      73.456 → 01:13.45
   ```
 
-- **`health_bar.py`**: `draw_health_bar(screen, health, x, y, width, height)`. Gray background with a fill that is green, or red at 30% health or below.
+- **`health_bar.py`**: `draw_health_bar(screen, health, x, y, width, height)`. Gray background with a fill that is green, or red at 30% health or below. Now only used for enemy health bars; the player's health is drawn by the HUD.
+- **`panel.py`**: `make_panel(frame_image, size)` builds a framed panel surface of any size from the small frame image, using **9-slice** scaling. `size` is in screen pixels. Build each panel once (for example in `__init__`) and blit it every frame.
+
+  ```
+  ┌────┬─────────┬────┐
+  │ TL │   top   │ TR │   corners: drawn as they are, never stretched
+  ├────┼─────────┼────┤
+  │left│ center  │right│  edges: stretched along their length only
+  ├────┼─────────┼────┤   center: stretched both ways (it's a solid fill)
+  │ BL │ bottom  │ BR │
+  └────┴─────────┴────┘
+  ```
+
+  The corner size `c` is `PANEL_CORNER_SIZE` (4 art pixels), which must match the border in `tools/make_panel_frame.py`. The art keeps all its detail in the outer 4 pixels, so each edge is the same color all the way along and is safe to stretch. Each of the 9 pieces is a (cut from the frame, drawn on the panel) pair of rects:
+
+  | Piece | Cut from the frame (x, y, w, h) | Drawn on the panel (x, y, w, h) |
+  | --- | --- | --- |
+  | top-left | `0, 0, c, c` | `0, 0, c, c` |
+  | top | `c, 0, frame middle w, c` | `c, 0, panel middle w, c` |
+  | top-right | `frame_width − c, 0, c, c` | `width − c, 0, c, c` |
+  | left | `0, c, c, frame middle h` | `0, c, c, panel middle h` |
+  | center | `c, c, frame middle w, frame middle h` | `c, c, panel middle w, panel middle h` |
+  | right | `frame_width − c, c, c, frame middle h` | `width − c, c, c, panel middle h` |
+  | bottom-left | `0, frame_height − c, c, c` | `0, height − c, c, c` |
+  | bottom | `c, frame_height − c, frame middle w, c` | `c, height − c, panel middle w, c` |
+  | bottom-right | `frame_width − c, frame_height − c, c, c` | `width − c, height − c, c, c` |
+
+  ```
+  frame middle = frame size − 2 × c
+  panel middle = panel size − 2 × c
+  ```
+
+  Every piece goes through the same loop: cut it with `subsurface` (a view into the image, no copy), resize it to its target with `pygame.transform.scale` (corners resize to their own size, so they're unchanged), and blit it. The panel is built at 1× (`size // GAME_SCALE`) and scaled up by `GAME_SCALE` at the end, so its pixels are the same 3×3 blocks as the world. A size that isn't a multiple of 3 is rounded down (100 becomes 99), and the smallest panel is `2 × c` art pixels (24 screen pixels) each way.
+- **`hud.py`**: `HUD`, the in-game heads-up display. `Level` creates one and calls `hud.draw(screen, player, run_time)` once per frame; `draw` calls `draw_health` and `draw_timer`, so Level never changes when the HUD gains parts. The font and the panels are created once in `__init__`.
+  - **Pixel-grid rules.** The HUD uses Silkscreen only at 24 (its 8 px grid × 3) or 48, so font pixels are the same 3×3 blocks as the world and the frames. Every size and position is a multiple of 3, and anything calculated is snapped with `value // GAME_SCALE * GAME_SCALE`.
+  - **Health** (`draw_health`): a `HEALTH_PANEL_SIZE` (312×54) panel at `HUD_MARGIN` (12), with a `HEALTH_BAR_SIZE` (186×24) bar at `HEALTH_BAR_OFFSET` (18, 15). The empty bar is `PALETTE_SHADOW`, the fill `PALETTE_BLOOD`, and the `current/max` text `PALETTE_STEEL`, `HEALTH_TEXT_GAP` (9) to the right of the bar. Gaps in `PALETTE_VOID` split the bar into segments, drawn after the fill so they cut through both parts. `segment_hp_for(max_health)` picks the segment size so there are at most `HEALTH_MAX_SEGMENTS` (5) blocks, each a round number of HP: 25 max gives 5-HP blocks, 35 gives 10, 100 gives 20.
+  - **Centering text** (`centered_text_y(text_surface, center_y)`): a rendered text surface is taller than its letters, because fonts reserve space above and below them (for Silkscreen at 24 the surface is 31 px tall but the digits only run from y 10 to 25). So text is centered by its visible pixels: `get_bounding_rect()` measures the ink, and its center is lined up with the target center.
+  - **Timer** (`draw_timer`): a `TIMER_PANEL_SIZE` (162×54) panel centered at the top, showing `format_run_time(run_time)`. Centered text normally shifts sideways as the digits change, because a `1` is narrower than an `8` and the total width keeps changing. So the timer gives every digit a fixed-width cell, as wide as the widest digit, and centers each glyph in its cell; `:` and `.` keep their own width, since they never move. The total width is then the same for every time, so nothing re-centers. The 12 characters it needs are rendered once into `timer_glyphs` (a dict comprehension), and `timer_cell_width(character)` gives each one's cell.
+
+    ```
+    cells:  [ 0 ][ 1 ] : [ 0 ][ 8 ] . [ 8 ][ 8 ]
+             └── each digit is centered in its own cell of the same width ──┘
+    ```
+
+  ```
+  fill_width  = int(bar width × current ÷ max) // GAME_SCALE × GAME_SCALE      (snapped to the 3 px grid)
+  segment HP  = first step in (5, 10, 20, 25, 50, 100) where max_health ÷ step ≤ 5
+  gap offset  = int(bar width × gap HP ÷ max) // GAME_SCALE × GAME_SCALE
+  text_y      = center_y − text_bounds.centery, snapped to the grid               (centered_text_y)
+  panel_x     = (SCREEN_WIDTH − panel width) // 2, snapped                        (timer panel)
+  cell width  = widest digit for 0–9, the glyph's own width for ":" and "."
+  start x     = panel_x + (panel width − sum of all cell widths) // 2
+  glyph x     = cell x + (cell width − glyph width) // 2
+  ```
 - **`create_outline.py`**: `make_outline` builds a one-pixel outline surface from an image's mask. It outlines each separate shape in the mask (`mask.connected_components()`), because `mask.outline()` alone only traces the first shape, which for text would be just the first letter. Holes inside a shape, like the inside of an "A", are not outlined. `draw_outline` blits it shifted one pixel in each direction to make a thicker outline.
 - **`cursor.py`**: `Cursor`, the custom mouse cursor, drawn slightly down and right of the real mouse position.
 
 ### `tools/`
 
 - **`line_counter.py`**: see section 3.
+- **`make_panel_frame.py`**: see section 3.
 
 ## 7. One gameplay frame, step by step
 
@@ -457,7 +518,7 @@ So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay en
 5. Ground items and chests.
 6. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
 7. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
-8. The player's health bar and the run timer, on the screen at full resolution (top left). They come after step 7, so they land on top of the world.
+8. The HUD, `self.hud.draw(screen, player, run_time)`: the health panel (top left) and the run timer (top center), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
 9. The inventory overlay, if open.
 
 The pause menu and the end-of-run screens call `level.draw(screen)` to show the frozen level behind them, so they get the scaled view automatically.
@@ -629,6 +690,10 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - `start_new_run()` reloads the map inside the update of whichever menu calls it (`RunEndScreen` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
 - There is only one level. Reaching the exit ends the run with the finish screen, but there is no next-level transition yet.
 - The exit is drawn only as a yellow outline until there is art for it.
+
+**HUD:**
+- The health panel has a fixed width, so health text wider than `25/25` (for example `100/100`) won't fit. Its width should be worked out from the text before max health goes above 99.
+- Enemy health bars and the inventory screen still use the old colors and fonts until the next HUD steps.
 
 **Menus and saving:**
 - Choosing Main Menu from the pause menu throws the run away with no warning. A confirmation box that tells the player their progress won't be saved is planned. It would go in the Options Main Menu branch, before `start_new_run`.

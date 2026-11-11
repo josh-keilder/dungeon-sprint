@@ -5,7 +5,6 @@ import pygame
 from entities.enemies.load_enemies import load_enemies
 from entities.player.load_player import load_player
 from globals import (
-    FONT_PATH,
     GAME_SCALE,
     MENU_BACKGROUND_COLOR,
     UNLOCK_DOOR_DISTANCE,
@@ -25,25 +24,16 @@ from systems.health import is_dead
 from systems.hitbox import draw_hitbox
 from systems.input import read_input
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
-from ui_components.health_bar import draw_health_bar
+from ui_components.hud import HUD
 from ui_components.inventory_ui import InventoryUI
-from ui_components.text_label import TextLabel
-from ui_components.time_format import format_run_time
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
-
-PLAYER_HEALTH_BAR_POS = (20, 20)
-PLAYER_HEALTH_BAR_SIZE = (200, 10)
 
 LEVEL_MUSIC = "level_music"
 
 DEATH_DELAY = 3.0
 DEATH_FADE_DURATION = 1.5
-
-HUD_FONT_SIZE = 24
-
-RUN_TIMER_POS = (20, 40)
 
 
 class Level:
@@ -55,10 +45,6 @@ class Level:
 
         # Run timer and its HUD text
         self.run_time = 0.0
-        self.hud_font = pygame.font.Font(FONT_PATH, HUD_FONT_SIZE)
-        self.run_timer_text = TextLabel(
-            "", pos=RUN_TIMER_POS, color=WHITE, font=self.hud_font
-        )
 
         # Ground items, spawned during play
         self.ground_items = pygame.sprite.Group()
@@ -77,6 +63,9 @@ class Level:
         # Player Setup
         self.player = load_player(level_data["player_spawn"])
         center_camera(self.player.rect.center)
+
+        # HUD setup
+        self.hud = HUD()
 
         # Enemy Spawning
         self.enemies = load_enemies(level_data["enemy_spawns"])
@@ -208,11 +197,7 @@ class Level:
         scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
         screen.blit(scaled_world, (0, 0))
 
-        draw_health_bar(
-            screen, self.player.health, *PLAYER_HEALTH_BAR_POS, *PLAYER_HEALTH_BAR_SIZE
-        )
-        self.run_timer_text.update_text(format_run_time(self.run_time))
-        self.run_timer_text.draw(screen)
+        self.hud.draw(screen, self.player, self.run_time)
 
         if self.show_inventory:
             self.inventory_ui.draw(screen, self.player.inventory)
