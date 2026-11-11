@@ -1,8 +1,12 @@
+import math
+
 WALL_CHECK_RANGE = 64
 
-TURN_BRAKE_THRESHOLD = -0.5
-TURN_BRAKE_FACTOR = 0.01
-IDLE_DRAG_MULTIPLIER = 1.2
+STOP_SPEED = 1.0
+
+
+def approach_fraction(rate, dt):
+    return 1 - math.exp(-rate * dt)
 
 
 def move_and_collide(rect, displacement, walls):
@@ -36,28 +40,26 @@ def move_and_collide(rect, displacement, walls):
     return hit_x, hit_y
 
 
-def steer(velocity, direction, acceleration, friction, max_speed, dt):
-    new_velocity = velocity.copy()
-
+def steer(
+    velocity, direction, max_speed, acceleration_rate, deceleration_rate, grip, dt
+):
     if direction.length_squared() > 0:
-        if (
-            new_velocity.length_squared() > 0
-            and direction.dot(new_velocity.normalize()) < TURN_BRAKE_THRESHOLD
-        ):
-            new_velocity -= new_velocity * friction * TURN_BRAKE_FACTOR * dt
+        target_velocity = direction * max_speed
 
-        new_velocity += direction * acceleration * dt
+        along_speed = velocity.dot(direction)
+        along_velocity = direction * along_speed
+        along_rate = grip if along_speed < 0 else acceleration_rate
+        across_velocity = velocity - along_velocity
+        new_along_velocity = along_velocity.lerp(
+            target_velocity, approach_fraction(along_rate, dt)
+        )
+        new_across_velocity = across_velocity * (1 - approach_fraction(grip, dt))
 
+        new_velocity = new_along_velocity + new_across_velocity
     else:
-        if new_velocity.length_squared() > 0:
-            speed_loss = new_velocity.normalize() * friction * IDLE_DRAG_MULTIPLIER * dt
+        new_velocity = velocity * (1 - approach_fraction(deceleration_rate, dt))
 
-            if new_velocity.length_squared() < speed_loss.length_squared():
-                new_velocity.update(0, 0)
-            else:
-                new_velocity -= speed_loss
-
-    if new_velocity.length_squared() > max_speed**2:
-        new_velocity.scale_to_length(max_speed)
+        if new_velocity.length_squared() < STOP_SPEED**2:
+            new_velocity.update(0, 0)
 
     return new_velocity

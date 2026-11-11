@@ -31,11 +31,12 @@ class Player:
         self.base_stats = {
             "attack": 5,
             "defense": 0,
-            "max_speed": 70,
             "health": 25,
             "roll_speed": 200,
-            "acceleration": 47,
-            "friction": 3000,
+            "max_speed": 70,
+            "acceleration_rate": 20,
+            "deceleration_rate": 60,
+            "grip": 50,
         }
 
         self.roll = {
@@ -144,9 +145,10 @@ class Player:
         self.velocity = steer(
             self.velocity,
             self.intent["move"],
-            self.stats["acceleration"],
-            self.stats["friction"],
             self.stats["max_speed"],
+            self.stats["acceleration_rate"],
+            self.stats["deceleration_rate"],
+            self.stats["grip"],
             dt,
         )
 

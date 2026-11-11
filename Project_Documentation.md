@@ -190,7 +190,7 @@ All four states are built once at startup and kept alive, so leaving and returni
 | Module | Job | Main functions |
 | --- | --- | --- |
 | `input.py` | Turns keyboard and mouse into an intent dict | `read_input` |
-| `movement.py` | Velocity steering and wall collision | `steer`, `move_and_collide` |
+| `movement.py` | Velocity steering and wall collision | `steer`, `approach_fraction`, `move_and_collide` |
 | `roll.py` | Roll start, duration and cooldown | `try_start_roll`, `advance_roll`, `is_rolling` |
 | `enemy_ai.py` | Enemy behaviours and line of sight | `fly_velocity`, `wander_chase_velocity`, `trigger_flee`, `has_line_of_sight`, `random_idle_direction` |
 | `collision.py` | Finds enemies touching the player | `find_player_contacts` |
@@ -264,14 +264,19 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 2. Recomputes `stats` from `base_stats` plus equipment bonuses, every frame, so equipping takes effect immediately. If the health stat changed, `set_max_health` updates the maximum and clamps current health.
 3. `roll` intent → `try_start_roll`. A roll needs a move direction, can't start during another roll (`is_rolling`), and can't start while `cooldown_timer` is running. Starting one starts both `active_timer` and `cooldown_timer`.
 4. `heal` intent → `use_small_health_potion`. Heals 70, removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player play the `heal` sound. The sound is played here rather than in `systems/consumables.py` because it is feedback, not a rule.
-5. `update_movement`: `steer` computes the new velocity, then `move_and_collide` moves the rect. Hitting a wall zeros velocity on that axis.
+5. `update_movement`: `steer` computes the new velocity from the move direction and the `max_speed`, `acceleration_rate`, `deceleration_rate` and `grip` stats, then `move_and_collide` moves the rect. Hitting a wall zeros velocity on that axis.
 6. `update_roll`: while rolling, the player is also moved by `roll_speed` in the roll direction (on top of normal movement), then `advance_roll` counts down `active_timer` and `cooldown_timer`.
    Then the player's `speed` is measured. At the very start of `update`, the player's center is copied into `start_pos`, before anything moves. After `update_movement` and `update_roll`, the distance from `start_pos` to the new center, divided by `dt`, gives the actual speed in pixels per second. Because it is measured rather than calculated, it includes walls: rolling into a wall gives a low speed.
 7. `advance_timer` counts down the invulnerability timer, then the heal cooldown.
 8. Picks the animation `player_{idle|walk|roll}_{direction}` and advances it.
 9. Copies `rect.topleft` into `pos`.
 
-**How `steer` works.** With input, it adds `direction * acceleration * dt`. If the input points sharply against the current velocity (dot product below -0.5), it also brakes by `friction * 0.01 * dt` of the velocity, which makes turning around snappier. With no input, it removes `friction * 1.2 * dt` of speed, stopping exactly at zero rather than overshooting. Finally it caps speed at `max_speed`.
+**How `steer` works.** `steer` is a kinematic controller, like Godot's: it doesn't push the player with forces, it moves the current velocity toward a *target velocity*, `direction * max_speed` (zero when there is no input). Each frame it closes a fraction of the gap between the two.
+
+- **The fraction.** `approach_fraction(rate, dt)` returns `1 - exp(-rate * dt)`. Closing a fixed fraction of the gap per *frame* would feel snappier at higher frame rates, but this formula gives the same motion at any frame rate, because two frames of `dt` multiply out to exactly one frame of `2 * dt`. A higher `rate` is snappier. As a rule of thumb, the velocity is 95 % of the way to its target after about `3 / rate` seconds.
+- **Acceleration scales by itself.** Because a fraction of the *gap* is closed, the player gains a lot of speed when standing still (big gap) and very little near `max_speed` (small gap), easing in without overshooting. No speed cap is needed.
+- **Grip.** With input, the velocity is split using the dot product: `along_speed = velocity.dot(direction)` is the speed in the input direction, `along_velocity` is that part as a vector, and `across_velocity` is everything left over (sideways motion from the previous heading). The along part approaches the target at `acceleration_rate`. The across part is removed at the `grip` rate, so turns don't drift. When `along_speed` is negative (the player is reversing), the along part uses `grip` too, so turning around is as snappy as turning sideways.
+- **Stopping.** With no input, the velocity is multiplied by `1 - approach_fraction(deceleration_rate, dt)`, which collapses it within a few frames. Below `STOP_SPEED` (1.0 px/s) it snaps to exactly 0, because closing a fraction of the gap never quite reaches zero.
 
 **How `move_and_collide` works.** It moves on X, pushes the rect out of the first wall it overlaps, then does the same on Y. Doing the axes separately lets you slide along walls. Walls whose center is more than 64 pixels away on that axis are skipped for speed. It returns `(hit_x, hit_y)`.
 
@@ -323,11 +328,12 @@ While `dying` is true, the very first thing `Level.update` does is count `death_
 | --- | --- | --- |
 | `attack` | 5 | Not used yet (could later scale roll damage) |
 | `defense` | 0 | Not used yet |
-| `max_speed` | 70 | Speed cap in `steer` (pixels/second) |
+| `max_speed` | 70 | Target speed in `steer` (pixels/second) |
 | `health` | 25 | Max health (kept low for now while values are being worked out) |
 | `roll_speed` | 200 | Extra speed during a roll |
-| `acceleration` | 47 | Speed gained per second of input |
-| `friction` | 3000 | Braking and stopping strength |
+| `acceleration_rate` | 20 | How fast the player reaches `max_speed` while holding a direction (95 % in about 0.15 s) |
+| `deceleration_rate` | 60 | How fast the player stops with no input (to a full stop in about 0.07 s) |
+| `grip` | 50 | How fast sideways and reversing velocity is removed (sideways drift gone in about 0.09 s) |
 
 Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 s (the cooldown starts when the roll starts).
 
@@ -339,7 +345,7 @@ Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 
 
 **`heal_cooldown` dict** (player): a timer holding the seconds left before another potion can be used. `use_small_health_potion` refuses while `is_running(heal_cooldown)`. `HEAL_COOLDOWN` is 3.0 s (`systems/consumables.py`). The cooldown only starts when a potion is actually used, so a refused Q press (full health or no potion) doesn't start it.
 
-**Equipment bonuses.** `compute_stats` copies `base_stats` and adds each equipped item's `bonuses` to stats with the same name. Bonus names that aren't in `base_stats` are ignored. Speed boots give `{"max_speed": 10, "acceleration": 20, "defense": 3, "health": 10}`.
+**Equipment bonuses.** `compute_stats` copies `base_stats` and adds each equipped item's `bonuses` to stats with the same name. Bonus names that aren't in `base_stats` are ignored. Speed boots give `{"max_speed": 10, "acceleration_rate": 7, "defense": 3, "health": 10}`.
 
 **`ENEMY_TYPES`** (`enemy_type_data.py`). The key must match the map spawn name after `Enemy_`:
 
@@ -449,7 +455,9 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - `attack` and `defense` stats exist but aren't used yet. `attack` could later scale roll damage.
 - With the current stats, roll speed only varies between about 200 and 270 pixels per second, so roll damage varies only a little until movement tuning and gear change it.
 
-**Movement:** tuning is planned. It may include a drift feel and a "grip" stat.
+**Movement:**
+- All movement values are first-pass numbers. They will be tuned once the basic gameplay features are in and levels are being built, with feedback from playtesters.
+- The roll push is added on top of the walking velocity and ends in a single frame, so speed drops from about 270 to walking speed at once. Easing the roll's speed out over its last few frames is a possible follow-up if that feels abrupt.
 
 **Content and map:**
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
