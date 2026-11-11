@@ -1,18 +1,28 @@
 import pygame
 
-from globals import GRAY, GREEN, RED
+from globals import PALETTE_BLOOD, PALETTE_SHADOW, PALETTE_VOID
 
-LOW_HEALTH_RATIO = 0.3
+HEALTH_BAR_BORDER = 1
 
 
 def draw_health_bar(screen, health, x, y, width, height):
-    ratio = health["current"] / health["max_health"]
+    pygame.draw.rect(
+        screen,
+        PALETTE_VOID,
+        (
+            x - HEALTH_BAR_BORDER,
+            y - HEALTH_BAR_BORDER,
+            width + 2 * HEALTH_BAR_BORDER,
+            height + 2 * HEALTH_BAR_BORDER,
+        ),
+    )
 
-    pygame.draw.rect(screen, GRAY, pygame.Rect(x, y, width, height))
+    pygame.draw.rect(screen, PALETTE_SHADOW, (x, y, width, height))
 
-    if ratio > 0:
-        fill_width = int(width * ratio)
+    fill_width = int(width * health["current"] / health["max_health"])
 
-        color = GREEN if ratio > LOW_HEALTH_RATIO else RED
+    if health["current"] > 0:
+        fill_width = max(1, fill_width)
 
-        pygame.draw.rect(screen, color, pygame.Rect(x, y, fill_width, height))
+    if fill_width > 0:
+        pygame.draw.rect(screen, PALETTE_BLOOD, (x, y, fill_width, height))

@@ -13,7 +13,7 @@ from systems.timer import advance_timer, new_timer
 from ui_components.health_bar import draw_health_bar
 
 ENEMY_HEALTH_BAR_WIDTH = TILE_SIZE
-ENEMY_HEALTH_BAR_HEIGHT = 4
+ENEMY_HEALTH_BAR_HEIGHT = 2
 ENEMY_HEALTH_BAR_GAP = 8
 
 
