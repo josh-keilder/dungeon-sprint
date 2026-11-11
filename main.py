@@ -1,10 +1,18 @@
 import pygame
 
-from globals import DUNGEON_LEVEL_ONE, FRAME_RATE, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE
+from globals import (
+    DUNGEON_LEVEL_ONE,
+    FRAME_RATE,
+    GREEN,
+    RED,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    WHITE,
+)
 from states.map.level import Level
-from states.menus.game_over import GameOver
 from states.menus.main_menu import MainMenu
 from states.menus.options import Options
+from states.menus.run_end import RunEndScreen
 from states.state_manager import GameStateManager
 from systems import settings, sound
 from systems.assets import load_image
@@ -15,6 +23,8 @@ from ui_objects.text_label import TextLabel
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 
 FPS_REFRESH_INTERVAL = 0.5
+
+GAME_OVER_MUSIC = "game_over"
 
 
 class Game:
@@ -51,12 +61,18 @@ class Game:
         self.main_menu = MainMenu(self.game_state_manager)
         self.options_menu = Options(self.game_state_manager)
         self.level = Level(self.game_state_manager, DUNGEON_LEVEL_ONE)
-        self.game_over_screen = GameOver(self.game_state_manager)
+        self.game_over_screen = RunEndScreen(
+            self.game_state_manager, "You Died!", RED, GAME_OVER_MUSIC
+        )
+        self.level_complete_screen = RunEndScreen(
+            self.game_state_manager, "You Escaped!", GREEN, None
+        )
 
         self.game_state_manager.add_state("level", self.level)
         self.game_state_manager.add_state("options", self.options_menu)
         self.game_state_manager.add_state("main_menu", self.main_menu)
         self.game_state_manager.add_state("game_over", self.game_over_screen)
+        self.game_state_manager.add_state("level_complete", self.level_complete_screen)
 
         self.game_state_manager.get_state().enter()
 

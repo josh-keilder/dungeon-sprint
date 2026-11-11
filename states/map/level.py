@@ -4,7 +4,7 @@ import pygame
 
 from entities.enemies.load_enemies import load_enemies
 from entities.player.load_player import load_player
-from globals import UNLOCK_DOOR_DISTANCE, WHITE
+from globals import FONT_PATH, UNLOCK_DOOR_DISTANCE, WHITE, YELLOW
 from items.item_database import initialize_item_database
 from items.items import WorldItem
 from states.map.map_loader import load_level_data
@@ -18,6 +18,8 @@ from systems.input import read_input
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_objects.health_bar import draw_health_bar
 from ui_objects.inventory_ui import InventoryUI
+from ui_objects.text_label import TextLabel
+from ui_objects.time_format import format_run_time
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
@@ -30,10 +32,21 @@ LEVEL_MUSIC = "level_music"
 DEATH_DELAY = 3.0
 DEATH_FADE_DURATION = 1.5
 
+HUD_FONT_SIZE = 24
+
+RUN_TIMER_POS = (20, 40)
+
 
 class Level:
     def __init__(self, game_state_manager, map_path):
         self.game_state_manager = game_state_manager
+
+        # Run timer and its HUD text
+        self.run_time = 0.0
+        self.hud_font = pygame.font.Font(FONT_PATH, HUD_FONT_SIZE)
+        self.run_timer_text = TextLabel(
+            "", pos=RUN_TIMER_POS, color=WHITE, font=self.hud_font
+        )
 
         # Ground items, spawned during play
         self.ground_items = pygame.sprite.Group()
@@ -47,6 +60,7 @@ class Level:
         self.wall_tiles = level_data["wall_tiles"]
         self.door_tiles = level_data["door_tiles"]
         self.chests = level_data["chests"]
+        self.exit_rect = level_data["exit_rect"]
 
         # Player Setup
         self.player = load_player(level_data["player_spawn"])
@@ -85,6 +99,8 @@ class Level:
             self.game_state_manager.set_state("options")
             sound.play_sfx("pause")
             return
+
+        self.run_time += dt
 
         if self.player.intent["debug"]:
             debug.toggle_hitboxes()
@@ -125,6 +141,10 @@ class Level:
             sound.play_sfx("death")
             return
 
+        if self.exit_rect is not None and self.player.rect.colliderect(self.exit_rect):
+            self.game_state_manager.set_state("level_complete")
+            return
+
         self.ground_items.update(dt)
         center_camera(self.player.rect.center)
 
@@ -148,6 +168,11 @@ class Level:
                                 screen, sprite.image, sprite.rect, camera, WHITE
                             )
 
+        if self.exit_rect is not None:
+            pygame.draw.rect(
+                screen, YELLOW, self.exit_rect.move(-camera.x, -camera.y), 2
+            )
+
         # Ground items and chests
         for group in [self.ground_items, self.chests]:
             for sprite in group:
@@ -165,6 +190,8 @@ class Level:
         draw_health_bar(
             screen, self.player.health, *PLAYER_HEALTH_BAR_POS, *PLAYER_HEALTH_BAR_SIZE
         )
+        self.run_timer_text.update_text(format_run_time(self.run_time))
+        self.run_timer_text.draw(screen)
 
         if self.show_inventory:
             self.inventory_ui.draw(screen, self.player.inventory)

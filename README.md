@@ -87,5 +87,5 @@ For a full explanation of how the code works, see [Project_Documentation.md](Pro
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 101
-- **Total Lines of Code:** 5291
+- **Total Files:** 102
+- **Total Lines of Code:** 5370

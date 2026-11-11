@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="160" height="112" tilewidth="16" tileheight="16" infinite="0" nextlayerid="17" nextobjectid="32">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="160" height="112" tilewidth="16" tileheight="16" infinite="0" nextlayerid="17" nextobjectid="33">
  <editorsettings>
   <export format="csv"/>
  </editorsettings>
@@ -854,5 +854,6 @@
   <object id="9" name="Enemy_Skull" x="1201" y="857">
    <point/>
   </object>
+  <object id="32" name="Exit" x="1408" y="1008" width="16" height="32"/>
  </objectgroup>
 </map>

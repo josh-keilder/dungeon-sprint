@@ -13,6 +13,7 @@ def load_level_data(map_path):
 
     level_data["player_spawn"] = find_player_spawn(tmx_data)
     level_data["enemy_spawns"] = find_enemy_spawns(tmx_data)
+    level_data["exit_rect"] = find_exit(tmx_data)
 
     return level_data
 
@@ -100,3 +101,12 @@ def find_enemy_spawns(tmx_data):
             enemy_positions[enemy_type].append((map_object.x, map_object.y))
 
     return enemy_positions
+
+
+def find_exit(tmx_data):
+    for map_object in tmx_data.objects:
+        if map_object.name == "Exit":
+            return pygame.Rect(
+                map_object.x, map_object.y, map_object.width, map_object.height
+            )
+    return None
