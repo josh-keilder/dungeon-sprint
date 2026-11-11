@@ -106,7 +106,9 @@ class Level:
         contacts = find_player_contacts(self.player, self.enemies)
 
         for enemy in contacts:
-            resolve_contact(self.player, enemy)
+            enemy_hit = resolve_contact(self.player, enemy)
+            if enemy_hit:
+                sound.play_sfx("roll_hit")
 
             if is_dead(enemy.health):
                 self.enemies.remove(enemy)

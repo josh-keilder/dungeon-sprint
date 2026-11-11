@@ -21,7 +21,9 @@ class Player:
         self.last_direction = "down"
         self.walking = False
         self.pos = pygame.math.Vector2(pos)
+
         self.velocity = pygame.Vector2()
+        self.speed = 0.0
 
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
 
@@ -61,6 +63,9 @@ class Player:
         )
 
     def update(self, dt, walls):
+        # Before anything moves the player, store where the player is.
+        start_pos = pygame.Vector2(self.rect.center)
+
         move_direction = self.intent["move"]
         self.walking = move_direction.length_squared() > 0
         if self.walking and not is_rolling(self.roll):
@@ -86,6 +91,11 @@ class Player:
 
         self.update_movement(dt, walls)
         self.update_roll(dt, walls)
+
+        # Distance moved calculation comes after the movement updates, then calculate the player speed during that distance
+        distance_moved = pygame.Vector2(self.rect.center).distance_to(start_pos)
+        self.speed = distance_moved / dt
+
         advance_timer(self.invulnerability, dt)
         advance_timer(self.heal_cooldown, dt)
 
