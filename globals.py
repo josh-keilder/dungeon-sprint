@@ -1,9 +1,16 @@
+import math
+
 # Screen, timing, and sprite sizes
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 FRAME_RATE = 240
 TILE_SIZE = 16
 PLAYER_SPRITE_SIZE = 64
+
+# World canvas, drawn at 1x then scaled up by GAME_SCALE
+GAME_SCALE = 3
+WORLD_WIDTH = math.ceil(SCREEN_WIDTH / GAME_SCALE)
+WORLD_HEIGHT = math.ceil(SCREEN_HEIGHT / GAME_SCALE)
 
 # Gameplay distances
 UNLOCK_DOOR_DISTANCE = 32

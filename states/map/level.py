@@ -4,7 +4,16 @@ import pygame
 
 from entities.enemies.load_enemies import load_enemies
 from entities.player.load_player import load_player
-from globals import FONT_PATH, UNLOCK_DOOR_DISTANCE, WHITE, YELLOW
+from globals import (
+    FONT_PATH,
+    GAME_SCALE,
+    MENU_BACKGROUND_COLOR,
+    UNLOCK_DOOR_DISTANCE,
+    WHITE,
+    WORLD_HEIGHT,
+    WORLD_WIDTH,
+    YELLOW,
+)
 from items.item_database import initialize_item_database
 from items.items import WorldItem
 from states.map.map_loader import load_level_data
@@ -40,6 +49,9 @@ RUN_TIMER_POS = (20, 40)
 class Level:
     def __init__(self, game_state_manager, map_path):
         self.game_state_manager = game_state_manager
+
+        # The world is drawn here at 1x, then scaled to the screen
+        self.world_surface = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
 
         # Run timer and its HUD text
         self.run_time = 0.0
@@ -149,14 +161,16 @@ class Level:
         center_camera(self.player.rect.center)
 
     def draw(self, screen):
+        self.world_surface.fill(MENU_BACKGROUND_COLOR)
+
         # Floor
-        screen.blit(self.map_surface, (-camera.x, -camera.y))
+        self.world_surface.blit(self.map_surface, (-camera.x, -camera.y))
 
         # Static tiles: decor, walls, doors
         for group in [self.decor_tiles, self.wall_tiles, self.door_tiles]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
-                    sprite.draw(screen)
+                    sprite.draw(self.world_surface)
 
                     # Highlight doors when player is nearby
                     if group == self.door_tiles:
@@ -165,19 +179,23 @@ class Level:
                             < UNLOCK_DOOR_DISTANCE
                         ):
                             draw_hitbox(
-                                screen, sprite.image, sprite.rect, camera, WHITE
+                                self.world_surface,
+                                sprite.image,
+                                sprite.rect,
+                                camera,
+                                WHITE,
                             )
 
         if self.exit_rect is not None:
             pygame.draw.rect(
-                screen, YELLOW, self.exit_rect.move(-camera.x, -camera.y), 2
+                self.world_surface, YELLOW, self.exit_rect.move(-camera.x, -camera.y), 2
             )
 
         # Ground items and chests
         for group in [self.ground_items, self.chests]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
-                    sprite.draw(screen, camera)
+                    sprite.draw(self.world_surface, camera)
 
         # Actors, sorted by y so lower ones draw on top
         actors = [self.player] + self.enemies
@@ -185,7 +203,10 @@ class Level:
 
         for actor in actors:
             if is_on_screen(actor.rect):
-                actor.draw(screen, camera)
+                actor.draw(self.world_surface, camera)
+
+        scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
+        screen.blit(scaled_world, (0, 0))
 
         draw_health_bar(
             screen, self.player.health, *PLAYER_HEALTH_BAR_POS, *PLAYER_HEALTH_BAR_SIZE

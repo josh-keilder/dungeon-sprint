@@ -100,7 +100,14 @@ Use `--check` to see whether anything needs formatting without changing files.
 
 After `run()` returns, `pygame.quit()` closes everything.
 
-The window uses `pygame.SCALED`. The game always draws to a 1280x720 surface and pygame scales it to fit the real window or monitor, so all coordinates in the code are in that 1280x720 space.
+The window uses `pygame.SCALED`. The game always draws to a 1280x720 surface and pygame scales it to fit the real window or monitor, so all screen coordinates in the code are in that 1280x720 space.
+
+Inside that, the level is drawn in two layers. The world is drawn at its true pixel size on a small canvas and scaled up by `GAME_SCALE` (3), so every art pixel becomes a crisp 3×3 block. The HUD is drawn afterwards at full resolution, so text stays sharp and the inventory's mouse positions stay in screen pixels:
+
+```
+1. the WORLD  →  drawn on a WORLD_WIDTH × WORLD_HEIGHT surface  →  scaled × GAME_SCALE  →  onto the screen
+2. the HUD    →  drawn straight onto the screen afterwards, at full resolution
+```
 
 ## 5. State flow
 
@@ -133,7 +140,15 @@ All states are built once at startup and kept alive, so leaving and returning to
 ### Root
 
 - **`main.py`**: `Game`, the startup and main loop described above.
-- **`globals.py`**: shared constants only. Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), `MENU_BACKGROUND_COLOR` (`(37, 19, 26)`, the fill color of the Main Menu and Options screens), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+- **`globals.py`**: shared constants only. `GAME_SCALE` (3) is how many screen pixels each world pixel becomes, and `WORLD_WIDTH` / `WORLD_HEIGHT` are the world canvas size, worked out from it so changing the one number switches the whole scale:
+
+  ```
+  WORLD_WIDTH  = ceil(SCREEN_WIDTH  ÷ GAME_SCALE)     3× → 427   (427 × 3 = 1281, 1 px falls off the edge)
+  WORLD_HEIGHT = ceil(SCREEN_HEIGHT ÷ GAME_SCALE)     3× → 240
+  ```
+
+  `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), `MENU_BACKGROUND_COLOR` (`(37, 19, 26)`, the fill color of the Main Menu and Options screens), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -161,7 +176,7 @@ All states are built once at startup and kept alive, so leaving and returning to
 
 - **`state_manager.py`**: `GameStateManager` (section 5).
 - **`new_run.py`**: `start_new_run(game_state_manager)` builds a fresh `Level` for `DUNGEON_LEVEL_ONE` and registers it as `"level"`, replacing the old run. It's a plain function in its own module so any menu can start a new run without depending on another menu. Used by `RunEndScreen` (Restart and Main Menu) and `Options` (Main Menu from a paused run).
-- **`map/level.py`**: `Level(game_state_manager, map_path)`. Loads the map, item database, player and enemies. Runs and draws gameplay. Helpers that systems call back into:
+- **`map/level.py`**: `Level(game_state_manager, map_path)`. Loads the map, item database, player and enemies. Runs and draws gameplay. `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into:
   - `unlock_door(door_id)` removes every door tile with that id.
   - `refresh_walls()` rebuilds `solid_tiles` (walls plus remaining doors).
   - `spawn_loot(drops, center)` creates `WorldItem`s scattered randomly around a point.
@@ -210,7 +225,7 @@ All states are built once at startup and kept alive, so leaving and returning to
 | `animation.py` | Animation dict rules | `new_animation`, `set_animation`, `advance_animation` |
 | `assets.py` | Loading and caching images and animations | `load_image`, `load_animations`, `slice_frames`, `crop_center`, `add_flipped_left` |
 | `hitbox.py` | Pixel-perfect masks | `get_mask`, `sprites_overlap`, `draw_hitbox` |
-| `camera.py` | The shared camera rect | `camera`, `center_camera`, `is_on_screen` |
+| `camera.py` | The shared camera rect, the size of the world canvas (`WORLD_WIDTH` × `WORLD_HEIGHT`), not the screen, so a bigger `GAME_SCALE` means fewer tiles in view | `camera`, `center_camera`, `is_on_screen` |
 | `display.py` | Creating the window | `create_window` |
 | `debug.py` | Debug flags | `show_hitboxes`, `toggle_hitboxes` |
 | `sound.py` | Loading and playing audio. `play_music(name, loops=-1)` loops forever by default and remembers the track in `_current_music_name`. Asking for the track that is already playing does nothing, so it doesn't restart. `stop_music` clears the remembered name. | `load_sfx`, `load_music`, `play_sfx`, `play_music`, `stop_music`, `set_sfx_volume`, `set_music_volume` |
@@ -434,14 +449,18 @@ So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay en
 2. **A door, only if you have a `gold_key`:** removes every door tile with the same `door_id`, rebuilds the solid tiles, and uses up one key.
 3. **A ground item:** adds it to the inventory. If only part of the stack fits, the rest stays on the ground with the reduced quantity.
 
-**Drawing order** (`Level.draw`). Everything world-space is drawn at `position - camera`, and anything off screen (`is_on_screen`) is skipped:
-1. The pre-rendered floor surface.
-2. Decor, walls, then doors. Doors within `UNLOCK_DOOR_DISTANCE` (32) of the player get a white outline. This outline doesn't check for a key.
-3. The exit, as a 2-pixel `YELLOW` outline (`exit_rect.move(-camera.x, -camera.y)` returns a shifted copy, so the stored rect is unchanged).
-4. Ground items and chests.
-5. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front.
-6. The player's health bar and the run timer (screen space, top left).
-7. The inventory overlay, if open.
+**Drawing order** (`Level.draw`). Steps 1 to 6 draw onto `world_surface`, at `position - camera`, and anything outside the camera (`is_on_screen`) is skipped. Every world-drawing call already takes the surface to draw on as a parameter, so tiles, items and actors don't know or care that it's a small canvas:
+1. Fill `world_surface` with `MENU_BACKGROUND_COLOR`, clearing last frame (the map doesn't cover the whole view, so old frames would otherwise smear around the edges).
+2. The pre-rendered floor surface.
+3. Decor, walls, then doors. Doors within `UNLOCK_DOOR_DISTANCE` (32) of the player get a white outline. This outline doesn't check for a key.
+4. The exit, as a 2-pixel `YELLOW` outline (`exit_rect.move(-camera.x, -camera.y)` returns a shifted copy, so the stored rect is unchanged).
+5. Ground items and chests.
+6. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
+7. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
+8. The player's health bar and the run timer, on the screen at full resolution (top left). They come after step 7, so they land on top of the world.
+9. The inventory overlay, if open.
+
+The pause menu and the end-of-run screens call `level.draw(screen)` to show the frozen level behind them, so they get the scaled view automatically.
 
 **Inventory screen** (`InventoryUI`):
 - A 10-column grid of 48-pixel slots (20 slots), plus a column of equipment slots: `head`, `chest`, `boots`, `ability_1`, `ability_2`.
@@ -602,6 +621,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **Movement:**
 - All movement values are first-pass numbers. They will be tuned once the basic gameplay features are in and levels are being built, with feedback from playtesters.
+- Speeds are in world pixels per second, so the player covers the same number of tiles per second at any `GAME_SCALE`. At 3× the screen shows a third as many tiles across, so movement looks about 3× faster on screen than it did at 1×. Something to judge in the tuning pass.
 
 **Content and map:**
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
