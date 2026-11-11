@@ -53,6 +53,8 @@ class Player:
         self.rect = self.image.get_frect()
         self.rect.center = pos
 
+        self.alpha = 255
+
         # Health, inventory, and stats
         self.health = new_health(self.base_stats["health"])
 
@@ -109,12 +111,17 @@ class Player:
         blink_hidden = is_running(self.invulnerability) and blink_phase % 2 == 1
 
         if not blink_hidden:
+            image_to_draw = self.image
+            if self.alpha < 255:
+                image_to_draw = self.image.copy()
+                image_to_draw.set_alpha(self.alpha)
+
             if camera:
                 screen.blit(
-                    self.image, (self.rect.x - camera.x, self.rect.y - camera.y)
+                    image_to_draw, (self.rect.x - camera.x, self.rect.y - camera.y)
                 )
             else:
-                screen.blit(self.image, self.rect.topleft)
+                screen.blit(image_to_draw, self.rect.topleft)
 
         if debug.show_hitboxes:
             draw_hitbox(screen, self.image, self.rect, camera, GREEN)

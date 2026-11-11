@@ -15,7 +15,7 @@ from systems.combat import resolve_contact
 from systems.health import is_dead
 from systems.hitbox import draw_hitbox
 from systems.input import read_input
-from systems.timer import advance_timer, is_running, new_timer, start_timer
+from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_objects.health_bar import draw_health_bar
 from ui_objects.inventory_ui import InventoryUI
 
@@ -28,6 +28,7 @@ PLAYER_HEALTH_BAR_SIZE = (200, 10)
 LEVEL_MUSIC = "level_music"
 
 DEATH_DELAY = 3.0
+DEATH_FADE_DURATION = 1.5
 
 
 class Level:
@@ -70,6 +71,10 @@ class Level:
     def update(self, dt):
         if self.dying:
             advance_timer(self.death_timer, dt)
+            elapsed = DEATH_DELAY - time_left(self.death_timer)
+            fade_progress = min(1.0, elapsed / DEATH_FADE_DURATION)
+            self.player.alpha = round(255 * (1 - fade_progress))
+
             if not is_running(self.death_timer):
                 self.game_state_manager.set_state("game_over")
             return
