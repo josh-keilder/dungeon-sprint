@@ -25,10 +25,10 @@ from systems.health import is_dead
 from systems.hitbox import draw_hitbox
 from systems.input import read_input
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
-from ui_objects.health_bar import draw_health_bar
-from ui_objects.inventory_ui import InventoryUI
-from ui_objects.text_label import TextLabel
-from ui_objects.time_format import format_run_time
+from ui_components.health_bar import draw_health_bar
+from ui_components.inventory_ui import InventoryUI
+from ui_components.text_label import TextLabel
+from ui_components.time_format import format_run_time
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5

@@ -49,7 +49,7 @@ The game currently includes:
 - `items/` - Item classes, item database, sprite data, and loot tables
 - `states/` - Game state manager, dungeon level and map loading, start, options and game-over menus
 - `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, sound, settings, and more
-- `ui_objects/` - Buttons, sliders, text labels, health bars, inventory screen, cursor
+- `ui_components/` - Buttons, sliders, text labels, health bars, inventory screen, cursor
 - `tools/` - Developer scripts (line counter used by the pre-commit hook)
 - `hooks/` - Git pre-commit hook
 - `Assets/` - Sprites, maps, audio, fonts, and UI art
@@ -88,4 +88,4 @@ For a full explanation of how the code works, see [Project_Documentation.md](Pro
 
 ## Project Statistics
 - **Total Files:** 105
-- **Total Lines of Code:** 5587
+- **Total Lines of Code:** 5588

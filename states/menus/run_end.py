@@ -11,8 +11,8 @@ from globals import (
 )
 from states.new_run import start_new_run
 from systems import sound
-from ui_objects.text_button import TextButton
-from ui_objects.time_format import format_run_time
+from ui_components.text_button import TextButton
+from ui_components.time_format import format_run_time
 
 TITLE_FONT_SIZE = 64
 TITLE_Y = 200

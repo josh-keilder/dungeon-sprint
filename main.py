@@ -17,8 +17,8 @@ from states.state_manager import GameStateManager
 from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window
-from ui_objects.cursor import Cursor
-from ui_objects.text_label import TextLabel
+from ui_components.cursor import Cursor
+from ui_components.text_label import TextLabel
 
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 

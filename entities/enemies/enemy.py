@@ -10,7 +10,7 @@ from systems.health import new_health
 from systems.hitbox import draw_hitbox
 from systems.movement import decay_velocity, move_and_collide
 from systems.timer import advance_timer, new_timer
-from ui_objects.health_bar import draw_health_bar
+from ui_components.health_bar import draw_health_bar
 
 ENEMY_HEALTH_BAR_WIDTH = TILE_SIZE
 ENEMY_HEALTH_BAR_HEIGHT = 4

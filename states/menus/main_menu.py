@@ -9,7 +9,7 @@ from globals import (
     WHITE,
 )
 from systems import sound
-from ui_objects.text_button import TextButton
+from ui_components.text_button import TextButton
 
 TITLE_FONT_SIZE = 96
 TITLE_Y = 50

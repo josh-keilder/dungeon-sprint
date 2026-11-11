@@ -1,5 +1,5 @@
 from globals import WHITE
-from ui_objects.button import Button
+from ui_components.button import Button
 
 
 class TextButton(Button):

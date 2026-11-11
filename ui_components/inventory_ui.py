@@ -2,7 +2,7 @@ import pygame
 
 from globals import DARK_GRAY, SCREEN_WIDTH, WHITE
 from systems.inventory import add_item, can_equip
-from ui_objects.text_label import TextLabel
+from ui_components.text_label import TextLabel
 
 
 class InventoryUI:

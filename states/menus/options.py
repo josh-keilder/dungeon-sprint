@@ -15,9 +15,9 @@ from states.new_run import start_new_run
 from systems import settings, sound
 from systems.display import create_window
 from systems.input import read_input
-from ui_objects.slider import Slider
-from ui_objects.text_button import TextButton
-from ui_objects.text_label import TextLabel
+from ui_components.slider import Slider
+from ui_components.text_button import TextButton
+from ui_components.text_label import TextLabel
 
 TITLE_FONT_SIZE = 96
 LABEL_FONT_SIZE = 24

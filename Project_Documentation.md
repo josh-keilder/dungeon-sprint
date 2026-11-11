@@ -233,7 +233,7 @@ All states are built once at startup and kept alive, so leaving and returning to
 
 Some systems hold module-level state that is shared by everyone who imports them: `camera.camera`, `debug.show_hitboxes`, `settings.SETTINGS`, `sound.SFX` and `sound.MUSIC`, and the caches in `assets` and `hitbox`. Read flags through the module (`debug.show_hitboxes`), not with `from systems.debug import show_hitboxes`. A `from` import copies the value once at import time and never sees later toggles.
 
-### `ui_objects/`
+### `ui_components/`
 
 - **`button.py`**: `Button(image, pos, outline_color=WHITE)`. `image` can be any surface, including text from `font.render`. Plays `button_hover` when the mouse enters and draws an outline in `outline_color` while hovered. The outline is drawn first and the image on top of it, so only the ring just outside the shape shows. Drawn the other way round, the outline covers thin shapes such as letters. On a left click it plays `button_click` and sets `clicked_this_frame`, which `is_clicked()` returns. `set_image` swaps the picture and rebuilds the outline. The new rect keeps the old `topleft`, so text that changes width would drift off center. `TextButton.set_text` corrects for that.
 - **`text_button.py`**: `TextButton(text, font, midtop=(0, 0), text_color=WHITE, outline_color=WHITE)`, a `Button` subclass whose picture is rendered text.
