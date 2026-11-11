@@ -3,6 +3,7 @@ import pygame
 from globals import GREEN
 from systems import debug
 from systems.animation import advance_animation, new_animation, set_animation
+from systems.blink import is_blink_hidden
 from systems.consumables import use_small_health_potion
 from systems.health import new_health, set_max_health
 from systems.hitbox import draw_hitbox
@@ -11,7 +12,7 @@ from systems.movement import move_and_collide, steer
 from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
 from systems.sound import play_sfx
 from systems.stats import compute_stats
-from systems.timer import advance_timer, is_running, new_timer, time_left
+from systems.timer import advance_timer, new_timer
 
 BLINK_INTERVAL = 0.1
 
@@ -107,8 +108,7 @@ class Player:
         self.pos = pygame.math.Vector2(self.rect.topleft)
 
     def draw(self, screen, camera=None):
-        blink_phase = int(time_left(self.invulnerability) / BLINK_INTERVAL)
-        blink_hidden = is_running(self.invulnerability) and blink_phase % 2 == 1
+        blink_hidden = is_blink_hidden(self.invulnerability, BLINK_INTERVAL)
 
         if not blink_hidden:
             image_to_draw = self.image

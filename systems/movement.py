@@ -57,9 +57,15 @@ def steer(
 
         new_velocity = new_along_velocity + new_across_velocity
     else:
-        new_velocity = velocity * (1 - approach_fraction(deceleration_rate, dt))
+        new_velocity = decay_velocity(velocity, deceleration_rate, dt)
 
-        if new_velocity.length_squared() < STOP_SPEED**2:
-            new_velocity.update(0, 0)
+    return new_velocity
+
+
+def decay_velocity(velocity, rate, dt):
+    new_velocity = velocity * (1 - approach_fraction(rate, dt))
+
+    if new_velocity.length_squared() < STOP_SPEED**2:
+        new_velocity.update(0, 0)
 
     return new_velocity
