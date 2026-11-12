@@ -2,7 +2,7 @@ import pygame
 
 from globals import GAME_SCALE
 
-# Corner size in art pixels. Must match the border in tools/make_panel_frame.py
+# Corner size in art pixels. Must match the border in the panel_frame sprite in tools/make_sprite.py
 PANEL_CORNER_SIZE = 4
 
 

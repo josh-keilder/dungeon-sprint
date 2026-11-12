@@ -72,13 +72,32 @@ Use `--check` to see whether anything needs formatting without changing files.
 
 **Running tools.** Tools that import project code such as `globals` are run as modules from the project root, with `-m` and a dotted name instead of a file path. `python tools/x.py` puts only the `tools/` folder on Python's import path, so `from globals import ...` fails with `ModuleNotFoundError`; `python -m tools.x` puts the current folder (the project root) on the path instead.
 
-**`tools/make_panel_frame.py`.** Generates the UI panel frame art, `Assets/UI/panel_frame.png`. Run it from the project root after editing the art:
+**`tools/make_sprite.py`.** Generates the game's own pixel art from text. Run it from the project root after editing any sprite; it regenerates every sprite, and an unchanged sprite comes out byte-identical:
 
 ```bash
-venv/Scripts/python -m tools.make_panel_frame
+venv/Scripts/python -m tools.make_sprite
 ```
 
-The art is written as text: `FRAME_ROWS` is a list of strings, one per pixel row, and each letter is one pixel. `FRAME_COLORS` maps each letter to a palette constant from `globals.py` (`o` outline `PALETTE_SOOT`, `m` stone ring `PALETTE_WALL`, `l` light edge `PALETTE_LEATHER`, `s` shadow edge `PALETTE_SHADOW`, `f` fill `PALETTE_VOID`), so the art can only use the game's colors, and `.` is left transparent. The image size comes from the rows themselves, so editing the rows is all that's needed (every row must be the same length). The surface is created with `pygame.SRCALPHA`, which starts fully transparent, so skipped `.` pixels stay see-through; without it a new surface starts opaque black. The frame is saved at 1× (12×12) and scaled up by the game.
+Each sprite is an entry in `SPRITES`, keyed by name, holding three things:
+
+```
+SPRITES = {
+    "panel_frame": {
+        "path":   "Assets/UI/panel_frame.png",   where the PNG is saved
+        "colors": {"o": PALETTE_SOOT, ...},       letter -> palette constant, for this sprite only
+        "rows":   [".oooooooooo.", ...],         one string per pixel row, one letter per pixel
+    },
+    "speed_boots": {...},
+}
+```
+
+`make_sprite(name, sprite)` draws one entry and `__main__` loops over them all. Letters only mean something inside their own sprite, so every sprite can use `o` for its outline, while `m` is the stone ring in the frame but mid leather in the boots. Colors come from the `PALETTE_*` constants in `globals.py`, so the art can only use the game's colors, and `.` is left transparent. The image size comes from the rows themselves (width from the first row, height from the row count), so editing the rows is all that's needed. The surface is created with `pygame.SRCALPHA`, which starts fully transparent, so skipped `.` pixels stay see-through; without it a new surface starts opaque black. Sprites are saved at 1× and scaled up by the game.
+
+Typos in text art would otherwise fail silently (a short row leaves transparent pixels, an unknown letter would be skipped), so the tool stops with a `ValueError` naming the sprite and the spot instead: `speed_boots: row 4 is 15 wide, expected 16`, or `speed_boots: unknown letter 'z' at (3, 7)`.
+
+The sprites:
+- **`panel_frame`** (12×12, `Assets/UI/panel_frame.png`): the 9-slice frame used by the HUD and the inventory (section 6). `o` outline `PALETTE_SOOT`, `m` stone ring `PALETTE_WALL`, `l` light edge `PALETTE_LEATHER`, `s` shadow edge `PALETTE_SHADOW`, `f` fill `PALETTE_VOID`.
+- **`speed_boots`** (16×16, `Assets/Items/speed_boots.png`): one boot in side view with a wing on the heel, filling the full width. `o` outline `PALETTE_VOID` (like the health potion), leather in three shades (`d` `PALETTE_CLAY`, `m` `PALETTE_LEATHER`, `l` `PALETTE_TAN`, lit from the top-left), `s` sole and buckle `PALETTE_STEEL`, and the wing in `w` `PALETTE_ICE` with `a` `PALETTE_AZURE` shading.
 **`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
 
 ## 4. Startup and the main loop
@@ -322,7 +341,7 @@ Some systems hold module-level state that is shared by everyone who imports them
   └────┴─────────┴────┘
   ```
 
-  The corner size `c` is `PANEL_CORNER_SIZE` (4 art pixels), which must match the border in `tools/make_panel_frame.py`. The art keeps all its detail in the outer 4 pixels, so each edge is the same color all the way along and is safe to stretch. Each of the 9 pieces is a (cut from the frame, drawn on the panel) pair of rects:
+  The corner size `c` is `PANEL_CORNER_SIZE` (4 art pixels), which must match the border of the `panel_frame` sprite in `tools/make_sprite.py`. The art keeps all its detail in the outer 4 pixels, so each edge is the same color all the way along and is safe to stretch. Each of the 9 pieces is a (cut from the frame, drawn on the panel) pair of rects:
 
   | Piece | Cut from the frame (x, y, w, h) | Drawn on the panel (x, y, w, h) |
   | --- | --- | --- |
@@ -387,7 +406,7 @@ Some systems hold module-level state that is shared by everyone who imports them
 ### `tools/`
 
 - **`line_counter.py`**: see section 3.
-- **`make_panel_frame.py`**: see section 3.
+- **`make_sprite.py`**: see section 3.
 
 ## 7. One gameplay frame, step by step
 
@@ -714,7 +733,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 4. For a new behaviour, write a `<behavior>_velocity` function in `systems/enemy_ai.py` and add a branch for it in `Enemy.update_movement`.
 
 **A new item.**
-1. Add its sheet layout to `items/item_texture_data.py`.
+1. Draw its art as a new entry in `SPRITES` in `tools/make_sprite.py` (16×16, saved to `Assets/Items/`) and run the tool, then add its sheet layout to `items/item_texture_data.py` pointing at that PNG.
 2. In `initialize_item_database`, load its animations and add an `Item` (or `EquipmentItem` with `slot` and `bonuses`) under a new id.
 3. To make it drop, add an entry to `CHEST_LOOT`.
 4. If it does something when used, add a function to `systems/consumables.py` and call it from the player on a new intent.
@@ -761,7 +780,6 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **HUD:**
 - The health panel has a fixed width, so health text wider than `25/25` (for example `100/100`) won't fit. Its width should be worked out from the text before max health goes above 99.
-- The speed boots still use placeholder art (a plain white square, `Speed_Boots_placeholder.png`), until real art is made for them.
 
 **Menus and saving:**
 - Choosing Main Menu from the pause menu throws the run away with no warning. A confirmation box that tells the player their progress won't be saved is planned. It would go in the Options Main Menu branch, before `start_new_run`.

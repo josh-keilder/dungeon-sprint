@@ -23,6 +23,6 @@ speed_boots_texture_data = {
         "size": (TILE_SIZE, TILE_SIZE),
         "position": (0, 0),
         "frames": 1,
-        "file_path": "Assets/Items/Speed_Boots_placeholder.png",
+        "file_path": "Assets/Items/speed_boots.png",
     },
 }
