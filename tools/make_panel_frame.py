@@ -2,6 +2,14 @@ import os
 
 import pygame
 
+from globals import (
+    PALETTE_LEATHER,
+    PALETTE_SHADOW,
+    PALETTE_SOOT,
+    PALETTE_VOID,
+    PALETTE_WALL,
+)
+
 FRAME_ROWS = [
     ".oooooooooo.",
     "ommmmmmmmmmo",
@@ -17,11 +25,11 @@ FRAME_ROWS = [
     ".oooooooooo.",
 ]
 FRAME_COLORS = {
-    "o": (30, 22, 22),  # outline
-    "m": (110, 74, 72),  # stone ring
-    "l": (137, 90, 69),  # light edge (top and left)
-    "s": (84, 55, 64),  # shadow edge (bottom and right)
-    "f": (37, 19, 26),  # fill
+    "o": PALETTE_SOOT,  # outline
+    "m": PALETTE_WALL,  # stone ring
+    "l": PALETTE_LEATHER,  # light edge (top and left)
+    "s": PALETTE_SHADOW,  # shadow edge (bottom and right)
+    "f": PALETTE_VOID,  # fill
 }
 OUTPUT_PATH = "Assets/UI/panel_frame.png"
 
