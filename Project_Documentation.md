@@ -88,7 +88,12 @@ The art is written as text: `FRAME_ROWS` is a list of strings, one per pixel row
 3. `create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)` opens the window. It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display.
 4. The system mouse is hidden and a `Cursor` is built from `Assets/Cursors/01.png` at half scale.
 5. Sound: all sound effects and music are loaded and the saved volumes are applied. No music starts here.
-6. The FPS label (`TextLabel` at the top right) and its timer are created.
+6. The FPS label and its timer are created. It's an outlined `TextLabel` in the default Silkscreen at 24, with no panel, because it's a debug readout rather than part of the game. Each time its text refreshes, it's positioned by its visible ink: right-aligned `FPS_MARGIN` (12) from the screen's right edge, so a wider number grows to the left, and vertically centered on `FPS_CENTER_Y` (21), snapped to the grid:
+
+   ```
+   x = SCREEN_WIDTH − FPS_MARGIN − ink right
+   y = (FPS_CENTER_Y − ink center y) // GAME_SCALE × GAME_SCALE
+   ```
 7. A `GameStateManager` starting on `"main_menu"` is created, then the states are built and registered: `MainMenu` as `"main_menu"`, `Options` as `"options"`, `Level` as `"level"`, and `RunEndScreen` twice, as `"game_over"` ("You Died!", red, `GAME_OVER_MUSIC`) and `"level_complete"` ("You Escaped!", green, no music of its own).
 8. `self.game_state_manager.get_state().enter()` runs the first screen's `enter()`, which starts the menu music. The first state is set directly in `GameStateManager.__init__`, not through `set_state`, so its `enter()` has to be called by hand. It must come after the `add_state` calls, because `get_state()` looks the state up in the dict.
 
@@ -155,7 +160,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ```
 
   `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
-  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette for UI that should match the art (`PALETTE_VOID` (37, 19, 26), `PALETTE_SHADOW` (84, 55, 64), `PALETTE_BLOOD` (188, 76, 81), `PALETTE_STEEL` (173, 193, 207), `PALETTE_TORCH` (191, 112, 77), `PALETTE_ICE` (202, 230, 245), added as the UI needs them. Steel is the normal UI text color and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette for UI that should match the art (`PALETTE_VOID` (37, 19, 26), `PALETTE_SHADOW` (84, 55, 64), `PALETTE_BLOOD` (188, 76, 81), `PALETTE_STEEL` (173, 193, 207), `PALETTE_TORCH` (191, 112, 77), `PALETTE_ICE` (202, 230, 245), `PALETTE_STONE` (144, 145, 158), added as the UI needs them. Stone is for secondary text, such as item descriptions. Steel is the normal UI text color and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -259,8 +264,34 @@ Some systems hold module-level state that is shared by everyone who imports them
      ░░░
   ```
 
-  Text is drawn without anti-aliasing for a pixel look. By default it builds its font with `SysFont(font_name, font_size)`, which only finds installed system fonts and cannot load a `.ttf` path such as `FONT_PATH`. Pass a ready-made `font` (for example `pygame.font.Font(FONT_PATH, 24)`) to use that instead, in which case `font_name` and `font_size` are ignored. The options menu labels use this. The FPS counter and the inventory labels use the default.
-- **`inventory_ui.py`**: `InventoryUI`, the inventory screen (section 7).
+  Text is drawn without anti-aliasing for a pixel look. With no `font` given, it builds Silkscreen from `FONT_PATH` at `font_size` (default 24, on the 3× grid), in `color` (default `PALETTE_STEEL`). Pass a ready-made `font` to share one font object between labels, in which case `font_size` is ignored. The menus, HUD and inventory pass their own fonts; the FPS counter uses the default.
+- **`inventory_ui.py`**: `InventoryUI(inventory)`, the inventory screen (section 7). It reads the inventory only for its **shape**, the number of slots and the equipment slot names, so the layout follows the data: changing `new_inventory`'s slot count or `EQUIPMENT_SLOT_NAMES` resizes the window.
+  - **Layout.** A centered, framed window titled "INVENTORY", with the equipment slots in a column on the left and the item grid, `GRID_COLUMNS` (5) wide, on the right. Every slot is a `SLOT_SIZE` (72) framed slot, `SLOT_GAP` (6) apart, the same as the HUD quick slots, with a 3× icon at `SLOT_ICON_OFFSET` (12). With 20 slots and 4 equipment slots, both columns are 4 slots tall, so they line up. The world behind is dimmed by a full-screen black overlay at `INVENTORY_DIM_ALPHA` (120 of 255), drawn first.
+
+    ```
+    grid rows      = ceil(slot count ÷ GRID_COLUMNS)
+    grid width     = GRID_COLUMNS × SLOT_SIZE + (GRID_COLUMNS − 1) × SLOT_GAP      (gaps only between slots)
+    grid height    = grid rows × SLOT_SIZE + (grid rows − 1) × SLOT_GAP
+    window width   = WINDOW_PADDING + SLOT_SIZE + EQUIPMENT_GAP + grid width + WINDOW_PADDING
+    window height  = WINDOW_PADDING + TITLE_HEIGHT + max(grid height, equipment height) + WINDOW_PADDING
+    window x, y    = centered on the screen, snapped to the 3 px grid
+
+    row, column    = divmod(slot index, GRID_COLUMNS)
+    grid slot rect = (grid_x + column × (SLOT_SIZE + SLOT_GAP), slots_top + row × (SLOT_SIZE + SLOT_GAP), SLOT_SIZE, SLOT_SIZE)
+    ```
+
+  - **Slot rects.** Every slot's `pygame.Rect` is built once in `__init__`: `grid_slot_rects` is a list whose position matches the inventory slot index, and `equipment_slot_rects` is a dict keyed by slot name. Drawing loops over them, and clicking asks each one `rect.collidepoint(mouse_pos)` (`get_slot_at_mouse`, `get_equipment_slot_at_mouse`), so where the slots are is decided in exactly one place and gaps, columns and window position can't drift out of sync. `divmod(index, GRID_COLUMNS)` returns both `index // GRID_COLUMNS` (the row) and `index % GRID_COLUMNS` (the column) at once: slot 7 in 5 columns is row 1, column 2.
+  - **`draw_slot(screen, rect, item)`** draws the slot frame, then, if there's an item, its icon (scaled by `GAME_SCALE` once and cached by item id in `_get_icon`) and, for stacks of more than one, an outlined count placed by its visible ink one art pixel inside the bottom-right corner. One `count_label` is shared by every slot and re-positioned for each.
+  - **Tooltips.** Hovering an item with an empty hand shows a framed tooltip next to the mouse: the name in `PALETTE_STEEL`, the description in `PALETTE_STONE`, and the value (if the item has one) in `PALETTE_TORCH`. Hovering an empty equipment slot shows just the slot's name (`"boots".title()` is "Boots"), so the empty slots can be told apart. An item's tooltip text never changes, so `build_tooltip(lines)` renders the whole tooltip, frame and text, into one surface the first time, and `get_tooltip(key, lines)` keeps it in `tooltip_cache` keyed by the item id (or `empty_<slot name>`, which can never clash with an item id); after that, hovering is a single blit. `draw_tooltip` places it `TOOLTIP_MOUSE_OFFSET` (18) down and right of the cursor, and flips it to the other side of the cursor if it would go off the screen.
+
+    ```
+    tooltip width  = widest line + 2 × TOOLTIP_PADDING                                       (rounded up to a multiple of 3)
+    tooltip height = 2 × TOOLTIP_PADDING + (line count − 1) × TOOLTIP_LINE_HEIGHT + ink height  (rounded up to a multiple of 3)
+    line y         = TOOLTIP_PADDING − ink top + line index × TOOLTIP_LINE_HEIGHT
+    ```
+
+    `TOOLTIP_PADDING` (18) is the 12 px frame border plus 6 px of room, and `TOOLTIP_LINE_HEIGHT` (27) is the visible text height (15) plus spacing. The size is rounded **up** so the text always fits. Subtracting the ink top (the empty space Silkscreen leaves above its letters, about 10 px) puts each line's visible top exactly at the padding.
+  - **The held item** is drawn centered on the mouse, using the icon's own size.
 - **`time_format.py`**: `format_run_time(seconds)` turns seconds into `mm:ss.hh` text, e.g. 73.456 becomes `01:13.45`. It first truncates to whole hundredths (`int(seconds * 100) / 100`) instead of rounding, the way speedrun timers do, so it never shows a time that hasn't been reached and 59.996 can't round up to `00:60.00`. `//` (floor division) gives the minutes and `%` (remainder) the seconds left over. In the f-string, `02d` means a whole number padded to 2 digits, and `05.2f` a decimal with 2 places padded to 5 characters, the decimal point included. Shared by the level HUD and `RunEndScreen`.
 
   ```
@@ -383,7 +414,7 @@ This is `Level.update(dt)` followed by `Level.draw(screen)`.
 - `inventory`: open the inventory. When closing, any held item goes back into the inventory first. If it doesn't fit, the inventory stays open.
 - A mouse click while the inventory is open goes to `InventoryUI.handle_click`.
 
-The game keeps running while the inventory is open. It is an overlay, not a pause.
+The game keeps running while the inventory is open. It is an overlay, not a pause, so managing items costs time and the world can still hurt you. `INVENTORY_PAUSES_GAME` (`False`, in `level.py`) makes this a one-word change: right after the inventory input (opening, closing and clicking), `Level.update` returns early when the inventory is open and the constant is `True`, which would stop the player, enemies, contacts and camera while the inventory stays usable. The check sits after `run_time += dt`, so the run timer would keep counting even while paused.
 
 **3. Player update** (`Player.update`):
 1. Sets `walking` and updates `last_direction` from the move direction. Facing doesn't change mid-roll. Vertical input wins over horizontal for facing.
@@ -559,10 +590,10 @@ So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay en
 The pause menu and the end-of-run screens call `level.draw(screen)` to show the frozen level behind them, so they get the scaled view automatically.
 
 **Inventory screen** (`InventoryUI`):
-- A 10-column grid of 48-pixel slots (20 slots), plus a column of equipment slots: `head`, `chest`, `boots`, `ability_1`, `ability_2`.
+- A centered window with 4 equipment slots (`head`, `chest`, `boots`, `ability`) on the left and a 5 × 4 grid of the 20 inventory slots on the right, over the dimmed world (layout and formulas in section 6).
 - Clicking a grid slot swaps it with the item in your hand, which picks up, places or swaps.
 - Clicking an equipment slot while holding an item equips it only if `item.slot` matches that slot name. Clicking it with an empty hand takes the equipped item off.
-- Hovering an item with an empty hand shows a tooltip with name, description and `value_text` (if any). Stack counts show in the slot corner.
+- Hovering an item with an empty hand shows a framed tooltip with its name, description and `value_text` (if any); hovering an empty equipment slot shows the slot's name. Stack counts show, outlined, in the slot corner.
 
 ## 8. Data formats
 
@@ -686,7 +717,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 3. To make it drop, add an entry to `CHEST_LOOT`.
 4. If it does something when used, add a function to `systems/consumables.py` and call it from the player on a new intent.
 
-**New equipment.** Use `EquipmentItem` with `slot` set to one of `head`, `chest`, `boots`, `ability_1` or `ability_2`. Its `bonuses` keys must match names in `base_stats`. For a new slot, add the name to `EQUIPMENT_SLOT_NAMES` in `systems/inventory.py`. The inventory screen draws one equipment box per name.
+**New equipment.** Use `EquipmentItem` with `slot` set to one of `head`, `chest`, `boots` or `ability`. Its `bonuses` keys must match names in `base_stats`. For a new slot, add the name to `EQUIPMENT_SLOT_NAMES` in `systems/inventory.py`. The inventory screen draws one equipment slot per name and resizes its window to fit.
 
 **A new key binding.** Add a field to the dict returned by `read_input`, then react to it in `Level.update` (level-wide actions) or `Player.update` (player actions).
 
@@ -728,7 +759,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **HUD:**
 - The health panel has a fixed width, so health text wider than `25/25` (for example `100/100`) won't fit. Its width should be worked out from the text before max health goes above 99.
-- The inventory screen still uses the old colors and fonts (a `DARK_GRAY` grid, Arial labels), and the FPS counter is still Comic Sans, until the inventory restyle.
+- The speed boots still use placeholder art (a plain white square, `Speed_Boots_placeholder.png`), until real art is made for them.
 
 **Menus and saving:**
 - Choosing Main Menu from the pause menu throws the run away with no warning. A confirmation box that tells the player their progress won't be saved is planned. It would go in the Options Main Menu branch, before `start_new_run`.

@@ -35,6 +35,8 @@ LEVEL_MUSIC = "level_music"
 DEATH_DELAY = 3.0
 DEATH_FADE_DURATION = 1.5
 
+INVENTORY_PAUSES_GAME = False
+
 
 class Level:
     def __init__(self, game_state_manager, map_path):
@@ -75,7 +77,7 @@ class Level:
         self.refresh_walls()
 
         self.show_inventory = False
-        self.inventory_ui = InventoryUI()
+        self.inventory_ui = InventoryUI(self.player.inventory)
 
         self.dying = False
         self.death_timer = new_timer()
@@ -120,6 +122,9 @@ class Level:
             self.inventory_ui.handle_click(
                 self.player.intent["mouse_left_click"], self.player.inventory
             )
+
+        if self.show_inventory and INVENTORY_PAUSES_GAME:
+            return
 
         self.player.update(dt, self.solid_tiles)
         for enemy in self.enemies:

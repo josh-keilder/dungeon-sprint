@@ -3,8 +3,10 @@ import pygame
 from globals import (
     DUNGEON_LEVEL_ONE,
     FRAME_RATE,
+    GAME_SCALE,
     GREEN,
     PALETTE_STEEL,
+    PALETTE_VOID,
     RED,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
@@ -22,7 +24,10 @@ from ui_components.text_label import TextLabel
 
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 
+FPS_MARGIN = 12
+FPS_CENTER_Y = 21
 FPS_REFRESH_INTERVAL = 0.5
+
 
 GAME_OVER_MUSIC = "game_over"
 
@@ -54,7 +59,7 @@ class Game:
 
         # FPS counter
         self.fps_timer = 0.0
-        self.fps_text = TextLabel("", font_size=15, pos=(1215, 0), color=PALETTE_STEEL)
+        self.fps_text = TextLabel("", color=PALETTE_STEEL, outline_color=PALETTE_VOID)
 
         # Screens, and the manager that switches between them
         self.game_state_manager = GameStateManager("main_menu")
@@ -96,6 +101,11 @@ class Game:
         if self.fps_timer >= FPS_REFRESH_INTERVAL:
             self.fps_timer -= FPS_REFRESH_INTERVAL
             self.fps_text.update_text(f"FPS: {int(self.clock.get_fps())}")
+            fps_bounds = self.fps_text.text_surface.get_bounding_rect()
+            self.fps_text.pos = (
+                SCREEN_WIDTH - FPS_MARGIN - fps_bounds.right,
+                (FPS_CENTER_Y - fps_bounds.centery) // GAME_SCALE * GAME_SCALE,
+            )
 
     def draw(self):
         screen = pygame.display.get_surface()

@@ -8,6 +8,7 @@ from globals import (
     PALETTE_STEEL,
     PALETTE_TORCH,
     PALETTE_VOID,
+    PANEL_FRAME_PATH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
@@ -20,7 +21,6 @@ from ui_components.text_label import TextLabel
 from ui_components.time_format import format_run_time
 
 # Shared by every HUD part
-PANEL_FRAME_PATH = "Assets/UI/panel_frame.png"
 HUD_FONT_SIZE = 24
 HUD_MARGIN = 12
 

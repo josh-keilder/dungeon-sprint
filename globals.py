@@ -42,6 +42,7 @@ PALETTE_BLOOD = (188, 76, 81)
 PALETTE_STEEL = (173, 193, 207)
 PALETTE_TORCH = (191, 112, 77)
 PALETTE_ICE = (202, 230, 245)
+PALETTE_STONE = (144, 145, 158)
 
 # Kept in case I need this specific color
 OPTION_MENU_BUTTON_BACKGROUND = (110, 74, 72)
@@ -51,6 +52,7 @@ MENU_BACKGROUND_COLOR = PALETTE_VOID
 
 DUNGEON_LEVEL_ONE = "Assets/Maps/Dungeon_Level_One.tmx"
 
+PANEL_FRAME_PATH = "Assets/UI/panel_frame.png"
 FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"
 BUTTON_FONT_SIZE = 32
 

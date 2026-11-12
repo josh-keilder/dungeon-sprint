@@ -1,4 +1,9 @@
-EQUIPMENT_SLOT_NAMES = ("head", "chest", "boots", "ability_1", "ability_2")
+EQUIPMENT_SLOT_NAMES = (
+    "head",
+    "chest",
+    "boots",
+    "ability",
+)
 
 
 def new_inventory(slot_count):

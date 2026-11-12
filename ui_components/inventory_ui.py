@@ -1,178 +1,255 @@
+import math
+
 import pygame
 
-from globals import DARK_GRAY, PALETTE_STEEL, SCREEN_WIDTH
+from globals import (
+    FONT_PATH,
+    GAME_SCALE,
+    PALETTE_STEEL,
+    PALETTE_STONE,
+    PALETTE_TORCH,
+    PALETTE_VOID,
+    PANEL_FRAME_PATH,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
+from systems.assets import load_image
 from systems.inventory import add_item, can_equip
+from ui_components.panel import make_panel
 from ui_components.text_label import TextLabel
+
+# Window layout
+INVENTORY_FONT_SIZE = 24
+SLOT_SIZE = 72
+SLOT_GAP = 6
+SLOT_ICON_OFFSET = 12
+GRID_COLUMNS = 5
+WINDOW_PADDING = 24
+EQUIPMENT_GAP = 24
+TITLE_HEIGHT = 36
+
+# Tooltip
+TOOLTIP_PADDING = 18
+TOOLTIP_LINE_HEIGHT = 27
+TOOLTIP_MOUSE_OFFSET = 18
+
+INVENTORY_DIM_ALPHA = 120
 
 
 class InventoryUI:
-    def __init__(self):
-        self.slot_size = 48
-        self.columns = 10
-        self.grid_start_x, self.grid_start_y = (
-            SCREEN_WIDTH - 780 - self.slot_size * self.columns,
-            610,
-        )
-        self.equipment_start_x, self.equipment_start_y = (
-            self.grid_start_x + 1200,
-            self.grid_start_y - 150,
-        )
-
-        self.quantity_label = TextLabel(
-            text="", font_name="Arial", font_size=10, color=PALETTE_STEEL
-        )
-        self.tooltip_name = TextLabel(
-            text="", font_name="Arial", font_size=14, color=PALETTE_STEEL
-        )
-        self.tooltip_description = TextLabel(
-            text="", font_name="Arial", font_size=12, color=(200, 200, 200)
-        )
-        self.tooltip_value = TextLabel(
-            text="", font_name="Arial", font_size=12, color=(200, 200, 200)
-        )
+    def __init__(self, inventory):
+        self.tooltip_cache = {}
+        self.icon_cache = {}
 
         self.held_item = None
 
-        self.icon_cache = {}
+        slot_count = len(inventory["slots"])
+        equipment_names = list(inventory["equipment"].keys())
+
+        grid_rows = math.ceil(slot_count / GRID_COLUMNS)
+        grid_width = GRID_COLUMNS * SLOT_SIZE + (GRID_COLUMNS - 1) * SLOT_GAP
+        grid_height = grid_rows * SLOT_SIZE + (grid_rows - 1) * SLOT_GAP
+        equipment_height = (
+            len(equipment_names) * SLOT_SIZE + (len(equipment_names) - 1) * SLOT_GAP
+        )
+
+        window_width = (
+            WINDOW_PADDING + SLOT_SIZE + EQUIPMENT_GAP + grid_width + WINDOW_PADDING
+        )
+        window_height = (
+            WINDOW_PADDING
+            + TITLE_HEIGHT
+            + max(grid_height, equipment_height)
+            + WINDOW_PADDING
+        )
+        self.window_pos = (
+            SCREEN_WIDTH - window_width
+        ) // 2 // GAME_SCALE * GAME_SCALE, (
+            SCREEN_HEIGHT - window_height
+        ) // 2 // GAME_SCALE * GAME_SCALE
+
+        self.frame_image = load_image(PANEL_FRAME_PATH)
+        self.window_panel = make_panel(self.frame_image, (window_width, window_height))
+        self.slot_panel = make_panel(self.frame_image, (SLOT_SIZE, SLOT_SIZE))
+
+        slots_top = self.window_pos[1] + WINDOW_PADDING + TITLE_HEIGHT
+        equipment_x = self.window_pos[0] + WINDOW_PADDING
+        grid_x = equipment_x + SLOT_SIZE + EQUIPMENT_GAP
+
+        self.grid_slot_rects = [
+            pygame.Rect(
+                grid_x + column * (SLOT_SIZE + SLOT_GAP),
+                slots_top + row * (SLOT_SIZE + SLOT_GAP),
+                SLOT_SIZE,
+                SLOT_SIZE,
+            )
+            for row, column in (
+                divmod(index, GRID_COLUMNS) for index in range(slot_count)
+            )
+        ]
+        self.equipment_slot_rects = {
+            slot_name: pygame.Rect(
+                equipment_x,
+                slots_top + position * (SLOT_SIZE + SLOT_GAP),
+                SLOT_SIZE,
+                SLOT_SIZE,
+            )
+            for position, slot_name in enumerate(equipment_names)
+        }
+
+        self.font = pygame.font.Font(FONT_PATH, INVENTORY_FONT_SIZE)
+
+        self.title_label = TextLabel(
+            "INVENTORY",
+            color=PALETTE_STEEL,
+            font=self.font,
+        )
+        title_x = (
+            self.window_pos[0]
+            + (window_width - self.title_label.text_surface.get_width()) // 2
+        )
+        self.title_label.pos = (title_x, self.window_pos[1] + WINDOW_PADDING // 2)
+
+        self.count_label = TextLabel(
+            "", color=PALETTE_STEEL, font=self.font, outline_color=PALETTE_VOID
+        )
+
+        self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.overlay.fill((0, 0, 0, INVENTORY_DIM_ALPHA))
 
     def draw(self, screen, inventory):
-        for slot_index, item in enumerate(inventory["slots"]):
-            x = self.grid_start_x + (slot_index % self.columns) * self.slot_size
-            y = self.grid_start_y + (slot_index // self.columns) * self.slot_size
+        screen.blit(self.overlay, (0, 0))
+        screen.blit(self.window_panel, self.window_pos)
 
-            pygame.draw.rect(
-                screen, DARK_GRAY, (x, y, self.slot_size, self.slot_size), 1
-            )
+        self.title_label.draw(screen)
 
-            if item:
-                icon = self._get_icon(item)
-                if icon:
-                    screen.blit(icon, (x + 5, y + 5))
+        for slot_index, rect in enumerate(self.grid_slot_rects):
+            self.draw_slot(screen, rect, inventory["slots"][slot_index])
 
-                if item.quantity > 1:
-                    self.quantity_label.update_text(str(item.quantity))
-                    screen.blit(
-                        self.quantity_label.text_surface,
-                        (x + self.slot_size - 15, y + self.slot_size - 15),
-                    )
-
-        for slot_index, (slot_name, item) in enumerate(inventory["equipment"].items()):
-            equipment_slot_x, equipment_slot_y = (
-                self.equipment_start_x,
-                self.equipment_start_y + slot_index * (self.slot_size + 5),
-            )
-            pygame.draw.rect(
-                screen,
-                (40, 40, 50),
-                (equipment_slot_x, equipment_slot_y, self.slot_size, self.slot_size),
-            )
-
-            if item:
-                icon = self._get_icon(item)
-                screen.blit(icon, (equipment_slot_x + 5, equipment_slot_y + 5))
+        for slot_name, rect in self.equipment_slot_rects.items():
+            self.draw_slot(screen, rect, inventory["equipment"][slot_name])
 
         if self.held_item:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             icon = self._get_icon(self.held_item)
             if icon:
                 screen.blit(
-                    icon, (mouse_x - self.slot_size // 2, mouse_y - self.slot_size // 2)
+                    icon,
+                    (mouse_x - icon.get_width() // 2, mouse_y - icon.get_height() // 2),
                 )
 
         if not self.held_item:
             mouse_pos = pygame.mouse.get_pos()
-            slot_index = self.get_slot_at_mouse(mouse_pos, inventory)
-            if slot_index is not None and inventory["slots"][slot_index]:
-                self.draw_tooltip(screen, inventory["slots"][slot_index], mouse_pos)
+            slot_index = self.get_slot_at_mouse(mouse_pos)
+            equipment_name = self.get_equipment_slot_at_mouse(mouse_pos)
 
-    def draw_tooltip(self, screen, item, mouse_pos):
-        self.tooltip_name.update_text(item.name)
-        self.tooltip_description.update_text(item.description)
-        self.tooltip_value.update_text(item.value_text)
+            hovered_item = None
+            if slot_index is not None:
+                hovered_item = inventory["slots"][slot_index]
+            elif equipment_name is not None:
+                hovered_item = inventory["equipment"][equipment_name]
 
-        padding, line_spacing = 8, 4
-        name_width, name_height = self.tooltip_name.text_surface.get_size()
-        description_width, description_height = (
-            self.tooltip_description.text_surface.get_size()
-        )
-        value_width, value_height = self.tooltip_value.text_surface.get_size()
+            tooltip = None
+            if hovered_item is not None:
+                lines = [
+                    (hovered_item.name, PALETTE_STEEL),
+                    (hovered_item.description, PALETTE_STONE),
+                ]
+                if hovered_item.value_text:
+                    lines.append((hovered_item.value_text, PALETTE_TORCH))
 
-        width = max(
-            name_width, description_width, value_width if item.value_text else 0
-        ) + (padding * 2)
+                tooltip = self.get_tooltip(hovered_item.id, lines)
+
+            elif equipment_name is not None:
+                tooltip = self.get_tooltip(
+                    f"empty_{equipment_name}", [(equipment_name.title(), PALETTE_STONE)]
+                )
+
+            if tooltip is not None:
+                self.draw_tooltip(screen, tooltip, mouse_pos)
+
+    def draw_slot(self, screen, rect, item):
+        screen.blit(self.slot_panel, rect.topleft)
+
+        if item is None:
+            return
+
+        icon = self._get_icon(item)
+        screen.blit(icon, (rect.x + SLOT_ICON_OFFSET, rect.y + SLOT_ICON_OFFSET))
+
+        if item.quantity > 1:
+            self.count_label.update_text(str(item.quantity))
+            count_bounds = self.count_label.text_surface.get_bounding_rect()
+            self.count_label.pos = (
+                rect.right - count_bounds.right - GAME_SCALE,
+                rect.bottom - count_bounds.bottom - GAME_SCALE,
+            )
+            self.count_label.draw(screen)
+
+    def draw_tooltip(self, screen, tooltip, mouse_pos):
+        tooltip_x = mouse_pos[0] + TOOLTIP_MOUSE_OFFSET
+        tooltip_y = mouse_pos[1] + TOOLTIP_MOUSE_OFFSET
+
+        if tooltip_x + tooltip.get_width() > SCREEN_WIDTH:
+            tooltip_x = mouse_pos[0] - TOOLTIP_MOUSE_OFFSET - tooltip.get_width()
+
+        if tooltip_y + tooltip.get_height() > SCREEN_HEIGHT:
+            tooltip_y = mouse_pos[1] - TOOLTIP_MOUSE_OFFSET - tooltip.get_height()
+
+        screen.blit(tooltip, (tooltip_x, tooltip_y))
+
+    def build_tooltip(self, lines):
+        rendered_lines = [self.font.render(text, False, color) for text, color in lines]
+
+        ink_top = rendered_lines[0].get_bounding_rect().top
+        ink_height = rendered_lines[0].get_bounding_rect().height
+
+        width = max(line.get_width() for line in rendered_lines) + 2 * TOOLTIP_PADDING
         height = (
-            name_height
-            + description_height
-            + (value_height if item.value_text else 0)
-            + (padding * 2)
-            + line_spacing
+            2 * TOOLTIP_PADDING
+            + (len(rendered_lines) - 1) * TOOLTIP_LINE_HEIGHT
+            + ink_height
         )
 
-        tooltip_x, tooltip_y = mouse_pos[0] + 15, mouse_pos[1] + 15
-        if tooltip_x + width > screen.get_width():
-            tooltip_x = mouse_pos[0] - width - 5
-        if tooltip_y + height > screen.get_height():
-            tooltip_y = mouse_pos[1] - height - 5
+        width = math.ceil(width / GAME_SCALE) * GAME_SCALE
+        height = math.ceil(height / GAME_SCALE) * GAME_SCALE
 
-        pygame.draw.rect(screen, (20, 20, 20), (tooltip_x, tooltip_y, width, height))
-        pygame.draw.rect(
-            screen, (150, 150, 150), (tooltip_x, tooltip_y, width, height), 1
-        )
+        tooltip = make_panel(self.frame_image, (width, height))
 
-        screen.blit(
-            self.tooltip_name.text_surface, (tooltip_x + padding, tooltip_y + padding)
-        )
-        screen.blit(
-            self.tooltip_description.text_surface,
-            (tooltip_x + padding, tooltip_y + padding + name_height + line_spacing),
-        )
-        if item.value_text:
-            screen.blit(
-                self.tooltip_value.text_surface,
+        for line_index, line in enumerate(rendered_lines):
+            tooltip.blit(
+                line,
                 (
-                    tooltip_x + padding,
-                    tooltip_y
-                    + padding
-                    + name_height
-                    + description_height
-                    + line_spacing
-                    + 4,
+                    TOOLTIP_PADDING,
+                    TOOLTIP_PADDING - ink_top + line_index * TOOLTIP_LINE_HEIGHT,
                 ),
             )
 
-    def get_slot_at_mouse(self, mouse_pos, inventory):
-        mouse_x, mouse_y = mouse_pos
-        if (
-            self.grid_start_x
-            <= mouse_x
-            <= self.grid_start_x + self.columns * self.slot_size
-            and self.grid_start_y
-            <= mouse_y
-            <= self.grid_start_y
-            + (len(inventory["slots"]) // self.columns) * self.slot_size
-        ):
-            column = (mouse_x - self.grid_start_x) // self.slot_size
-            row = (mouse_y - self.grid_start_y) // self.slot_size
-            slot_index = int(row * self.columns + column)
-            return slot_index if 0 <= slot_index < len(inventory["slots"]) else None
+        return tooltip
+
+    def get_tooltip(self, key, lines):
+        if key not in self.tooltip_cache:
+            self.tooltip_cache[key] = self.build_tooltip(lines)
+
+        return self.tooltip_cache[key]
+
+    def get_slot_at_mouse(self, mouse_pos):
+        for slot_index, rect in enumerate(self.grid_slot_rects):
+            if rect.collidepoint(mouse_pos):
+                return slot_index
+
         return None
 
-    def get_equipment_slot_at_mouse(self, mouse_pos, inventory):
-        mouse_x, mouse_y = mouse_pos
-        for slot_index, slot_name in enumerate(inventory["equipment"].keys()):
-            equipment_slot_x, equipment_slot_y = (
-                self.equipment_start_x,
-                self.equipment_start_y + slot_index * (self.slot_size + 5),
-            )
-            if pygame.Rect(
-                equipment_slot_x, equipment_slot_y, self.slot_size, self.slot_size
-            ).collidepoint(mouse_x, mouse_y):
-                return slot_name
+    def get_equipment_slot_at_mouse(self, mouse_pos):
+        for slot_index, rect in self.equipment_slot_rects.items():
+            if rect.collidepoint(mouse_pos):
+                return slot_index
+
         return None
 
     def handle_click(self, mouse_pos, inventory):
-        slot_index = self.get_slot_at_mouse(mouse_pos, inventory)
-        equipment_slot_name = self.get_equipment_slot_at_mouse(mouse_pos, inventory)
+        slot_index = self.get_slot_at_mouse(mouse_pos)
+        equipment_slot_name = self.get_equipment_slot_at_mouse(mouse_pos)
 
         if slot_index is not None:
             swapped_item = inventory["slots"][slot_index]
@@ -206,9 +283,6 @@ class InventoryUI:
             return None
 
         if item.id not in self.icon_cache:
-            icon_size = self.slot_size - 10
-            self.icon_cache[item.id] = pygame.transform.scale(
-                item.image, (icon_size, icon_size)
-            )
+            self.icon_cache[item.id] = pygame.transform.scale_by(item.image, GAME_SCALE)
 
         return self.icon_cache[item.id]

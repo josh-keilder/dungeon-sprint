@@ -1,15 +1,14 @@
 import pygame
 
-from globals import BLACK, GAME_SCALE
+from globals import FONT_PATH, GAME_SCALE, PALETTE_STEEL
 
 
 class TextLabel:
     def __init__(
         self,
         text,
-        font_name="Comic Sans MS",
-        font_size=30,
-        color=BLACK,
+        font_size=24,
+        color=PALETTE_STEEL,
         pos=(0, 0),
         font=None,
         outline_color=None,
@@ -17,7 +16,7 @@ class TextLabel:
         pygame.font.init()
 
         if font is None:
-            self.font = pygame.font.SysFont(font_name, font_size)
+            self.font = pygame.font.Font(FONT_PATH, font_size)
         else:
             self.font = font
 
