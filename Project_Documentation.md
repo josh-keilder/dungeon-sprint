@@ -630,7 +630,13 @@ Some systems hold module-level state that is shared by everyone who imports them
     text_y        = centered_text_y(text, HUD_MARGIN + panel height // 2)
     ```
 
-  - **Quick slots** (`draw_quick_slots`, `draw_quick_slot`): two `QUICK_SLOT_SIZE` (72×72) slots at the bottom left, `QUICK_SLOT_GAP` (12) apart, for potions and gold keys. 72 is the 12 px frame border on each side plus a 48 px icon (16 art pixels × 3). One `draw_quick_slot(screen, slot_pos, icon, count, count_label, cooldown_fraction=0.0)` draws any slot in order: frame, icon, cooldown shade, count, each on top of the one before; `draw_quick_slots` calls it once per slot with that slot's values.
+  - **Quick slots** (`draw_quick_slots`, `draw_quick_slot`): three `QUICK_SLOT_SIZE` (72×72) slots at the bottom left, `QUICK_SLOT_GAP` (12) apart: potions, then silver keys, then gold keys. 72 is the 12 px frame border on each side plus a 48 px icon (16 art pixels × 3). One `draw_quick_slot(screen, slot_pos, icon, count, count_label, cooldown_fraction=0.0)` draws any slot in order: frame, icon, cooldown shade, count, each on top of the one before; `draw_quick_slots` calls it once per slot with that slot's values.
+    - The key slots are data: `KEY_SLOT_ITEMS` (`("silver_key", "gold_key")`, left to right) is turned into `self.key_slots`, a list of dicts built in a loop in `__init__`, one per key, each with its `item_id`, `pos`, bright and faded `icon`, and its own `count_label` (each label remembers its own text and position). `draw_quick_slots` loops over them, so adding a key color is one more entry in the tuple. `enumerate(..., start=1)` numbers them after the potion slot (slot 0):
+
+      ```
+      slot x = HUD_MARGIN + index × (QUICK_SLOT_SIZE width + QUICK_SLOT_GAP)
+      potion 12 (index 0),  silver key 96 (index 1),  gold key 180 (index 2)
+      ```
     - The icons come from the item database: `HUD(item_database)` takes `Level`'s database and scales each item's `.image` by `GAME_SCALE` once. The database is the one source for item images, so the HUD, the inventory and ground items always match.
     - The counts (`x7`) are outlined `TextLabel`s, one per slot, placed by their visible ink (`get_bounding_rect()`) one art pixel inside the slot's bottom-right corner. The potion slot also shows an orange `Q` (`PALETTE_TORCH`) on its top-left corner, so the player knows which key heals.
     - A slot whose count is 0 shows a faded copy of its icon (`EMPTY_ICON_ALPHA`, 80 of 255). The faded copies are made once with `copy()` and `set_alpha`, so the bright originals stay bright.
@@ -882,13 +888,16 @@ The check comes after the death check, so dying and pressing F at the exit on th
 |---|---|---|
 | chest | `Press F to open chest` | yes |
 | ground item | `Press F to pick up <item_data.name>` | yes |
-| door, with a `gold_key` | `Press F to unlock door` | yes |
-| door, without a key | `Gold key required to unlock door` | no |
+| door, with its key (`door.key`) | `Press F to unlock door` | yes |
+| silver door, no silver key | `Silver key required to unlock door` | no |
+| gold door, no gold key | `Gold key required to unlock door` | no |
 | exit | `Press F to climb down` | yes |
 
 `interact` asks the same question before acting and does nothing if the target isn't available, so the key check lives in exactly one place, shared by the prompt and the action. Then:
 - **A chest:** rolls `CHEST_LOOT`, spawns the drops around the chest, and removes the chest.
-- **A door:** removes every door tile with the same `door_id`, rebuilds the solid tiles, and uses up one key.
+- **A door:** removes every door tile with the same `door_id`, rebuilds the solid tiles, and uses up one key of the door's own color (`remove_item(inventory, door.key)`).
+
+Every door tile knows which key opens it (`door.key`, `"silver_key"` or `"gold_key"`, from the map's `Doors` objects), so `describe_target` and `unlock_door` just ask the door; nothing in gameplay assumes a color. The "required" prompt builds the key's name from its id: `"silver_key".replace("_", " ")` is `"silver key"`, and `.capitalize()` uppercases only the first letter, giving `"Silver key"`. So a new key color later gets its prompt for free.
 - **A ground item:** adds it to the inventory. If only part of the stack fits, the rest stays on the ground with the reduced quantity.
 - **The exit:** sets `level.exit_requested = True`, and nothing else. `interact` runs early in `Level.update`, before enemies move and before the death check; if it started the floor change right there, the rest of the frame would still run, and an enemy could hit (or kill) the player mid-transition. With a flag, the actual leaving happens at frame step 7, after the death check, so dying and exiting on the same frame still counts as a death, and the split and transition code stays in one place. `load_floor` resets the flag, so a new floor never starts with a pending exit.
 
@@ -1120,7 +1129,6 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door. T
 - If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
 - Easy has 1 of its 5 floors so far, so a run currently ends at floor 1's exit, and the floor transition and split rows only show once floor 2 exists.
 - The old hand-made `Dungeon_Level_One.tmx` still uses a `Logic_Layer`, which the loader no longer reads, so its doors load without ids. `Logic_Tile.tsx`, `Logic_Tiles.tsx` and their PNGs are only kept for it, and can go with it.
-- Until gameplay reads a door's `key`, every door still asks for a gold key in-game.
 - The ASCII converter needs doors exactly 2 tiles long and walls at least 2 thick. It writes no decor, places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
 - The old hand-made `Dungeon_Level_One.tmx` has no ladder tile, so its exit is invisible in-game now that the yellow outline is gone. It's only kept as Tiled reference.
 

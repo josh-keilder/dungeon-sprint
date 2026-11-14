@@ -51,7 +51,7 @@ QUICK_SLOT_INNER_OFFSET = 9
 QUICK_SLOT_INNER_SIZE = (54, 54)
 COOLDOWN_SHADE_ALPHA = 160
 EMPTY_ICON_ALPHA = 80
-
+KEY_SLOT_ITEMS = ("silver_key", "gold_key")  # left to right, after the potion slot
 
 # Interaction prompt, bottom center
 PROMPT_CENTER_Y = SCREEN_HEIGHT - HUD_MARGIN - 36
@@ -131,16 +131,30 @@ class HUD:
             self.potion_slot_pos[1] - hotkey_label_bounds.top,
         )
 
-        # Key slot
-        self.key_slot_pos = (HUD_MARGIN + QUICK_SLOT_SIZE[0] + QUICK_SLOT_GAP, slot_y)
-        self.key_icon = pygame.transform.scale_by(
-            item_database["gold_key"].image, GAME_SCALE
-        )
-        self.key_icon_empty = self.key_icon.copy()
-        self.key_icon_empty.set_alpha(EMPTY_ICON_ALPHA)
-        self.key_count_label = TextLabel(
-            "", color=PALETTE_STEEL, font=self.font, outline_color=PALETTE_VOID
-        )
+        # Key slots, after the potion slot
+        self.key_slots = []
+        for index, item_id in enumerate(KEY_SLOT_ITEMS, start=1):
+            icon = pygame.transform.scale_by(item_database[item_id].image, GAME_SCALE)
+            icon_empty = icon.copy()
+            icon_empty.set_alpha(EMPTY_ICON_ALPHA)
+
+            self.key_slots.append(
+                {
+                    "item_id": item_id,
+                    "pos": (
+                        HUD_MARGIN + index * (QUICK_SLOT_SIZE[0] + QUICK_SLOT_GAP),
+                        slot_y,
+                    ),
+                    "icon": icon,
+                    "icon_empty": icon_empty,
+                    "count_label": TextLabel(
+                        "",
+                        color=PALETTE_STEEL,
+                        font=self.font,
+                        outline_color=PALETTE_VOID,
+                    ),
+                }
+            )
 
         # Cooldown shade, used by the potion slot
         self.cooldown_shade = pygame.Surface(QUICK_SLOT_INNER_SIZE, pygame.SRCALPHA)
@@ -252,15 +266,10 @@ class HUD:
         )
         self.potion_hotkey_label.draw(screen)
 
-        key_count = count_item(player.inventory, "gold_key")
-        key_icon = self.key_icon if key_count > 0 else self.key_icon_empty
-        self.draw_quick_slot(
-            screen,
-            self.key_slot_pos,
-            key_icon,
-            key_count,
-            self.key_count_label,
-        )
+        for slot in self.key_slots:
+            count = count_item(player.inventory, slot["item_id"])
+            icon = slot["icon"] if count > 0 else slot["icon_empty"]
+            self.draw_quick_slot(screen, slot["pos"], icon, count, slot["count_label"])
 
     def draw_quick_slot(
         self, screen, slot_pos, icon, count, count_label, cooldown_fraction=0.0

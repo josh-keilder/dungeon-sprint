@@ -32,9 +32,11 @@ def describe_target(player, found):
     if kind == "chest":
         return ("Press F to open chest", True)
     if kind == "door":
-        if has_item(player.inventory, "gold_key"):
+        if has_item(player.inventory, target.key):
             return ("Press F to unlock door", True)
-        return ("Gold key required to unlock door", False)
+
+        key_name = target.key.replace("_", " ").capitalize()
+        return (f"{key_name} required to unlock door", False)
 
     if kind == "exit":
         return ("Press F to climb down", True)
@@ -50,7 +52,7 @@ def open_chest(chest, level):
 
 def unlock_door(level, door, inventory):
     level.unlock_door(door.door_id)
-    remove_item(inventory, "gold_key")
+    remove_item(inventory, door.key)
 
 
 def pick_up_item(item, inventory):
