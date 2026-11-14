@@ -50,7 +50,7 @@ The game currently includes:
 - `states/` - Game state manager, dungeon level and map loading, start, options and game-over menus
 - `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, sound, settings, and more
 - `ui_components/` - Buttons, sliders, text labels, health bars, inventory screen, cursor
-- `tools/` - Developer scripts: sprite generator, map preview, ASCII → TMX map converter, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
+- `tools/` - Developer scripts: sprite generator, strip maker, map preview, ASCII → TMX map converter, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
 - `hooks/` - Git pre-commit hook
 - `Assets/` - Sprites, maps, audio, fonts, and UI art
 
@@ -95,6 +95,12 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
 	```
 
+- **Strip maker** (`tools/make_strip.py`): joins animation frames from the original asset pack into one-row strips in `Assets/` (the keys so far). Needs the pack folder locally; it's git-ignored.
+
+	```bash
+	venv/Scripts/python -m tools.make_strip
+	```
+
 - **Line counter** (`tools/line_counter.py`): updates the Project Statistics section of this README. The pre-commit hook runs it automatically; enable the hook once per clone with `git config core.hooksPath hooks`.
 
 	```bash
@@ -117,5 +123,5 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 108
-- **Total Lines of Code:** 6890
+- **Total Files:** 109
+- **Total Lines of Code:** 6949

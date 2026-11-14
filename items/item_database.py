@@ -1,6 +1,7 @@
 from items.item_texture_data import (
     gold_key_texture_data,
     health_potion_texture_data,
+    silver_key_texture_data,
     speed_boots_texture_data,
 )
 from items.items import EquipmentItem, Item
@@ -15,6 +16,7 @@ def initialize_item_database():
 
     # Animation frames for each item
     gold_key_frames = load_animations(gold_key_texture_data)
+    silver_key_frames = load_animations(silver_key_texture_data)
     small_health_potion_frames = load_animations(health_potion_texture_data)
     speed_boots_frames = load_animations(speed_boots_texture_data)
 
@@ -23,7 +25,13 @@ def initialize_item_database():
         item_id="gold_key",
         name="Gold Key",
         animations={"idle": gold_key_frames["gold_key"]},
-        description="Unlocks Doors",
+        description="Opens treasure rooms",
+    )
+    item_database["silver_key"] = Item(
+        item_id="silver_key",
+        name="Silver Key",
+        animations={"idle": silver_key_frames["silver_key"]},
+        description="Opens the way forward",
     )
 
     # Consumables

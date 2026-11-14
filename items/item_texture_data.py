@@ -5,7 +5,16 @@ gold_key_texture_data = {
         "size": (TILE_SIZE, TILE_SIZE),
         "position": (0, 0),
         "frames": 4,
-        "file_path": "Assets/Items/animated_gold_key.png",
+        "file_path": "Assets/Items/gold_key_strip.png",
+    },
+}
+
+silver_key_texture_data = {
+    "silver_key": {
+        "size": (TILE_SIZE, TILE_SIZE),
+        "position": (0, 0),
+        "frames": 4,
+        "file_path": "Assets/Items/silver_key_strip.png",
     },
 }
 

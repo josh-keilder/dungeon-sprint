@@ -231,6 +231,18 @@ The **grid** is the shared format: hand-written and generated levels go through 
 - **Doors can guard optional loot.** A door doesn't have to block the way to the exit: on Easy floor 1 it locks a side room with a chest, so the key and the chest are a route choice. The solvability check only proves the **exit** can be reached, so it can't tell a required door from an optional one; that's a design decision, checked by playing.
 - **Limits:** 3 door groups (the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles, walls at least 2 thick, no decor, and only keys as placed items. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
 
+**`tools/make_strip.py`.** Joins animation frames into one horizontal strip. The pack stores each animation as one file per frame (`keys_2_1.png` … `keys_2_4.png`), while the game's texture data expects one strip that `slice_frames` cuts into equal cells. The pack folder is git-ignored, so the game must never load from it: the tool **reads from the pack** and **writes into `Assets/`**, and only its output is committed. Running it needs the pack on your machine.
+
+```bash
+venv/Scripts/python -m tools.make_strip
+```
+
+It's built like `make_sprite`: `STRIPS` maps a name to `{"frames": [frame paths, in order], "path": output path}`, and `make_strip(name, strip)` handles any entry. The frame lists are list comprehensions over `range(1, 5)`, matching the pack's numbering. Every frame must be the same size, since `slice_frames` cuts equal cells, so it checks each frame against the first, using `zip(paths, frames)` to walk the two lists side by side and name the bad file in the `ValueError`. It then blits frame `index` at `index × frame width` on a transparent (`SRCALPHA`) surface and saves it. `PACK_FOLDER` and the per-folder constants (`KEYS_FOLDER`) keep the long pack paths in one place.
+
+The strips so far:
+- **`gold_key`** → `Assets/Items/gold_key_strip.png` (the pack's `keys_1`, 4 frames, a spinning gold key).
+- **`silver_key`** → `Assets/Items/silver_key_strip.png` (the pack's `keys_2`, 4 frames, a spinning silver key).
+
 **`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
 
 ## 4. Startup and the main loop
@@ -334,8 +346,8 @@ All states are built once at startup and kept alive, so leaving and returning to
   - `EquipmentItem(Item)`: adds `slot` and `bonuses`, and always has `max_stack` 1.
   - `WorldItem`: a sprite for an item lying on the ground. It holds a clone of the item data and its own animation.
   - `Chest`: a sprite placed from the map.
-- **`item_database.py`**: `initialize_item_database()` builds and returns the dict of item templates, keyed by item id: `gold_key`, `small_health_potion`, `speed_boots`. It also defines `SMALL_HEALTH_POTION_VALUE` (10), how much HP a potion heals: it's the potion's own data, so it lives next to the potion's definition rather than in `globals.py` (which is for settings shared across the whole game). It's used for the tooltip's "Value: 10 HP" here, and imported by `systems/consumables.py` for the actual healing, so the two can never disagree.
-- **`item_texture_data.py`**: sprite sheet layouts for each item.
+- **`item_database.py`**: `initialize_item_database()` builds and returns the dict of item templates, keyed by item id: `gold_key` ("Opens treasure rooms"), `silver_key` ("Opens the way forward"), `small_health_potion`, `speed_boots`. The two keys use the pack's spinning key animations; on the ground they animate, while the HUD quick slots and the inventory show their first frame (`item.image`) as a still icon. It also defines `SMALL_HEALTH_POTION_VALUE` (10), how much HP a potion heals: it's the potion's own data, so it lives next to the potion's definition rather than in `globals.py` (which is for settings shared across the whole game). It's used for the tooltip's "Value: 10 HP" here, and imported by `systems/consumables.py` for the actual healing, so the two can never disagree.
+- **`item_texture_data.py`**: sprite sheet layouts for each item. The keys' entries (`gold_key_texture_data`, `silver_key_texture_data`) point at the 4-frame strips made by `make_strip`; the old `animated_gold_key.png` and the unused static `gold_key.png` were removed.
 - **`loot_table_data.py`**: the loot tables: `CHEST_LOOT`, what a chest can drop, and one table per enemy type (`SKULL_LOOT`, `SKELETON_LOOT`), what it can drop when it dies (section 8).
 
 ### `states/`
@@ -625,6 +637,7 @@ Some systems hold module-level state that is shared by everyone who imports them
 - **`make_sprite.py`**: see section 3.
 - **`preview_map.py`**: see section 3.
 - **`ascii_to_tmx.py`**: see section 3.
+- **`make_strip.py`**: see section 3.
 
 ## 7. One gameplay frame, step by step
 
