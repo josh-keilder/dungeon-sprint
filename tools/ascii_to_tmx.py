@@ -2,6 +2,7 @@ import os
 import random
 import sys
 import xml.etree.ElementTree as ET
+from collections import deque
 
 from globals import TILE_SIZE
 
@@ -43,9 +44,12 @@ VOID = " "
 PLAYER = "@"
 EXIT = "X"
 CHEST = "C"
-PLACED_ITEMS = {"g": "gold_key"}
+KEY = "g"
+PLACED_ITEMS = {KEY: "gold_key"}
 ENEMY_TYPES = {"s": "Skull", "k": "Skeleton"}
 DOOR_IDS = {"1": "door_1", "2": "door_2", "3": "door_3"}
+
+DIRECTIONS = ((0, -1), (1, 0), (0, 1), (-1, 0))
 
 KNOWN_CHARACTERS = (
     {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST}
@@ -88,7 +92,7 @@ def validate_grid(grid):
                 exit_count += 1
 
             if is_open(character):
-                for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+                for dx, dy in DIRECTIONS:
                     if cell_at(grid, x + dx, y + dy) == VOID:
                         raise ValueError(f"open tile at ({x}, {y}) touches the void")
 
@@ -96,6 +100,13 @@ def validate_grid(grid):
         raise ValueError(f"expected 1 player spawn '@', found {player_count}")
     if exit_count == 0:
         raise ValueError("no exit 'X'")
+
+    start = find_cells(grid, {PLAYER})[0]
+    if not can_finish(grid, start):
+        raise ValueError(
+            "the exit can't be reached from '@': check that every door has "
+            "a key 'g' that can be reached before it"
+        )
 
 
 def cell_at(grid, x, y):
@@ -281,6 +292,62 @@ def write_tmx(output_path, layers, objects, width, height):
     tree = ET.ElementTree(map_element)
     ET.indent(tree, space=" ")
     tree.write(output_path, encoding="UTF-8", xml_declaration=True)
+
+
+def find_cells(grid, characters):
+    return [
+        (x, y)
+        for y, row in enumerate(grid)
+        for x, character in enumerate(row)
+        if character in characters
+    ]
+
+
+def flood_fill(grid, start, opened_doors):
+    reachable = {start}
+    queue = deque([start])
+
+    while queue:
+        x, y = queue.popleft()
+
+        for dx, dy in DIRECTIONS:
+            neighbor = (x + dx, y + dy)
+            if neighbor in reachable:
+                continue
+
+            character = cell_at(grid, *neighbor)
+            if not is_open(character):
+                continue
+            if character in DOOR_IDS and character not in opened_doors:
+                continue
+
+            reachable.add(neighbor)
+            queue.append(neighbor)
+
+    return reachable
+
+
+def can_finish(grid, start, opened_doors=frozenset()):
+    reachable = flood_fill(grid, start, opened_doors)
+
+    if any(grid[y][x] == EXIT for x, y in reachable):
+        return True
+
+    keys_found = sum(1 for x, y in reachable if grid[y][x] == KEY)
+    keys_in_hand = keys_found - len(opened_doors)
+    if keys_in_hand <= 0:
+        return False
+
+    touching = {
+        cell_at(grid, x + dx, y + dy) for x, y in reachable for dx, dy in DIRECTIONS
+    }
+    closed_doors = (touching & set(DOOR_IDS)) - opened_doors
+
+    for door in closed_doors:
+        if can_finish(grid, start, opened_doors | {door}):
+            return True
+
+    return False
 
 
 def main():

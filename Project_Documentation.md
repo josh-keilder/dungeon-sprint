@@ -68,6 +68,26 @@ venv/Scripts/python -m black .
 
 Use `--check` to see whether anything needs formatting without changing files.
 
+A trailing comma after the last item of a bracketed list tells Black to keep it exploded, one item per line (its *magic trailing comma*). So `for (dx, dy,) in ...` gets split over four lines; leave the comma out to keep a short list on one line.
+
+**Sorting imports with isort.** `pyproject.toml` sets isort's `profile = "black"`, so the two tools agree. Imports are in groups separated by a blank line: the standard library, then third-party packages (`pygame`, `pytmx`), then the project's own modules. Within a group, plain `import x` lines come first, then the `from x import y` lines, each alphabetical:
+
+```python
+import os
+import sys
+from collections import deque
+
+import pygame
+
+from globals import TILE_SIZE
+```
+
+```bash
+venv/Scripts/python -m isort .
+```
+
+As with Black, `--check` only reports.
+
 **`tools/line_counter.py`.** Counts lines in every `.py` file (skipping `venv`, `.venv`, `.git` and `__pycache__`) and rewrites the "Project Statistics" section at the end of `README.md`.
 
 **Running tools.** Tools that import project code such as `globals` are run as modules from the project root, with `-m` and a dotted name instead of a file path. `python tools/x.py` puts only the `tools/` folder on Python's import path, so `from globals import ...` fails with `ModuleNotFoundError`; `python -m tools.x` puts the current folder (the project root) on the path instead.
@@ -160,7 +180,7 @@ ASCII text file ──read_grid──▶ grid (list of equal-length strings) ─
 The **grid** is the shared format: hand-written and generated levels go through the same autotiling, so they get identical walls. Keeping the rules separate from the file writing also means the game could one day build a generated grid straight into a level in memory.
 
 - **Reading.** `read_grid(path)` splits the file into rows (`splitlines()` also handles Windows `\r\n` line endings), drops blank lines at the end, and pads every row with spaces to the widest one (`ljust`), so trailing spaces never need typing. `cell_at(grid, x, y)` returns the character, or void outside the grid, so edges need no special cases.
-- **Validation** (`validate_grid`, plus checks while building) stops with a `ValueError` naming the spot instead of writing a broken map: an unknown character; not exactly one `@`; no `X`; an open tile whose up, right, down or left neighbor is void (a gap in the wall the player could walk out through); a wall only 1 tile thick (floor on both sides, which no tile piece fits); a door tile with no partner next to it.
+- **Validation** (`validate_grid`, plus checks while building) stops with a `ValueError` naming the spot instead of writing a broken map: an unknown character; not exactly one `@`; no `X`; an open tile whose up, right, down or left neighbor is void (a gap in the wall the player could walk out through); a wall only 1 tile thick (floor on both sides, which no tile piece fits); a door tile with no partner next to it; and an exit that can't be reached (the solvability check below).
 - **Autotiling walls** (`wall_gid(grid, x, y, rng)`). The rules were learned from the hand-built Level One, by grouping its wall tiles by which neighbors are open floor. They're checked in priority order and the first match wins (y grows downward, so `(0, 1)` is below):
 
   | The wall has open floor… | Piece | GIDs |
@@ -186,6 +206,25 @@ The **grid** is the shared format: hand-written and generated levels go through 
 - **Layers** (`build_tile_layers(grid, rng)`) are 2D lists of GIDs (0 for empty), one per `TILE_LAYER_NAMES` entry, in the names and order `map_loader` expects. Each is built with `[[0] * width for _ in range(height)]`, which makes separate rows; `[[0] * width] * height` would list one row `height` times, so writing to one row would change them all. `Wall_Decor` and `Floor_Decor` are left empty.
 - **Objects** (`build_objects(grid)`) are `(name, x, y, width, height)` tuples in pixels, with the names `map_loader` looks for, using the game's reference points: `Player` at the tile's center (the game sets `rect.center` to it); `Enemy_<type>` and `chest` at the tile's top-left; and one `Exit` rect covering every `X` cell, from the smallest x and y to the largest (`+ 1` to include the last cell). Placed items (`PLACED_ITEMS`, so far only `g` for `gold_key`) are point objects named by their item id, at the tile's center, because `WorldItem` places itself by `rect.center`. Chests go in a `Chests` object group, placed items in `Items`, and everything else in `Entity_Spawns`. `g` is used rather than `K` because `k` is already the Skeleton.
 - **Writing** (`write_tmx`). A `.tmx` is XML, built with Python's `xml.etree.ElementTree` (`ET`): `ET.Element` makes the `<map>` root, `ET.SubElement` adds the tileset references (`TILESETS`: `Dungeon.tsx` at 1, `Logic_Tiles.tsx` at 101), one `<layer>` per tile layer with its GIDs as CSV text (`layer_csv`, the same format Tiled writes), and the object groups. Attribute values must be strings. Every layer and object group gets a unique id from `next_id` and every object one from `object_id`, and `nextlayerid` / `nextobjectid` tell Tiled which numbers to use next if the map is edited by hand. Spawn points have no size, so their width and height are left out. `ET.indent` adds line breaks and indentation, so the file and its diffs are readable.
+- **Solvability check** (`can_finish`, run at the end of `validate_grid`). It answers: can a player starting at `@` reach the exit, picking up keys and opening doors along the way? It follows the game's rules: any `gold_key` opens any door group, and each group uses up one key. Keys are guaranteed by design (see the loot notes in section 8), and this is what checks it. Hard's generated floors will rely on the same check to reject unwinnable layouts.
+  - **Flood fill** (`flood_fill(grid, start, opened_doors)`): starting from `@`, it spreads to every open neighbor, then their neighbors, and so on, but never through a door that's still closed. What it covers is everywhere the player can walk right now. It's a breadth-first search: `queue` is a `deque` (a list built for removing from the front quickly), and `popleft()` takes the oldest cell, so the fill spreads outward in rings; `reachable` is a set, so "already seen?" is instant, and it's also the result. Three `continue`s skip a neighbor that was already seen, that's a wall or void, or that's a closed door.
+
+    ```
+    @ . . . 1 . . X      reachable now: the 4 cells left of door 1
+    ```
+
+  - **Opening doors** (`can_finish(grid, start, opened_doors=frozenset())`): if the exit isn't reachable, it counts the keys in hand, then tries opening each closed door that touches the reachable area, calling itself with that door added. That's recursion; it ends because each call opens one more door and there are at most 3. Different doors lead to different places, so it tries every choice, and returns `True` as soon as one works.
+
+    ```
+    keys in hand = keys found in the reachable area − doors already opened
+
+    can_finish(opened = {})        1 key found, exit not reached → try door "1"
+    └─ can_finish(opened = {"1"})  reachable now includes X → True
+    ```
+
+    Counting every key in the reachable area is valid because that area only ever grows as doors open, so a player can always collect all of it before choosing the next door. `touching` is the set of characters next to the reachable area; `& set(DOOR_IDS)` keeps the doors and `- opened_doors` drops the open ones. `opened_doors | {door}` makes a **new** set for each try, so the tries don't affect each other. `any(...)` is true if at least one item is, and `sum(1 for ...)` counts matches.
+  - **Why the default is `frozenset()`:** a default value is created once, when the function is defined, and shared by every call, so a mutable default like `set()` or `[]` can quietly carry changes from one call into the next, a classic Python trap. A `frozenset` can't be changed, so it's safe.
+  - Helpers and constants: `find_cells(grid, characters)` lists the positions of the given characters (a comprehension with two `for`s, rows then cells); `KEY` (`"g"`) names the key character; `DIRECTIONS` holds the 4 neighbor offsets (up, right, down, left), shared by the void check and the flood fill.
 - **Reproducible output.** `random.Random(map_name)` is a generator seeded with the map's name: the same seed always gives the same "random" picks, so converting the same file twice writes an identical map and `git diff` only shows real changes, while each map still gets its own variety.
 - **Two typos from building it, worth remembering** because both were valid Python that ran and quietly did the wrong thing: `{WALL < FLOOR, ...}` (a comparison, `False`, instead of two set items) and `cell_at(grid, x + dx, y=dx)` (a keyword argument setting `y` to `dx`). The cure is checking real output, not just that the code runs.
 - **Limits:** 3 door groups (the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles, walls at least 2 thick, no decor, and only keys as placed items. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
@@ -925,7 +964,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **A new floor.**
 1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one `g` key per door group, one `@`, at least one `X`.
-2. Convert it: `venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports.
+2. Convert it: `venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports. If it says the exit can't be reached, check that every door's key can be reached before that door.
 3. Preview it: `venv/Scripts/python -m tools.preview_map Assets/Maps/<name>.tmx`, then check `map_previews/<name>.png`.
 4. Add its path to `LEVEL_ORDER` in `globals.py`, where the order is the play order.
 5. Optionally polish it in Tiled, but reconverting overwrites hand edits, so make changes in the text source where possible.
