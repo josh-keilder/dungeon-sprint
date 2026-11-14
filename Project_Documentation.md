@@ -222,12 +222,34 @@ All states are built once at startup and kept alive, so leaving and returning to
   level_index = 0 ──▶ load_floor(...)    enemies, solid_tiles, camera
   ```
 
-  `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into: `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into:
+  `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into:
   - `unlock_door(door_id)` removes every door tile with that id.
   - `refresh_walls()` rebuilds `solid_tiles` (walls plus remaining doors).
   - `spawn_loot(drops, center)` creates `WorldItem`s scattered randomly around a point.
   - `run_time` (starts at 0.0) holds the seconds spent in this run, across all floors, and is drawn by the HUD's timer panel.
   - `exit_rect` is the current floor's exit area, or `None` if the map has none.
+  - **The floor transition.** Moving to the next floor fades the screen to black, shows a "Floor 2" card, and fades back in. It runs inside `Level` rather than as its own game state, because it's part of playing a run and needs the world drawn underneath. `transition_phase` is `None` while playing, or the name of the current phase, and one `transition_timer` is restarted for each phase:
+
+    ```
+    exit touched ─▶ "fade_out" ─▶ "card" ─▶ "fade_in" ─▶ None (playing)
+                     0.4 s        1.0 s      0.4 s
+                     overlay      load_floor overlay
+                     0 → 255      at start   255 → 0
+    ```
+
+    - `update_transition(dt)` advances the timer and, when it runs out, does what happens at the **end** of the current phase: the end of `"fade_out"` raises `level_index`, calls `load_floor` and `show_floor_card`, and starts the card; the end of `"card"` starts `"fade_in"`; the end of `"fade_in"` sets the phase back to `None`. The new floor loads while the screen is fully black, so the swap is never seen. `FADE_DURATION` (0.4) and `FLOOR_CARD_DURATION` (1.0) set the lengths.
+    - Loading a floor takes real time, so the frame after `load_floor` gets a large `dt`. The transition advances its timer by `min(dt, MAX_TRANSITION_DT)` (1/30 s), so a slow load can't skip the card; however long the load took, it counts as one short frame.
+    - `show_floor_card()` sets `floor_label` (a `TextLabel` at Silkscreen 48) to `Floor {level_index + 1}` (players count from 1, the list from 0) and centers it on the screen by its visible ink, snapped to the 3 px grid, the same way as the FPS label.
+    - `transition_alpha()` says how dark the overlay is: `fade_left` goes from 1.0 to 0.0 as a fade runs, and the card is fully black.
+
+      ```
+      fade_left = time_left(transition_timer) ÷ FADE_DURATION     (1.0 → 0.0)
+      fade_out:  alpha = round(255 × (1 − fade_left))             (0 → 255, darkening)
+      fade_in:   alpha = round(255 × fade_left)                   (255 → 0, clearing)
+      card:      alpha = 255
+      ```
+
+    - `fade_overlay` is a screen-sized surface filled with `PALETTE_VOID`. It's drawn last, over the HUD too, so the whole screen fades together, with the card text on top during `"card"`.
   - `dying` (starts `False`) is the flag that says the death sequence has started, and `death_timer` (made with `new_timer()`) holds the seconds left before the game-over screen. `DEATH_DELAY` (3.0 s) is the whole freeze, and `DEATH_FADE_DURATION` (1.5 s) is how long the player's body takes to fade out. The fade must be no longer than the delay.
 - **`map/map_loader.py`**: reads the TMX file with pytmx.
   - `load_level_data(map_path)` returns one dict with everything the level needs.
@@ -425,6 +447,8 @@ Some systems hold module-level state that is shared by everyone who imports them
 
 This is `Level.update(dt)` followed by `Level.draw(screen)`.
 
+Before step 1, `update` has two early exits. While the player is dying, it only advances the death freeze (step 6). Then, while a floor transition is running, it only calls `update_transition(dt)` and returns. Both come before `read_input()` and `run_time += dt`, so input, ESC, the world and the run timer are all frozen; transition time doesn't count toward the run, since loading speed differs between computers.
+
 **1. Read input.** `read_input()` returns a fresh intent dict and stores it on `player.intent`:
 
 | Key | Field | Kind |
@@ -601,15 +625,16 @@ player.alpha  = round(255 × (1 − fade_progress))           (255 visible → 0
 
 So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
 
-**7. Reaching the exit.** After the death check, if `exit_rect` isn't `None` and the player's rect overlaps it, `level_index` goes up by one. If there is another floor (`level_index < len(LEVEL_ORDER)`), `load_floor` loads it; otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns, so nothing else runs this frame against a floor that was just replaced.
+**7. Reaching the exit.** After the death check, if `exit_rect` isn't `None` and the player's rect overlaps it, the level checks whether there is another floor (`level_index + 1 < len(LEVEL_ORDER)`). If there is, it starts the `"fade_out"` phase of the floor transition; `level_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns.
 
 ```
 LEVEL_ORDER = [floor 0, floor 1]
 
-exit on floor 0:  level_index 0 → 1,  1 < 2  →  load_floor(LEVEL_ORDER[1])
-exit on floor 1:  level_index 1 → 2,  2 < 2 is false  →  "level_complete"
+exit on floor 0:  0 + 1 < 2  →  "fade_out"  …  end of fade: level_index 0 → 1, load_floor(LEVEL_ORDER[1])
+exit on floor 1:  1 + 1 < 2 is false  →  "level_complete"
 ```
- The check comes after the death check, so dying and touching the exit on the same frame counts as a death. `exit_rect is not None` is checked first, and because `and` stops at the first false part, a map without an exit never tries to collide with `None`. After the switch `Level.update` is no longer called, so `run_time` stays at the finishing time.
+
+The check comes after the death check, so dying and touching the exit on the same frame counts as a death. `exit_rect is not None` is checked first, and because `and` stops at the first false part, a map without an exit never tries to collide with `None`. After the switch `Level.update` is no longer called, so `run_time` stays at the finishing time.
 
 **8. Ground items and camera.** Ground items advance their animation, and the camera centers on the player.
 
@@ -628,6 +653,7 @@ exit on floor 1:  level_index 1 → 2,  2 < 2 is false  →  "level_complete"
 7. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
 8. The HUD, `self.hud.draw(screen, player, run_time)`: the health panel (top left), the run timer (top center) and the quick slots (bottom left), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
 9. The inventory overlay, if open.
+10. During a floor transition, `fade_overlay` at `transition_alpha()`, over everything including the HUD, then the floor card text during `"card"`.
 
 The pause menu and the end-of-run screens call `level.draw(screen)` to show the frozen level behind them, so they get the scaled view automatically.
 
@@ -796,7 +822,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
 - The map has a `Keys` tile layer and an `Items` object layer (with placed `gold_key` and `small_health_potion` objects) that the loader doesn't read yet. Items currently only come from chests.
 - `start_new_run()` reloads the map inside the update of whichever menu calls it (`RunEndScreen` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
-- The floor swap is instant, with no fade or floor card, and the frame after `load_floor` gets a large `dt` covering the load time, like a restart.
+- If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
 - `LEVEL_ORDER` lists level one twice, to test the floor transition, until level two exists.
 - The exit is drawn only as a yellow outline until there is art for it.
 

@@ -9,6 +9,9 @@ from globals import (
     LEVEL_ORDER,
     MENU_BACKGROUND_COLOR,
     PALETTE_STEEL,
+    PALETTE_VOID,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
     UNLOCK_DOOR_DISTANCE,
     WORLD_HEIGHT,
     WORLD_WIDTH,
@@ -25,8 +28,9 @@ from systems.health import is_dead
 from systems.hitbox import draw_hitbox
 from systems.input import read_input
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
-from ui_components.hud import HUD
+from ui_components.hud import HUD, centered_text_y
 from ui_components.inventory_ui import InventoryUI
+from ui_components.text_label import TextLabel
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
@@ -35,6 +39,10 @@ LEVEL_MUSIC = "level_music"
 
 DEATH_DELAY = 3.0
 DEATH_FADE_DURATION = 1.5
+
+FADE_DURATION = 0.4
+FLOOR_CARD_DURATION = 1.0
+MAX_TRANSITION_DT = 1 / 30
 
 INVENTORY_PAUSES_GAME = False
 
@@ -67,6 +75,13 @@ class Level:
 
         self.dying = False
         self.death_timer = new_timer()
+
+        # Floor transition: None while playing, else "fade_out", "card", or "fade_in"
+        self.transition_phase = None
+        self.transition_timer = new_timer()
+        self.fade_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.fade_overlay.fill(PALETTE_VOID)
+        self.floor_label = TextLabel("", font_size=48)
 
     def load_floor(self, map_path):
         # Ground items, spawned during play; left-behind items don't carry over
@@ -105,6 +120,10 @@ class Level:
 
             if not is_running(self.death_timer):
                 self.game_state_manager.set_state("game_over")
+            return
+
+        if self.transition_phase is not None:
+            self.update_transition(dt)
             return
 
         self.player.intent = read_input()
@@ -159,15 +178,32 @@ class Level:
             return
 
         if self.exit_rect is not None and self.player.rect.colliderect(self.exit_rect):
-            self.level_index += 1
-            if self.level_index < len(LEVEL_ORDER):
-                self.load_floor(LEVEL_ORDER[self.level_index])
+            if self.level_index + 1 < len(LEVEL_ORDER):
+                self.transition_phase = "fade_out"
+                start_timer(self.transition_timer, FADE_DURATION)
             else:
                 self.game_state_manager.set_state("level_complete")
             return
 
         self.ground_items.update(dt)
         center_camera(self.player.rect.center)
+
+    def update_transition(self, dt):
+        advance_timer(self.transition_timer, min(dt, MAX_TRANSITION_DT))
+        if is_running(self.transition_timer):
+            return
+
+        if self.transition_phase == "fade_out":
+            self.level_index += 1
+            self.load_floor(LEVEL_ORDER[self.level_index])
+            self.show_floor_card()
+            self.transition_phase = "card"
+            start_timer(self.transition_timer, FLOOR_CARD_DURATION)
+        elif self.transition_phase == "card":
+            self.transition_phase = "fade_in"
+            start_timer(self.transition_timer, FADE_DURATION)
+        else:
+            self.transition_phase = None
 
     def draw(self, screen):
         self.world_surface.fill(MENU_BACKGROUND_COLOR)
@@ -221,6 +257,30 @@ class Level:
 
         if self.show_inventory:
             self.inventory_ui.draw(screen, self.player.inventory)
+
+        if self.transition_phase is not None:
+            self.fade_overlay.set_alpha(self.transition_alpha())
+            screen.blit(self.fade_overlay, (0, 0))
+
+            if self.transition_phase == "card":
+                self.floor_label.draw(screen)
+
+    def show_floor_card(self):
+        self.floor_label.update_text(f"Floor {self.level_index + 1}")
+        text_surface = self.floor_label.text_surface
+        text_bounds = text_surface.get_bounding_rect()
+        text_x = (SCREEN_WIDTH // 2 - text_bounds.centerx) // GAME_SCALE * GAME_SCALE
+        text_y = centered_text_y(text_surface, SCREEN_HEIGHT // 2)
+        self.floor_label.pos = (text_x, text_y)
+
+    def transition_alpha(self):
+        fade_left = time_left(self.transition_timer) / FADE_DURATION
+
+        if self.transition_phase == "fade_out":
+            return round(255 * (1 - fade_left))
+        if self.transition_phase == "fade_in":
+            return round(255 * fade_left)
+        return 255
 
     def unlock_door(self, door_id):
         for door in self.door_tiles.sprites():
