@@ -54,8 +54,11 @@ class Level:
         # The world is drawn here at 1x, then scaled to the screen
         self.world_surface = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
 
-        # Run timer and its HUD text
+        # Run timer
         self.run_time = 0.0
+
+        # run_time at each exit touched, one per finished floor
+        self.splits = []
 
         # Item templates
         self.item_database = initialize_item_database()
@@ -178,6 +181,7 @@ class Level:
             return
 
         if self.exit_rect is not None and self.player.rect.colliderect(self.exit_rect):
+            self.splits.append(self.run_time)
             if self.level_index + 1 < len(LEVEL_ORDER):
                 self.transition_phase = "fade_out"
                 start_timer(self.transition_timer, FADE_DURATION)

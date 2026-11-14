@@ -164,7 +164,7 @@ A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter(
 - **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally. `enter()` plays `MAIN_MENU_MUSIC` (`"menu_music"`).
 - **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). Touching the exit loads the next floor from `LEVEL_ORDER`, or switches to `"level_complete"` after the last one (step 7). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
 - **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the level, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the level. In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file. `enter()` does nothing, so the pause menu keeps playing whatever music was already on.
-- **RunEndScreen** (`states/menus/run_end.py`): the screen shown when a run ends, either way. It is one class created twice in `main.py` with different settings, `RunEndScreen(game_state_manager, title, title_color, music)`: the differences between the two screens are constructor arguments, not separate classes. It draws the title, the run time and two text buttons over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`. `enter()` reads the finished run's `run_time` from `game_state_manager.states["level"]` and renders it. If `music` is a track name, `enter()` stops the current music and plays it once, with `loops=0`. That's how the death screen plays `"game_over"`, and why Restart then starts the level music again from the beginning. If `music` is `None`, as on the finish screen, the current track keeps playing.
+- **RunEndScreen** (`states/menus/run_end.py`): the screen shown when a run ends, either way. It is one class created twice in `main.py` with different settings, `RunEndScreen(game_state_manager, title, title_color, music)`: the differences between the two screens are constructor arguments, not separate classes. It draws the title, the run's split times (one row per floor, then the total) and two text buttons over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`. `enter()` reads the finished run's `splits`, `run_time` and `dying` from `game_state_manager.states["level"]` and renders the split table. If `music` is a track name, `enter()` stops the current music and plays it once, with `loops=0`. That's how the death screen plays `"game_over"`, and why Restart then starts the level music again from the beginning. If `music` is `None`, as on the finish screen, the current track keeps playing.
 
 All states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exceptions are a death, and quitting to the main menu from the pause menu. `start_new_run(game_state_manager)` in `states/new_run.py` builds a brand new `Level(game_state_manager)`, which starts on the first floor, and registers it under `"level"` with `add_state`, which replaces the old one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
 
@@ -227,6 +227,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   - `refresh_walls()` rebuilds `solid_tiles` (walls plus remaining doors).
   - `spawn_loot(drops, center)` creates `WorldItem`s scattered randomly around a point.
   - `run_time` (starts at 0.0) holds the seconds spent in this run, across all floors, and is drawn by the HUD's timer panel.
+  - `splits` (starts empty, run-wide like `run_time`) holds the `run_time` at the moment each exit was touched, one entry per finished floor, the last floor included. That's the speedrun meaning of a split: the clock reading at each checkpoint. Only these raw readings are stored; each floor's own time is worked out from them on the end screen (`floor_times`). Because the floor transition pauses the run timer, no transition time ends up in any floor's time.
   - `exit_rect` is the current floor's exit area, or `None` if the map has none.
   - **The floor transition.** Moving to the next floor fades the screen to black, shows a "Floor 2" card, and fades back in. It runs inside `Level` rather than as its own game state, because it's part of playing a run and needs the world drawn underneath. `transition_phase` is `None` while playing, or the name of the current phase, and one `transition_timer` is restarted for each phase:
 
@@ -267,9 +268,35 @@ All states are built once at startup and kept alive, so leaving and returning to
   - Main Menu and Back are created without a position, then placed in the bottom corners by setting `rect.bottomleft` and `rect.bottomright`, `NAVIGATION_BUTTON_MARGIN` (20) pixels from the screen edges.
   - The SFX and music sliders are centered at `SLIDER_X` (640) on `SFX_SLIDER_Y` (475) and `MUSIC_SLIDER_Y` (575), and are `SLIDER_WIDTH` x `SLIDER_HEIGHT` (300x20). Their labels use a separate Silkscreen font at `LABEL_FONT_SIZE` (24), so "Music Volume: 100" fits within the track width. Each label is left-aligned with its track's left edge (`SLIDER_LABEL_X`), and its y is the slider's y minus `SLIDER_LABEL_OFFSET_Y` (45), so a label moves with its slider.
 - **`menus/run_end.py`**: `RunEndScreen(game_state_manager, title, title_color, music)`, the end-of-run screen used for both death and finishing (section 5).
-  - The title is rendered from `FONT_PATH` at `TITLE_FONT_SIZE` (64) in `title_color` and centered horizontally with `(SCREEN_WIDTH - width) // 2` at `TITLE_Y` (200). Restart and Main Menu are `TextButton`s using the shared `BUTTON_FONT_SIZE`, placed by their midtop point `(SCREEN_WIDTH // 2, y)`, with a gray outline.
-  - `render_run_time(run_time)` renders `"Time: "` plus `format_run_time(run_time)`, centered at `RUN_TIME_Y` (290). It's called once in `__init__` with 0.0, so the image always exists before the first `draw`, and again in `enter()` with the real time.
-  - `draw` first draws the current Level, looked up from `game_state_manager.states["level"]`, then a full-screen black overlay at `OVERLAY_ALPHA` (160 of 255), then the title and buttons. The level has to be redrawn every frame, because a translucent overlay drawn on its own would stack up to solid black.
+  - The title is rendered from `FONT_PATH` at `TITLE_FONT_SIZE` (64) in `title_color` and centered horizontally with `(SCREEN_WIDTH - width) // 2` at `TITLE_Y` (120). Restart and Main Menu are `TextButton`s using the shared `BUTTON_FONT_SIZE`, placed by their midtop point `(SCREEN_WIDTH // 2, y)` at `RESTART_BUTTON_Y` (540) and `MAIN_MENU_BUTTON_Y` (610), turning `PALETTE_TORCH` on hover.
+  - **The split table.** One row per floor with the time spent on that floor, a divider, then the total:
+
+    ```
+            You Escaped!                         SPLITS_TOP_Y (230), rows SPLIT_ROW_HEIGHT (42) apart
+
+        Floor 1        00:45.12                  labels left-aligned at SPLIT_LABEL_X (center − 180)
+        Floor 2        01:02.80                  times right-aligned at SPLIT_TIME_RIGHT (center + 180)
+        ───────────────────────                  divider: SPLIT_DIVIDER_HEIGHT (3) px, PALETTE_SHADOW
+        Total          01:47.92                  SPLIT_TOTAL_GAP (18) below the divider
+    ```
+
+    - `floor_times(splits, run_time)`, a plain function above the class, works out each floor's time from the stored clock readings. After a death, `run_time` is past the last split, so the floor the player died on gets a row too, with its time up to death. After a win, the last split equals `run_time`, so no extra row is added.
+
+      ```
+      splits  = [45.12, 107.92]       (run_time when each exit was touched)
+      floor 1 = 45.12 − 0      = 45.12
+      floor 2 = 107.92 − 45.12 = 62.80
+      total   = run_time       = 107.92
+
+      died on floor 3 at run_time 130.00:
+      floor 3 = 130.00 − 107.92 (last split) = 22.08
+      ```
+
+      The subtracting is done in whole centiseconds (`to_centiseconds`, in `time_format.py`): each split is cut to whole hundredths first, and each floor time is the displayed split minus the previous displayed split. Integers are exact, so the floor times always add up to exactly the displayed Total. Subtracting raw floats instead would sometimes show a floor 0.01 too low (`2.33 − 0.01` is `2.3199999…`), and floors made of truncated parts wouldn't always sum to the truncated total.
+    - `enter()` reads `splits`, `run_time` and `dying` from the level and calls `render_splits(splits, run_time, died)`. `dying` is `True` on the death screen and `False` on the win screen, which is how one class knows to show the floor the player died on in `PALETTE_BLOOD`; all other rows are `PALETTE_STEEL`.
+    - `render_splits` builds `split_rows`, a list of `(image, pos)` pairs, once per screen visit, plus the `divider_rect`; `draw` only loops over them. `add_split_row(label, seconds, row_y, color)` renders one row's label and time, because the floor rows and the Total row are drawn the same way. The time's x is `SPLIT_TIME_RIGHT − its width`, which right-aligns it so the times line up. `__init__` starts with an empty list and an empty rect, so `draw` works even before the first `enter`.
+    - It fits up to 5 floors between the title and the buttons.
+  - `draw` first draws the current Level, looked up from `game_state_manager.states["level"]`, then a full-screen black overlay at `OVERLAY_ALPHA` (160 of 255), then the title, the split rows and divider, and the buttons. The level has to be redrawn every frame, because a translucent overlay drawn on its own would stack up to solid black.
   - Restart and Main Menu both call `start_new_run(self.game_state_manager)` from `states/new_run.py` before switching state.
 
 ### `systems/`
@@ -348,7 +375,18 @@ Some systems hold module-level state that is shared by everyone who imports them
 
     `TOOLTIP_PADDING` (18) is the 12 px frame border plus 6 px of room, and `TOOLTIP_LINE_HEIGHT` (27) is the visible text height (15) plus spacing. The size is rounded **up** so the text always fits. Subtracting the ink top (the empty space Silkscreen leaves above its letters, about 10 px) puts each line's visible top exactly at the padding.
   - **The held item** is drawn centered on the mouse, using the icon's own size.
-- **`time_format.py`**: `format_run_time(seconds)` turns seconds into `mm:ss.hh` text, e.g. 73.456 becomes `01:13.45`. It first truncates to whole hundredths (`int(seconds * 100) / 100`) instead of rounding, the way speedrun timers do, so it never shows a time that hasn't been reached and 59.996 can't round up to `00:60.00`. `//` (floor division) gives the minutes and `%` (remainder) the seconds left over. In the f-string, `02d` means a whole number padded to 2 digits, and `05.2f` a decimal with 2 places padded to 5 characters, the decimal point included. Shared by the level HUD and `RunEndScreen`.
+- **`time_format.py`**: run times as text, shared by the HUD timer and `RunEndScreen`.
+  - `to_centiseconds(seconds)` turns seconds into a whole number of hundredths, truncating (rounding down) the way speedrun timers do, so a time is never shown before it's reached and 59.996 can't round up to `00:60.00`. Floats can't store most decimals exactly: `0.29` is really `0.28999999…`, so `0.29 * 100` is `28.999…` and a plain `int()` would give 28. Adding `FLOAT_NUDGE` (`1e-6`, a millionth of a centisecond) before truncating fixes values that are only a hair under a whole hundredth because of float noise, without changing real times.
+  - `format_run_time(seconds)` turns seconds into `mm:ss.hh` text, e.g. 73.456 becomes `01:13.45`. All of its arithmetic is on the integer centiseconds, so nothing is lost to float noise:
+
+    ```
+    centiseconds  = to_centiseconds(seconds)        = int(seconds × 100 + FLOAT_NUDGE)
+    minutes       = centiseconds // 6000            (6000 centiseconds in a minute)
+    whole_seconds = centiseconds // 100 % 60        (seconds past the minute)
+    hundredths    = centiseconds % 100
+    ```
+
+    `//` (floor division) drops the remainder and `%` keeps only the remainder. In the f-string, `02d` means a whole number padded to 2 digits.
 
   ```
   seconds           = int(seconds × 100) ÷ 100     (truncate to whole hundredths)
@@ -633,7 +671,7 @@ player.alpha  = round(255 × (1 − fade_progress))           (255 visible → 0
 
 So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
 
-**7. Reaching the exit.** After the death check, if `exit_rect` isn't `None` and the player's rect overlaps it, the level checks whether there is another floor (`level_index + 1 < len(LEVEL_ORDER)`). If there is, it starts the `"fade_out"` phase of the floor transition; `level_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns.
+**7. Reaching the exit.** After the death check, if `exit_rect` isn't `None` and the player's rect overlaps it, the level first records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`level_index + 1 < len(LEVEL_ORDER)`). If there is, it starts the `"fade_out"` phase of the floor transition; `level_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns.
 
 ```
 LEVEL_ORDER = [floor 0, floor 1]
@@ -837,6 +875,8 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 **HUD:**
 - The health panel has a fixed width, so health text wider than `25/25` (for example `100/100`) won't fit. Its width should be worked out from the text before max health goes above 99.
 - The floor panel also has a fixed width, which fits up to `F9`.
+- The end screen's split table fits up to 5 floors above the buttons.
+- The menus and end screens use font sizes 32 and 64, which aren't on the 24/48 pixel grid the HUD follows; to be fixed in one menu pass.
 
 **Menus and saving:**
 - Choosing Main Menu from the pause menu throws the run away with no warning. A confirmation box that tells the player their progress won't be saved is planned. It would go in the Options Main Menu branch, before `start_new_run`.
