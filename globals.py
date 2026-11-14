@@ -15,8 +15,6 @@ WORLD_HEIGHT = math.ceil(SCREEN_HEIGHT / GAME_SCALE)
 # Gameplay distances
 UNLOCK_DOOR_DISTANCE = 32
 
-# Item Values
-SMALL_HEALTH_POTION_VALUE = 70
 
 # Colors
 WHITE = (255, 255, 255)

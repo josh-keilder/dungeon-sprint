@@ -1,4 +1,5 @@
 from entities.enemies.enemy_texture_data import skull_enemy_texture_data
+from items.loot_table_data import SKELETON_LOOT, SKULL_LOOT
 
 ENEMY_TYPES = {
     "Skull": {
@@ -12,6 +13,7 @@ ENEMY_TYPES = {
         "knockback_decay_rate": 10,
         "blink_interval": 0.1,
         "invulnerability_duration": 1.0,
+        "loot_table": SKULL_LOOT,
     },
     "Skeleton": {
         "max_health": 100,
@@ -24,5 +26,6 @@ ENEMY_TYPES = {
         "knockback_decay_rate": 16,
         "blink_interval": 0.15,
         "invulnerability_duration": 1.0,
+        "loot_table": SKELETON_LOOT,
     },
 }

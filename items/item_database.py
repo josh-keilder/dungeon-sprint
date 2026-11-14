@@ -1,4 +1,3 @@
-from globals import SMALL_HEALTH_POTION_VALUE
 from items.item_texture_data import (
     gold_key_texture_data,
     health_potion_texture_data,
@@ -6,6 +5,9 @@ from items.item_texture_data import (
 )
 from items.items import EquipmentItem, Item
 from systems.assets import load_animations
+
+# Item Values
+SMALL_HEALTH_POTION_VALUE = 10
 
 
 def initialize_item_database():

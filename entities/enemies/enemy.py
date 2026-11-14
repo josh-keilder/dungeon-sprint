@@ -28,6 +28,7 @@ class Enemy:
         self.knockback_decay_rate = type_data["knockback_decay_rate"]
         self.blink_interval = type_data["blink_interval"]
         self.invulnerability_duration = type_data["invulnerability_duration"]
+        self.loot_table = type_data["loot_table"]
 
         self.behavior = type_data["behavior"]
         self.pos = pygame.math.Vector2(pos)

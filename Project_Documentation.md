@@ -312,7 +312,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ```
 
   `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
-  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `LEVEL_ORDER` (the map paths in play order; the run goes through them one after another, and the last one's exit ends the run. For now it's the hand-built `Dungeon_Level_One.tmx`, then `test_room.tmx`, a tiny map made with the ASCII converter, as a stand-in second floor until real floors are designed), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `LEVEL_ORDER` (the map paths in play order; the run goes through them one after another, and the last one's exit ends the run. For now it's the hand-built `Dungeon_Level_One.tmx`, then `test_room.tmx`, a tiny map made with the ASCII converter, as a stand-in second floor until real floors are designed), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -320,7 +320,7 @@ All states are built once at startup and kept alive, so leaving and returning to
 - **`player/player.py`**: `Player`. Holds `pos`, `velocity`, `speed` (the actual speed last frame in pixels per second, measured as distance moved divided by `dt`), `last_direction`, `walking`, `intent`, `base_stats`, and the `roll`, `invulnerability`, `heal_cooldown`, `animation`, `health`, `inventory` and `stats` dicts. `update(dt, walls)` runs the player's frame (section 7). Methods: `update_facing`, `update_movement`, `update_roll`, `handle_animation_state`, `draw`. While invulnerable, `draw` skips the sprite while `is_blink_hidden(self.invulnerability, BLINK_INTERVAL)` is true, so the player blinks. `BLINK_INTERVAL` (0.1 s) is the player's own value, at the top of `player.py`. The debug hitbox is still drawn. `alpha` (starts at 255, fully visible) is how opaque the sprite is drawn, and Level lowers it during death. When `alpha` is below 255, `draw` blits a faded **copy** of the frame instead of changing `self.image`. The animation frames are shared from the cache in `systems/assets.py`, so fading the frame itself would leave it faded for the next `Player` too, and a restarted player would be invisible.
 - **`player/load_player.py`**: `load_player(spawn_pos)` loads the player animations (cropped from 64x64 sheets down to 16x16) and returns a `Player`.
 - **`player/player_texture_data.py`**: sprite sheet layout for idle, walk and roll in the up, down and right directions. Left is generated by flipping right.
-- **`enemies/enemy.py`**: `Enemy(type_data, pos)`. Copies its stats from the type data with `type_data["..."]`: `attack_damage`, `speed`, `knockback_multiplier`, `knockback_decay_rate`, `blink_interval` and `invulnerability_duration` (section 8). `knockback_velocity` (starts at zero) is the current shove in pixels per second. `update(dt, walls, target_pos)` advances its animation, moves it with the behaviour named in `behavior`, applies the shove with `update_knockback`, and counts down its `invulnerability` timer with `advance_timer`. `draw` hides the sprite while `is_blink_hidden(self.invulnerability, self.blink_interval)` is true, so an enemy blinks after a roll hit. Its health bar (shown once it has taken damage) and its hitbox (when debug is on) are always drawn, so its health stays readable while it blinks. The bar is `ENEMY_HEALTH_BAR_WIDTH` (16) × `ENEMY_HEALTH_BAR_HEIGHT` (2) art pixels plus the 1-pixel border, so 4 art pixels tall in total, and sits `ENEMY_HEALTH_BAR_GAP` (8) above the sprite.
+- **`enemies/enemy.py`**: `Enemy(type_data, pos)`. Copies its stats from the type data with `type_data["..."]`: `attack_damage`, `speed`, `knockback_multiplier`, `knockback_decay_rate`, `blink_interval`, `invulnerability_duration` and `loot_table` (section 8). `knockback_velocity` (starts at zero) is the current shove in pixels per second. `update(dt, walls, target_pos)` advances its animation, moves it with the behaviour named in `behavior`, applies the shove with `update_knockback`, and counts down its `invulnerability` timer with `advance_timer`. `draw` hides the sprite while `is_blink_hidden(self.invulnerability, self.blink_interval)` is true, so an enemy blinks after a roll hit. Its health bar (shown once it has taken damage) and its hitbox (when debug is on) are always drawn, so its health stays readable while it blinks. The bar is `ENEMY_HEALTH_BAR_WIDTH` (16) × `ENEMY_HEALTH_BAR_HEIGHT` (2) art pixels plus the 1-pixel border, so 4 art pixels tall in total, and sits `ENEMY_HEALTH_BAR_GAP` (8) above the sprite.
 - **`enemies/enemy_type_data.py`**: `ENEMY_TYPES`, one entry per enemy kind (section 8).
 - **`enemies/enemy_texture_data.py`**: enemy sprite sheet layouts. `skeleton_texture_data` is an empty placeholder until skeleton art exists.
 - **`enemies/load_enemies.py`**: `load_enemies(enemy_spawns)` turns the map's spawn positions into `Enemy` objects. Spawn names with no matching `ENEMY_TYPES` entry are skipped.
@@ -332,9 +332,9 @@ All states are built once at startup and kept alive, so leaving and returning to
   - `EquipmentItem(Item)`: adds `slot` and `bonuses`, and always has `max_stack` 1.
   - `WorldItem`: a sprite for an item lying on the ground. It holds a clone of the item data and its own animation.
   - `Chest`: a sprite placed from the map.
-- **`item_database.py`**: `initialize_item_database()` builds and returns the dict of item templates, keyed by item id: `gold_key`, `small_health_potion`, `speed_boots`.
+- **`item_database.py`**: `initialize_item_database()` builds and returns the dict of item templates, keyed by item id: `gold_key`, `small_health_potion`, `speed_boots`. It also defines `SMALL_HEALTH_POTION_VALUE` (10), how much HP a potion heals: it's the potion's own data, so it lives next to the potion's definition rather than in `globals.py` (which is for settings shared across the whole game). It's used for the tooltip's "Value: 10 HP" here, and imported by `systems/consumables.py` for the actual healing, so the two can never disagree.
 - **`item_texture_data.py`**: sprite sheet layouts for each item.
-- **`loot_table_data.py`**: `CHEST_LOOT`, what a chest can drop (section 8).
+- **`loot_table_data.py`**: the loot tables: `CHEST_LOOT`, what a chest can drop, and one table per enemy type (`SKULL_LOOT`, `SKELETON_LOOT`), what it can drop when it dies (section 8).
 
 ### `states/`
 
@@ -658,7 +658,7 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 1. Sets `walking` and updates `last_direction` from the move direction. Facing doesn't change mid-roll. Vertical input wins over horizontal for facing.
 2. Recomputes `stats` from `base_stats` plus equipment bonuses, every frame, so equipping takes effect immediately. If the health stat changed, `set_max_health` updates the maximum and clamps current health.
 3. `roll` intent → `try_start_roll`. A roll needs a move direction, can't start during another roll (`is_rolling`), and can't start while `cooldown_timer` is running. Starting one starts both `active_timer` and `cooldown_timer`.
-4. `heal` intent → `use_small_health_potion`. Heals 70, removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player play the `heal` sound. The sound is played here rather than in `systems/consumables.py` because it is feedback, not a rule.
+4. `heal` intent → `use_small_health_potion`. Heals `SMALL_HEALTH_POTION_VALUE` (10 of the 25 max), removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player play the `heal` sound. The sound is played here rather than in `systems/consumables.py` because it is feedback, not a rule.
 5. `update_movement`: `steer` computes the new velocity from the move direction and the `max_speed`, `acceleration_rate`, `deceleration_rate` and `grip` stats, then `move_and_collide` moves the rect. Hitting a wall zeros velocity on that axis.
 6. `update_roll`: while rolling, the player is also moved by `roll_speed` in the roll direction (on top of normal movement), scaled by `roll_speed_multiplier` so the push fades out at the end of the roll (see below), then `advance_roll` counts down `active_timer` and `cooldown_timer`.
    Then the player's `speed` is measured. At the very start of `update`, the player's center is copied into `start_pos`, before anything moves. After `update_movement` and `update_roll`, the distance from `start_pos` to the new center, divided by `dt`, gives the actual speed in pixels per second. Because it is measured rather than calculated, it includes walls: rolling into a wall gives a low speed.
@@ -764,6 +764,8 @@ multiplier
 - **only while the player is rolling**, deals `round(player.speed * ROLL_DAMAGE_PER_SPEED)` to the enemy, shoves it, and starts the enemy's own invulnerability window for `enemy.invulnerability_duration`, unless the enemy is already invulnerable. Rolling is the player's only attack: walking into an enemy doesn't hurt it.
 - deals the enemy's `attack_damage` to the player and starts the player's invulnerability window, unless the player is already invulnerable or is rolling,
 - always starts the enemy's flee (2 s) then return (3 s) timers, even when both hits were skipped, so an enemy can't stay on top of the player.
+
+An enemy whose health reaches 0 rolls its `loot_table` with `roll_loot` and spawns the drops at its center with `spawn_loot`, then is removed from `enemies`. The drops are spawned before the removal, while the enemy and its position still exist.
 
 **The shove.** The direction is from the player's center to the enemy's center, normalized, so a head-on hit pushes the enemy straight back and a glancing hit pushes it sideways. If the two centers are exactly the same point, that vector has zero length and can't be normalized, so the roll direction is used instead. The shove is `direction * player.speed * KNOCKBACK_PER_SPEED * enemy.knockback_multiplier`: the player's hit strength (roll speed times `KNOCKBACK_PER_SPEED`, 1.2) scaled by how easily this enemy is pushed. Speed now drives both damage and knockback, so a full-speed roll hits hardest and a hit as the roll fades barely shoves.
 
@@ -883,6 +885,7 @@ Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 
     "knockback_decay_rate": 10,    # how fast the shove fades (higher is shorter)
     "blink_interval": 0.1,         # seconds per blink on/off after a hit
     "invulnerability_duration": 1.0,  # seconds of i-frames after a hit
+    "loot_table": SKULL_LOOT,     # what it can drop when it dies
 },
 ```
 
@@ -928,6 +931,28 @@ Results are cached by the set of animation names plus `crop_size`. Two texture d
 
 Keys are not chest loot: they're placed on the map (the `Items` layer), so every floor is guaranteed to have the keys its doors need, and routes don't depend on luck. Chests are for random extras: potions and gear.
 
+**Enemy loot.** Each enemy type has its own table, the same shape as `CHEST_LOOT`, kept in `loot_table_data.py` and attached to the type as `ENEMY_TYPES[...]["loot_table"]`:
+
+```python
+SKULL_LOOT    = [{"item_id": "small_health_potion", "chance": 0.25, "min_quantity": 1, "max_quantity": 1}]
+SKELETON_LOOT = [{"item_id": "small_health_potion", "chance": 0.35, "min_quantity": 1, "max_quantity": 1}]
+```
+
+Enemies drop single potions, smaller than a chest's 1 to 3, so chests stay the bigger prize and are worth a detour. A chest and an enemy go through the same pipeline; only the event and the table differ:
+
+```
+chest opened ──▶ roll_loot(CHEST_LOOT)        ──▶ level.spawn_loot(drops, chest center)
+enemy dies   ──▶ roll_loot(enemy.loot_table)  ──▶ level.spawn_loot(drops, enemy center)
+```
+
+The table belongs to the enemy type, so a tougher enemy can be worth more, and because it's data, a difficulty mode can later scale every table (more potions on Easy) without touching code. With Level One's 2 Skulls and 2 Skeletons:
+
+```
+average potions per kill:  Skull 0.25, Skeleton 0.35
+per full clear:            2 × 0.25 + 2 × 0.35 = 1.2 potions on average
+chance of no drop at all:  0.75² × 0.65² ≈ 0.24   (about 1 clear in 4)
+```
+
 `chance` is 0.0 to 1.0, and the quantity is a random whole number between min and max inclusive.
 
 **Settings file.** `settings.json` in the project root. It is ignored by git, so each machine has its own. It is created when you leave the options menu.
@@ -958,7 +983,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **A new enemy type.**
 1. Add its sheet layout to `entities/enemies/enemy_texture_data.py`.
-2. Add an entry to `ENEMY_TYPES` with a key like `"Bat"`, its stats, a `behavior` (`"fly"` or `"wander_chase"`), its texture data, its starting animation name, and its `knockback_multiplier`, `knockback_decay_rate`, `blink_interval` and `invulnerability_duration`. Every key is required: a missing one crashes at level load with a `KeyError` naming it.
+2. Add an entry to `ENEMY_TYPES` with a key like `"Bat"`, its stats, a `behavior` (`"fly"` or `"wander_chase"`), its texture data, its starting animation name, and its `knockback_multiplier`, `knockback_decay_rate`, `blink_interval`, `invulnerability_duration` and `loot_table` (a table in `loot_table_data.py`; use `[]` for no drops). Every key is required: a missing one crashes at level load with a `KeyError` naming it.
 3. In Tiled, place objects named `Enemy_Bat` in `Entity_Spawns`.
 4. For a new behaviour, write a `<behavior>_velocity` function in `systems/enemy_ai.py` and add a branch for it in `Enemy.update_movement`.
 

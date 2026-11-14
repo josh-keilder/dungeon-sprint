@@ -27,6 +27,7 @@ from systems.combat import resolve_contact
 from systems.health import is_dead
 from systems.hitbox import draw_hitbox
 from systems.input import read_input
+from systems.loot import roll_loot
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.hud import HUD, centered_text_y
 from ui_components.inventory_ui import InventoryUI
@@ -180,6 +181,8 @@ class Level:
                 sound.play_sfx("roll_hit")
 
             if is_dead(enemy.health):
+                drops = roll_loot(enemy.loot_table)
+                self.spawn_loot(drops, enemy.rect.center)
                 self.enemies.remove(enemy)
 
         if is_dead(self.player.health) and not self.dying:

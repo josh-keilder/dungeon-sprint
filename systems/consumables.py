@@ -1,4 +1,4 @@
-from globals import SMALL_HEALTH_POTION_VALUE
+from items.item_database import SMALL_HEALTH_POTION_VALUE
 from systems.health import heal
 from systems.inventory import has_item, remove_item
 from systems.timer import is_running, start_timer
