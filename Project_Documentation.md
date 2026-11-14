@@ -128,6 +128,67 @@ Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignor
 - **Arguments.** `sys.argv` is the list of words typed after the command (`sys.argv[0]` is the script), so `sys.argv[1:]` is the map paths, if any; when it's empty, the `or` falls back to `LEVEL_ORDER`. `dict.fromkeys(LEVEL_ORDER)` removes duplicates while keeping the order, because dict keys are unique, so a map listed twice is drawn once. `os.path.basename` and `os.path.splitext` turn `Assets/Maps/Dungeon_Level_One.tmx` into `Dungeon_Level_One` for the file name.
 - A map with no walls would crash at `wall_rects[0]` (an `IndexError`), since the crop is based on the walls. Every real map has walls, so this only matters for a half-made map.
 
+**`tools/ascii_to_tmx.py`.** Turns a level sketched as text into a Tiled map that the game, the preview tool and Tiled all load. The text sources live in `Assets/Maps/Source/`, and the map is written next to the tilesets in `Assets/Maps/`, named after the source file, unless a second argument gives the output path:
+
+```bash
+venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
+venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
+```
+
+The legend:
+
+| Char | Meaning |
+|---|---|
+| `#` | wall (autotiled) |
+| `.` | floor |
+| space | void, outside the dungeon |
+| `@` | player spawn (exactly one) |
+| `X` | exit (at least one; several cells become one exit rect, so they should form a rectangle) |
+| `C` | chest |
+| `s` / `k` | Skull / Skeleton spawn (`ENEMY_TYPES`) |
+| `1` `2` `3` | door tiles for `door_1` to `door_3` (`DOOR_IDS`), 2 tiles in a row or column |
+
+Everything except `#` and space has floor under it; `is_open(character)` is that rule, and the rest of the converter leans on it.
+
+```
+ASCII text file ──read_grid──▶ grid (list of equal-length strings) ──build──▶ .tmx file
+                                  ▲
+       a procedural generator ────┘  (produces the grid directly, skipping the text)
+```
+
+The **grid** is the shared format: hand-written and generated levels go through the same autotiling, so they get identical walls. Keeping the rules separate from the file writing also means the game could one day build a generated grid straight into a level in memory.
+
+- **Reading.** `read_grid(path)` splits the file into rows (`splitlines()` also handles Windows `\r\n` line endings), drops blank lines at the end, and pads every row with spaces to the widest one (`ljust`), so trailing spaces never need typing. `cell_at(grid, x, y)` returns the character, or void outside the grid, so edges need no special cases.
+- **Validation** (`validate_grid`, plus checks while building) stops with a `ValueError` naming the spot instead of writing a broken map: an unknown character; not exactly one `@`; no `X`; an open tile whose up, right, down or left neighbor is void (a gap in the wall the player could walk out through); a wall only 1 tile thick (floor on both sides, which no tile piece fits); a door tile with no partner next to it.
+- **Autotiling walls** (`wall_gid(grid, x, y, rng)`). The rules were learned from the hand-built Level One, by grouping its wall tiles by which neighbors are open floor. They're checked in priority order and the first match wins (y grows downward, so `(0, 1)` is below):
+
+  | The wall has open floor… | Piece | GIDs |
+  |---|---|---|
+  | below | top wall face | `TOP_WALL_GIDS` 2–5 |
+  | above, and to the left | inner corner | `INNER_CORNER_WEST_GID` 51 |
+  | above, and to the right | inner corner | `INNER_CORNER_EAST_GID` 54 |
+  | above | bottom ledge | `BOTTOM_WALL_GIDS` 42–45 |
+  | to its right | left side wall | `LEFT_WALL_GIDS` 11, 21, 31 |
+  | to its left | right side wall | `RIGHT_WALL_GIDS` 16, 26, 36 |
+  | only diagonally: se / sw / ne / nw | outer corner | `OUTER_CORNER_GIDS` 1 / 6 / 41 / 46 |
+  | nowhere | solid | `VOID_GID` 79 |
+
+  `open_at(dx, dy)` is a nested function: defined inside `wall_gid`, it can use `grid`, `x` and `y`, so each rule reads like the table. Where a piece has variants, `rng.choice` picks one so long walls don't repeat. Rooms are separated by walls at least 2 thick with doors in a short corridor, as in Level One; each room then gets its own corner pieces with solid 79 between them.
+- **Floors** (`FLOOR_PATTERN`). Floor tiles 12–15, 22–25 and 32–35 aren't interchangeable variants but one 4×3 slab picture cut into 12 pieces, and Level One lays it out as a repeating pattern (every floor tile in it follows the pattern). So the piece is chosen by position, not chance; `%` makes the pattern repeat, and the `- 1` starts a fresh slab at the first tile inside a room's top-left wall:
+
+  ```
+  floor GID = FLOOR_PATTERN[(y − 1) % 3][(x − 1) % 4]
+  ```
+
+  Walls and the void get `VOID_GID` on the Floor layer, as in the hand-made map.
+- **Doors** (`door_gid`). A door is 2 tiles, and its partner decides the half: partner below → top half (47), above → bottom half (57), right → left half (67), left → right half (68). The door's `Logic_Layer` tile is `LOGIC_FIRST_GID + n − 1`: `Logic_Tiles.tsx` starts at GID 101 and its tiles 0, 1 and 2 carry the `door_id` properties `door_1`, `door_2` and `door_3`, which `map_loader` reads.
+- **Layers** (`build_tile_layers(grid, rng)`) are 2D lists of GIDs (0 for empty), one per `TILE_LAYER_NAMES` entry, in the names and order `map_loader` expects. Each is built with `[[0] * width for _ in range(height)]`, which makes separate rows; `[[0] * width] * height` would list one row `height` times, so writing to one row would change them all. `Wall_Decor` and `Floor_Decor` are left empty.
+- **Objects** (`build_objects(grid)`) are `(name, x, y, width, height)` tuples in pixels, with the names `map_loader` looks for, using the game's reference points: `Player` at the tile's center (the game sets `rect.center` to it); `Enemy_<type>` and `chest` at the tile's top-left; and one `Exit` rect covering every `X` cell, from the smallest x and y to the largest (`+ 1` to include the last cell). Chests go in a `Chests` object group, everything else in `Entity_Spawns`.
+- **Writing** (`write_tmx`). A `.tmx` is XML, built with Python's `xml.etree.ElementTree` (`ET`): `ET.Element` makes the `<map>` root, `ET.SubElement` adds the tileset references (`TILESETS`: `Dungeon.tsx` at 1, `Logic_Tiles.tsx` at 101), one `<layer>` per tile layer with its GIDs as CSV text (`layer_csv`, the same format Tiled writes), and the object groups. Attribute values must be strings. Every layer and object group gets a unique id from `next_id` and every object one from `object_id`, and `nextlayerid` / `nextobjectid` tell Tiled which numbers to use next if the map is edited by hand. Spawn points have no size, so their width and height are left out. `ET.indent` adds line breaks and indentation, so the file and its diffs are readable.
+- **Reproducible output.** `random.Random(map_name)` is a generator seeded with the map's name: the same seed always gives the same "random" picks, so converting the same file twice writes an identical map and `git diff` only shows real changes, while each map still gets its own variety.
+- **Two typos from building it, worth remembering** because both were valid Python that ran and quietly did the wrong thing: `{WALL < FLOOR, ...}` (a comparison, `False`, instead of two set items) and `cell_at(grid, x + dx, y=dx)` (a keyword argument setting `y` to `dx`). The cure is checking real output, not just that the code runs.
+- **Limits:** 3 door groups (the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles, walls at least 2 thick, no decor, and no `Items` / `Keys` layers. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
+
 **`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
 
 ## 4. Startup and the main loop
@@ -211,7 +272,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ```
 
   `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
-  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `LEVEL_ORDER` (the map paths in play order; the run goes through them one after another, and the last one's exit ends the run. For now it lists `Dungeon_Level_One.tmx` twice, to test the floor transition until level two exists), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `LEVEL_ORDER` (the map paths in play order; the run goes through them one after another, and the last one's exit ends the run. For now it's the hand-built `Dungeon_Level_One.tmx`, then `test_room.tmx`, a tiny map made with the ASCII converter, as a stand-in second floor until real floors are designed), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -519,6 +580,7 @@ Some systems hold module-level state that is shared by everyone who imports them
 - **`line_counter.py`**: see section 3.
 - **`make_sprite.py`**: see section 3.
 - **`preview_map.py`**: see section 3.
+- **`ascii_to_tmx.py`**: see section 3.
 
 ## 7. One gameplay frame, step by step
 
@@ -856,6 +918,13 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 3. In Tiled, place objects named `Enemy_Bat` in `Entity_Spawns`.
 4. For a new behaviour, write a `<behavior>_velocity` function in `systems/enemy_ai.py` and add a branch for it in `Enemy.update_movement`.
 
+**A new floor.**
+1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one `@`, at least one `X`.
+2. Convert it: `venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports.
+3. Preview it: `venv/Scripts/python -m tools.preview_map Assets/Maps/<name>.tmx`, then check `map_previews/<name>.png`.
+4. Add its path to `LEVEL_ORDER` in `globals.py`, where the order is the play order.
+5. Optionally polish it in Tiled, but reconverting overwrites hand edits, so make changes in the text source where possible.
+
 **A new item.**
 1. Draw its art as a new entry in `SPRITES` in `tools/make_sprite.py` (16×16, saved to `Assets/Items/`) and run the tool, then add its sheet layout to `items/item_texture_data.py` pointing at that PNG.
 2. In `initialize_item_database`, load its animations and add an `Item` (or `EquipmentItem` with `slot` and `bonuses`) under a new id.
@@ -900,7 +969,8 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - The map has a `Keys` tile layer and an `Items` object layer (with placed `gold_key` and `small_health_potion` objects) that the loader doesn't read yet. Items currently only come from chests. The map preview tool doesn't show these layers either, since it draws what the loader returns.
 - `start_new_run()` reloads the map inside the update of whichever menu calls it (`RunEndScreen` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
 - If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
-- `LEVEL_ORDER` lists level one twice, to test the floor transition, until level two exists.
+- `LEVEL_ORDER`'s second floor is `test_room.tmx`, a tiny stand-in, until real floors are designed.
+- The ASCII converter supports only 3 door groups (`door_1` to `door_3`, the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles long and walls at least 2 thick. It writes no decor and no `Items` / `Keys` layers, and several `X` cells become one bounding rect, so they should form a rectangle.
 - The exit is drawn only as a yellow outline until there is art for it.
 
 **HUD:**

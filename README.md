@@ -50,7 +50,7 @@ The game currently includes:
 - `states/` - Game state manager, dungeon level and map loading, start, options and game-over menus
 - `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, sound, settings, and more
 - `ui_components/` - Buttons, sliders, text labels, health bars, inventory screen, cursor
-- `tools/` - Developer scripts: sprite generator, map preview, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
+- `tools/` - Developer scripts: sprite generator, map preview, ASCII → TMX map converter, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
 - `hooks/` - Git pre-commit hook
 - `Assets/` - Sprites, maps, audio, fonts, and UI art
 
@@ -88,6 +88,13 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 	venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 	```
 
+- **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a level sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls. A second argument sets a different output path. The legend is in `Project_Documentation.md`, section 3.
+
+	```bash
+	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
+	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
+	```
+
 - **Line counter** (`tools/line_counter.py`): updates the Project Statistics section of this README. The pre-commit hook runs it automatically; enable the hook once per clone with `git config core.hooksPath hooks`.
 
 	```bash
@@ -110,5 +117,5 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 107
-- **Total Lines of Code:** 6341
+- **Total Files:** 108
+- **Total Lines of Code:** 6639
