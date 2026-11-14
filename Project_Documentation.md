@@ -133,7 +133,7 @@ Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignor
   - **Door groups:** one `door_id` label per group. A door can be several tiles wide, so a `set` of already-labeled ids skips the rest; a set is a collection with fast "have I seen this?" checks.
   - **Enemy spawns:** a 1-pixel `PALETTE_BLOOD` box at each spawn, labeled with the first three letters of the type (`enemy_type[:3]`, a slice), so `Skull` and `Skeleton` show as `SKU` and `SKE`.
   - **Player spawn:** a `PALETTE_AZURE` dot with a `PALETTE_VOID` ring (a bigger circle drawn first). The two spawn kinds use different reference points, matching the game: the player spawn is the player's center, an enemy spawn is the enemy's top-left.
-  - **The exit:** a 1-pixel `PALETTE_GOLD` outline.
+  - **The exit:** a 1-pixel `PALETTE_GOLD` outline around the exit *rect*, with the ladder tile visible inside it.
   - Labels come from `draw_label(surface, font, text, pos)`: Silkscreen at `LABEL_FONT_SIZE` 8, its native size, so it's perfectly crisp at 1× and scales up with the image, in `PALETTE_ICE` on a `PALETTE_VOID` box 1 pixel bigger on every side (`inflate(2, 2)`), so it reads over any tile.
 - **Cropping and scaling.** Maps are usually bigger than the dungeon in them (Level One is 160×112 tiles), so the image is cropped to the walls and scaled up:
 
@@ -163,7 +163,7 @@ The legend:
 | `.` | floor |
 | space | void, outside the dungeon |
 | `@` | player spawn (exactly one) |
-| `X` | exit (at least one; several cells become one exit rect, so they should form a rectangle) |
+| `X` | exit, drawn as a ladder down; use one per floor (several cells would become one combined exit rect) |
 | `C` | chest |
 | `s` / `k` | Skull / Skeleton spawn (`ENEMY_TYPES`) |
 | `g` | placed gold key (`PLACED_ITEMS`); place one per door group |
@@ -195,6 +195,7 @@ The **grid** is the shared format: hand-written and generated levels go through 
   | nowhere | solid | `VOID_GID` 79 |
 
   `open_at(dx, dy)` is a nested function: defined inside `wall_gid`, it can use `grid`, `x` and `y`, so each rule reads like the table. Where a piece has variants, `rng.choice` picks one so long walls don't repeat. Rooms are separated by walls at least 2 thick with doors in a short corridor, as in Level One; each room then gets its own corner pieces with solid 79 between them.
+- **The exit's look** (`LADDER_GID` 40). Under each `X`, `build_tile_layers` puts the tileset's ladder (a ladder going down into a dark hole, with its rails sticking up out of it) on the `Floor_Decor` layer, over the normal floor. The exit's *logic* is still the `Exit` object (a rect); its *look* lives in the map data, so the game draws it as an ordinary decor tile with no exit-specific drawing code. Changing the exit art later means changing `LADDER_GID` and reconverting. The ladder is also what the interaction outline goes around when the player is at the exit.
 - **Floors** (`FLOOR_PATTERN`). Floor tiles 12–15, 22–25 and 32–35 aren't interchangeable variants but one 4×3 slab picture cut into 12 pieces, and Level One lays it out as a repeating pattern (every floor tile in it follows the pattern). So the piece is chosen by position, not chance; `%` makes the pattern repeat, and the `- 1` starts a fresh slab at the first tile inside a room's top-left wall:
 
   ```
@@ -294,7 +295,7 @@ A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter(
 ```
 
 - **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally. `enter()` plays `MAIN_MENU_MUSIC` (`"menu_music"`).
-- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). Touching the exit loads the next floor from `LEVEL_ORDER`, or switches to `"level_complete"` after the last one (step 7). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
+- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). Climbing down the exit ladder (F) loads the next floor from `LEVEL_ORDER`, or switches to `"level_complete"` after the last one (step 7). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
 - **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the level, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the level. In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file. `enter()` does nothing, so the pause menu keeps playing whatever music was already on.
 - **RunEndScreen** (`states/menus/run_end.py`): the screen shown when a run ends, either way. It is one class created twice in `main.py` with different settings, `RunEndScreen(game_state_manager, title, title_color, music)`: the differences between the two screens are constructor arguments, not separate classes. It draws the title, the run's split times (one row per floor, then the total) and two text buttons over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`. `enter()` reads the finished run's `splits`, `run_time` and `dying` from `game_state_manager.states["level"]` and renders the split table. If `music` is a track name, `enter()` stops the current music and plays it once, with `loops=0`. That's how the death screen plays `"game_over"`, and why Restart then starts the level music again from the beginning. If `music` is `None`, as on the finish screen, the current track keeps playing.
 
@@ -360,7 +361,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   - `spawn_loot(drops, center)` creates `WorldItem`s scattered randomly around a point.
   - `run_time` (starts at 0.0) holds the seconds spent in this run, across all floors, and is drawn by the HUD's timer panel.
   - `splits` (starts empty, run-wide like `run_time`) holds the `run_time` at the moment each exit was touched, one entry per finished floor, the last floor included. That's the speedrun meaning of a split: the clock reading at each checkpoint. Only these raw readings are stored; each floor's own time is worked out from them on the end screen (`floor_times`). Because the floor transition pauses the run timer, no transition time ends up in any floor's time.
-  - `exit_rect` is the current floor's exit area, or `None` if the map has none.
+  - `exit_rect` is the current floor's exit area, or `None` if the map has none. `exit_requested` (reset to `False` by `load_floor`) is set when the player presses F at the exit, and acted on at frame step 7.
   - **The floor transition.** Moving to the next floor fades the screen to black, shows a "Floor 2" card, and fades back in. It runs inside `Level` rather than as its own game state, because it's part of playing a run and needs the world drawn underneath. `transition_phase` is `None` while playing, or the name of the current phase, and one `transition_timer` is restarted for each phase:
 
     ```
@@ -822,7 +823,7 @@ player.alpha  = round(255 × (1 − fade_progress))           (255 visible → 0
 
 So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
 
-**7. Reaching the exit.** After the death check, if `exit_rect` isn't `None` and the player's rect overlaps it, the level first records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`level_index + 1 < len(LEVEL_ORDER)`). If there is, it starts the `"fade_out"` phase of the floor transition; `level_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns.
+**7. Leaving through the exit.** Climbing down takes **F**: walking onto the ladder does nothing by itself, so nobody leaves a floor by accident. Pressing F at the exit only sets `exit_requested` (see "What `interact` does"); the leaving happens here, after the death check. If `exit_requested` is set, the level clears it, then records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`level_index + 1 < len(LEVEL_ORDER)`). If there is, it starts the `"fade_out"` phase of the floor transition; `level_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns.
 
 ```
 LEVEL_ORDER = [floor 0, floor 1]
@@ -831,14 +832,15 @@ exit on floor 0:  0 + 1 < 2  →  "fade_out"  …  end of fade: level_index 0 �
 exit on floor 1:  1 + 1 < 2 is false  →  "level_complete"
 ```
 
-The check comes after the death check, so dying and touching the exit on the same frame counts as a death. `exit_rect is not None` is checked first, and because `and` stops at the first false part, a map without an exit never tries to collide with `None`. After the switch `Level.update` is no longer called, so `run_time` stays at the finishing time.
+The check comes after the death check, so dying and pressing F at the exit on the same frame counts as a death. A map without an exit can never set the flag, because `find_target` checks `exit_rect is not None` first (and `and` stops at the first false part, so it never tries to collide with `None`). After the switch `Level.update` is no longer called, so `run_time` stays at the finishing time.
 
 **8. Ground items and camera.** Ground items advance their animation, and the camera centers on the player.
 
 **What `interact` does (F).** Everything about F comes from one question, `find_target(player, level)`: "what would F act on right now?" It looks in a box `REACH` (15) pixels larger than the player and returns the first match, as `(kind, sprite)`, in this priority order:
 1. **A chest.**
 2. **A ground item.**
-3. **A door tile**, even without a key. Doors are checked last because a locked door is now always a target: if they came first, a potion lying next to a locked door could never be picked up, since F would keep choosing the door. With doors last, things you can always act on win.
+3. **The exit**, when the reach box touches `exit_rect`; the target is the rect itself, since the exit isn't a sprite. It comes after the ground items, so loot lying on the ladder is picked up first.
+4. **A door tile**, even without a key. Doors are checked last because a locked door is now always a target: if they came first, a potion lying next to a locked door could never be picked up, since F would keep choosing the door. With doors last, things you can always act on win.
 
 `describe_target(player, found)` turns the target into the prompt text and whether F will work, `(text, available)`:
 
@@ -848,35 +850,36 @@ The check comes after the death check, so dying and touching the exit on the sam
 | ground item | `Press F to pick up <item_data.name>` | yes |
 | door, with a `gold_key` | `Press F to unlock door` | yes |
 | door, without a key | `Gold key required to unlock door` | no |
+| exit | `Press F to climb down` | yes |
 
 `interact` asks the same question before acting and does nothing if the target isn't available, so the key check lives in exactly one place, shared by the prompt and the action. Then:
 - **A chest:** rolls `CHEST_LOOT`, spawns the drops around the chest, and removes the chest.
 - **A door:** removes every door tile with the same `door_id`, rebuilds the solid tiles, and uses up one key.
 - **A ground item:** adds it to the inventory. If only part of the stack fits, the rest stays on the ground with the reduced quantity.
+- **The exit:** sets `level.exit_requested = True`, and nothing else. `interact` runs early in `Level.update`, before enemies move and before the death check; if it started the floor change right there, the rest of the frame would still run, and an enemy could hit (or kill) the player mid-transition. With a flag, the actual leaving happens at frame step 7, after the death check, so dying and exiting on the same frame still counts as a death, and the split and transition code stays in one place. `load_floor` resets the flag, so a new floor never starts with a pending exit.
 
 **The interaction target, outline and prompt.** Right after the player moves, `Level.update` stores `interact_target` (from `find_target`) and `interact_prompt` (from `describe_target`, or `None`), so they match where the player is this frame; `draw` only uses them. Both are cleared in `__init__`, in `load_floor` (the target would otherwise point at a sprite from the old floor, and its outline would show during the fade-in, which skips `update`), and every frame of the death freeze (so no prompt shows while dying).
 
 ```
-find_target(player, level) ──▶ ("door", door) / ("chest", chest) / ("item", item) / None
+find_target(player, level) ──▶ ("chest", …) / ("item", …) / ("exit", exit_rect) / ("door", …) / None
         ├──▶ describe_target ──▶ (text, available)
-        ├──▶ outline: interact_highlight() → the whole door group, or the one chest or item
+        ├──▶ outline: interact_highlight() → the whole door group, the exit's ladder, or the one chest or item
         │             PALETTE_CANDLE if F will work, PALETTE_STEEL if it won't
         └──▶ HUD prompt: bottom center, steel text, or blood for "key required"
 ```
 
-`interact_highlight()` returns the sprites to outline: every door tile with the target's `door_id` (a door is 2 tiles, and unlocking works on the whole group, so the outline does too), or just the chest or item. They're drawn with `draw_highlight` (see `hitbox.py`). The outline and the prompt come from the same answer as F itself, so they can never disagree with what F does.
+`interact_highlight()` returns the sprites to outline: every door tile with the target's `door_id` (a door is 2 tiles, and unlocking works on the whole group, so the outline does too), the exit's ladder (the decor tiles inside `exit_rect`, since the exit has no sprite of its own), or just the chest or item. They're drawn with `draw_highlight` (see `hitbox.py`), but only if the list isn't empty: a map whose exit has no ladder tile (the old Level One) would give an empty list, and `draw_highlight` would crash on `rects[0]`. An empty list counts as false, so `if highlight_sprites:` reads "if there are any". The outline and the prompt come from the same answer as F itself, so they can never disagree with what F does.
 
-**Drawing order** (`Level.draw`). Steps 1 to 6 draw onto `world_surface`, at `position - camera`, and anything outside the camera (`is_on_screen`) is skipped. Every world-drawing call already takes the surface to draw on as a parameter, so tiles, items and actors don't know or care that it's a small canvas:
+**Drawing order** (`Level.draw`). Steps 1 to 5 draw onto `world_surface`, at `position - camera`, and anything outside the camera (`is_on_screen`) is skipped. Every world-drawing call already takes the surface to draw on as a parameter, so tiles, items and actors don't know or care that it's a small canvas:
 1. Fill `world_surface` with `MENU_BACKGROUND_COLOR`, clearing last frame (the map doesn't cover the whole view, so old frames would otherwise smear around the edges).
 2. The pre-rendered floor surface.
 3. Decor, walls, then doors.
-4. The exit, as a 2-pixel `YELLOW` outline (`exit_rect.move(-camera.x, -camera.y)` returns a shifted copy, so the stored rect is unchanged).
-5. Ground items and chests, then the interaction outline around `interact_highlight()` (candle or steel), drawn after them so it isn't covered and before the actors so the player stays in front.
-6. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
-7. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
-8. The HUD, `self.hud.draw(screen, player, run_time, level_index + 1, interact_prompt)`: the health panel (top left), the run timer (top center), the floor number (right of the timer), the quick slots (bottom left) and the interaction prompt (bottom center), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
-9. The inventory overlay, if open.
-10. During a floor transition, `fade_overlay` at `transition_alpha()`, over everything including the HUD, then the floor card text during `"card"`.
+4. Ground items and chests, then the interaction outline around `interact_highlight()` (candle or steel), drawn after them so it isn't covered and before the actors so the player stays in front.
+5. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
+6. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
+7. The HUD, `self.hud.draw(screen, player, run_time, level_index + 1, interact_prompt)`: the health panel (top left), the run timer (top center), the floor number (right of the timer), the quick slots (bottom left) and the interaction prompt (bottom center), on the screen at full resolution. It comes after step 6, so it lands on top of the world.
+8. The inventory overlay, if open.
+9. During a floor transition, `fade_overlay` at `transition_alpha()`, over everything including the HUD, then the floor card text during `"card"`.
 
 The pause menu and the end-of-run screens call `level.draw(screen)` to show the frozen level behind them, so they get the scaled view automatically.
 
@@ -1029,7 +1032,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 4. For a new behaviour, write a `<behavior>_velocity` function in `systems/enemy_ai.py` and add a branch for it in `Enemy.update_movement`.
 
 **A new floor.**
-1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one `g` key per door group, one `@`, at least one `X`.
+1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one `g` key per door group, one `@`, one `X`.
 2. Convert it: `venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports. If it says the exit can't be reached, check that every door's key can be reached before that door.
 3. Preview it: `venv/Scripts/python -m tools.preview_map Assets/Maps/<name>.tmx`, then check `map_previews/<name>.png`.
 4. Add its path to `LEVEL_ORDER` in `globals.py`, where the order is the play order.
@@ -1082,7 +1085,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
 - Easy has 1 of its 5 floors so far, so a run currently ends at floor 1's exit, and the floor transition and split rows only show once floor 2 exists.
 - The ASCII converter supports only 3 door groups (`door_1` to `door_3`, the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles long and walls at least 2 thick. It writes no decor, places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
-- The exit is drawn only as a yellow outline until there is art for it.
+- The old hand-made `Dungeon_Level_One.tmx` has no ladder tile, so its exit is invisible in-game now that the yellow outline is gone. It's only kept as Tiled reference.
 
 **HUD:**
 - The health panel has a fixed width, so health text wider than `25/25` (for example `100/100`) won't fit. Its width should be worked out from the text before max health goes above 99.

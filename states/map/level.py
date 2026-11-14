@@ -15,7 +15,6 @@ from globals import (
     SCREEN_WIDTH,
     WORLD_HEIGHT,
     WORLD_WIDTH,
-    YELLOW,
 )
 from items.item_database import initialize_item_database
 from items.items import WorldItem
@@ -124,6 +123,8 @@ class Level:
         self.player.velocity.update(0, 0)
         center_camera(self.player.rect.center)
 
+        self.exit_requested = False
+
         self.interact_target = None
         self.interact_prompt = None
 
@@ -210,7 +211,8 @@ class Level:
             sound.play_sfx("death")
             return
 
-        if self.exit_rect is not None and self.player.rect.colliderect(self.exit_rect):
+        if self.exit_requested:
+            self.exit_requested = False
             self.splits.append(self.run_time)
             if self.level_index + 1 < len(LEVEL_ORDER):
                 self.transition_phase = "fade_out"
@@ -251,11 +253,6 @@ class Level:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.world_surface)
 
-        if self.exit_rect is not None:
-            pygame.draw.rect(
-                self.world_surface, YELLOW, self.exit_rect.move(-camera.x, -camera.y), 2
-            )
-
         # Ground items and chests
         for group in [self.ground_items, self.chests]:
             for sprite in group:
@@ -266,9 +263,11 @@ class Level:
         if self.interact_target is not None:
             _, available = self.interact_prompt
             outline_color = PALETTE_CANDLE if available else PALETTE_STEEL
-            draw_highlight(
-                self.world_surface, self.interact_highlight(), camera, outline_color
-            )
+            highlight_sprites = self.interact_highlight()
+            if highlight_sprites:
+                draw_highlight(
+                    self.world_surface, highlight_sprites, camera, outline_color
+                )
 
         # Actors, sorted by y so lower ones draw on top
         actors = [self.player] + self.enemies
@@ -304,6 +303,13 @@ class Level:
 
         if kind == "door":
             return [door for door in self.door_tiles if door.door_id == target.door_id]
+        if kind == "exit":
+            return [
+                tile
+                for tile in self.decor_tiles
+                if tile.rect.colliderect(self.exit_rect)
+            ]
+
         return [target]
 
     def show_floor_card(self):

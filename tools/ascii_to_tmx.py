@@ -22,6 +22,7 @@ INNER_CORNER_WEST_GID = 51  # open floor above and to the left
 INNER_CORNER_EAST_GID = 54  # open floor above and to the right
 OUTER_CORNER_GIDS = {"se": 1, "sw": 6, "ne": 41, "nw": 46}  # only a diagonal is open
 DOOR_GIDS = {"top": 47, "bottom": 57, "left": 67, "right": 68}
+LADDER_GID = 40  # the exit: a ladder down into a hole
 
 # Logic_Tiles.tsx starts at GID 101; its tile 0 is door_1, tile 1 door_2, tile 2 door_3
 LOGIC_FIRST_GID = 101
@@ -185,6 +186,9 @@ def build_tile_layers(grid, rng):
             if character in DOOR_IDS:
                 layers["Door_Tiles"][y][x] = door_gid(grid, x, y)
                 layers["Logic_Layer"][y][x] = LOGIC_FIRST_GID + int(character) - 1
+
+            if character == EXIT:
+                layers["Floor_Decor"][y][x] = LADDER_GID
 
     return layers
 

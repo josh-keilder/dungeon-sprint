@@ -16,6 +16,9 @@ def find_target(player, level):
         if reach_box.colliderect(item.rect):
             return ("item", item)
 
+    if level.exit_rect is not None and reach_box.colliderect(level.exit_rect):
+        return ("exit", level.exit_rect)
+
     for door in level.door_tiles:
         if reach_box.colliderect(door.rect):
             return ("door", door)
@@ -32,6 +35,9 @@ def describe_target(player, found):
         if has_item(player.inventory, "gold_key"):
             return ("Press F to unlock door", True)
         return ("Gold key required to unlock door", False)
+
+    if kind == "exit":
+        return ("Press F to climb down", True)
 
     return (f"Press F to pick up {target.item_data.name}", True)
 
@@ -74,3 +80,5 @@ def interact(player, level):
         unlock_door(level, target, player.inventory)
     elif kind == "item":
         pick_up_item(target, player.inventory)
+    elif kind == "exit":
+        level.exit_requested = True
