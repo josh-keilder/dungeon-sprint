@@ -6,6 +6,7 @@ from entities.enemies.load_enemies import load_enemies
 from entities.player.load_player import load_player
 from globals import (
     GAME_SCALE,
+    LEVEL_ORDER,
     MENU_BACKGROUND_COLOR,
     PALETTE_STEEL,
     UNLOCK_DOOR_DISTANCE,
@@ -39,7 +40,7 @@ INVENTORY_PAUSES_GAME = False
 
 
 class Level:
-    def __init__(self, game_state_manager, map_path):
+    def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
         # The world is drawn here at 1x, then scaled to the screen
@@ -48,11 +49,28 @@ class Level:
         # Run timer and its HUD text
         self.run_time = 0.0
 
-        # Ground items, spawned during play
-        self.ground_items = pygame.sprite.Group()
-
-        # Item templates and map data
+        # Item templates
         self.item_database = initialize_item_database()
+
+        # Player Setup, placed on each floor by load_floor
+        self.player = load_player((0, 0))
+
+        # HUD setup
+        self.hud = HUD(self.item_database)
+
+        # Which entry of LEVEL_ORDER is being played, and its map
+        self.level_index = 0
+        self.load_floor(LEVEL_ORDER[self.level_index])
+
+        self.show_inventory = False
+        self.inventory_ui = InventoryUI(self.player.inventory)
+
+        self.dying = False
+        self.death_timer = new_timer()
+
+    def load_floor(self, map_path):
+        # Ground items, spawned during play; left-behind items don't carry over
+        self.ground_items = pygame.sprite.Group()
 
         level_data = load_level_data(map_path)
         self.map_surface = level_data["map_surface"]
@@ -62,13 +80,6 @@ class Level:
         self.chests = level_data["chests"]
         self.exit_rect = level_data["exit_rect"]
 
-        # Player Setup
-        self.player = load_player(level_data["player_spawn"])
-        center_camera(self.player.rect.center)
-
-        # HUD setup
-        self.hud = HUD(self.item_database)
-
         # Enemy Spawning
         self.enemies = load_enemies(level_data["enemy_spawns"])
 
@@ -76,11 +87,11 @@ class Level:
         self.solid_tiles = []
         self.refresh_walls()
 
-        self.show_inventory = False
-        self.inventory_ui = InventoryUI(self.player.inventory)
-
-        self.dying = False
-        self.death_timer = new_timer()
+        # Move the same player (health, inventory, gear) to this floor's spawn
+        self.player.rect.center = level_data["player_spawn"]
+        self.player.pos.xy = self.player.rect.topleft
+        self.player.velocity.update(0, 0)
+        center_camera(self.player.rect.center)
 
     def enter(self):
         sound.play_music(LEVEL_MUSIC)
@@ -148,7 +159,11 @@ class Level:
             return
 
         if self.exit_rect is not None and self.player.rect.colliderect(self.exit_rect):
-            self.game_state_manager.set_state("level_complete")
+            self.level_index += 1
+            if self.level_index < len(LEVEL_ORDER):
+                self.load_floor(LEVEL_ORDER[self.level_index])
+            else:
+                self.game_state_manager.set_state("level_complete")
             return
 
         self.ground_items.update(dt)

@@ -153,7 +153,7 @@ A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter(
 
 ```
          MainMenu ──"Start"──▶ Level ──player at 0 HP──▶ RunEndScreen "game_over"
-              │                  │  └──reach the exit──▶ RunEndScreen "level_complete"
+              │                  │  └──exit of the last floor──▶ RunEndScreen "level_complete"
           "Options"          ESC (plays "pause")              │ (both)
               ▼                  ▼                  "Restart" ──▶ new Level
            Options ◀─────────────┘                  "Main Menu" ──▶ new Level, then MainMenu
@@ -162,11 +162,11 @@ A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter(
 ```
 
 - **MainMenu** (`states/menus/main_menu.py`): Start goes to the level, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally. `enter()` plays `MAIN_MENU_MUSIC` (`"menu_music"`).
-- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). Touching the exit switches to `"level_complete"` (step 7). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
+- **Level** (`states/map/level.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). Touching the exit loads the next floor from `LEVEL_ORDER`, or switches to `"level_complete"` after the last one (step 7). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
 - **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the level, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"level"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the level. In that case the menu is drawn over the dimmed, frozen level instead of a solid background. Both buttons save the settings file. `enter()` does nothing, so the pause menu keeps playing whatever music was already on.
 - **RunEndScreen** (`states/menus/run_end.py`): the screen shown when a run ends, either way. It is one class created twice in `main.py` with different settings, `RunEndScreen(game_state_manager, title, title_color, music)`: the differences between the two screens are constructor arguments, not separate classes. It draws the title, the run time and two text buttons over the frozen level. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"level"` or `"main_menu"`. `enter()` reads the finished run's `run_time` from `game_state_manager.states["level"]` and renders it. If `music` is a track name, `enter()` stops the current music and plays it once, with `loops=0`. That's how the death screen plays `"game_over"`, and why Restart then starts the level music again from the beginning. If `music` is `None`, as on the finish screen, the current track keeps playing.
 
-All states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exceptions are a death, and quitting to the main menu from the pause menu. `start_new_run(game_state_manager)` in `states/new_run.py` builds a brand new `Level(game_state_manager, DUNGEON_LEVEL_ONE)` and registers it under `"level"` with `add_state`, which replaces the old one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
+All states are built once at startup and kept alive, so leaving and returning to the level normally resumes it where you left off. The exceptions are a death, and quitting to the main menu from the pause menu. `start_new_run(game_state_manager)` in `states/new_run.py` builds a brand new `Level(game_state_manager)`, which starts on the first floor, and registers it under `"level"` with `add_state`, which replaces the old one in the `states` dict. A rebuild resets everything the Level owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Level can be replaced, code that needs it should look it up through `game_state_manager.states["level"]` when it needs it, not keep a reference from startup. `Game.level` in `main.py` still points at the first Level and is not used after registration.
 
 ## 6. Folder-by-folder reference
 
@@ -181,7 +181,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ```
 
   `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
-  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `DUNGEON_LEVEL_ONE` (the map path), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, `SMALL_HEALTH_POTION_VALUE` (70), the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `LEVEL_ORDER` (the map paths in play order; the run goes through them one after another, and the last one's exit ends the run. For now it lists `Dungeon_Level_One.tmx` twice, to test the floor transition until level two exists), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -208,13 +208,26 @@ All states are built once at startup and kept alive, so leaving and returning to
 ### `states/`
 
 - **`state_manager.py`**: `GameStateManager` (section 5).
-- **`new_run.py`**: `start_new_run(game_state_manager)` builds a fresh `Level` for `DUNGEON_LEVEL_ONE` and registers it as `"level"`, replacing the old run. It's a plain function in its own module so any menu can start a new run without depending on another menu. Used by `RunEndScreen` (Restart and Main Menu) and `Options` (Main Menu from a paused run).
-- **`map/level.py`**: `Level(game_state_manager, map_path)`. Loads the map, item database, player and enemies. Runs and draws gameplay. `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into:
+- **`new_run.py`**: `start_new_run(game_state_manager)` builds a fresh `Level`, starting on the first floor of `LEVEL_ORDER`, and registers it as `"level"`, replacing the old run. It's a plain function in its own module so any menu can start a new run without depending on another menu. Used by `RunEndScreen` (Restart and Main Menu) and `Options` (Main Menu from a paused run).
+- **`map/level.py`**: `Level(game_state_manager)`, one whole run: every floor in `LEVEL_ORDER`, one after another. Runs and draws gameplay. Its setup is split by how long things live:
+  - **`__init__`** sets up what lasts the whole run: `run_time`, the item database, the player, the HUD, the inventory screen and the death timer. It creates the player at `(0, 0)`, sets `level_index` to 0 (which entry of `LEVEL_ORDER` is being played), then calls `load_floor` for the first floor, which places the player.
+  - **`load_floor(map_path)`** swaps in a floor: fresh `ground_items` (items left on the floor don't carry over), the map data from `load_level_data` (map surface, decor, walls, doors, chests, exit), the enemies, and `solid_tiles` through `refresh_walls()`. Then it moves the **same** player object to the floor's spawn: it sets `rect.center`, syncs `pos` to the rect (enemy contact checks read `player.pos` before the player updates), zeroes `velocity` so the player doesn't slide in at full speed, and centers the camera. Because the player object is kept, health, inventory, gear and cooldowns carry over with no extra code, and because `run_time` lives on the `Level`, the timer keeps counting across floors.
+
+  ```
+  Level.__init__ (once per run)          load_floor (once per floor)
+  ─────────────────────────────          ───────────────────────────
+  run_time, item_database                ground_items
+  player  ──────── same object ────────▶ placed at this floor's spawn
+  hud, inventory_ui, death_timer         map surface, tiles, doors, chests, exit
+  level_index = 0 ──▶ load_floor(...)    enemies, solid_tiles, camera
+  ```
+
+  `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into: `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into:
   - `unlock_door(door_id)` removes every door tile with that id.
   - `refresh_walls()` rebuilds `solid_tiles` (walls plus remaining doors).
   - `spawn_loot(drops, center)` creates `WorldItem`s scattered randomly around a point.
-  - `run_time` (starts at 0.0) holds the seconds spent in this run, shown by `run_timer_text`, a `TextLabel` at `RUN_TIMER_POS` (20, 40) in a Silkscreen font at `HUD_FONT_SIZE` (24). It's left-aligned because Silkscreen isn't fixed-width, so centered text would shift sideways as the digits change.
-  - `exit_rect` is the map's exit area, or `None` if the map has none.
+  - `run_time` (starts at 0.0) holds the seconds spent in this run, across all floors, and is drawn by the HUD's timer panel.
+  - `exit_rect` is the current floor's exit area, or `None` if the map has none.
   - `dying` (starts `False`) is the flag that says the death sequence has started, and `death_timer` (made with `new_timer()`) holds the seconds left before the game-over screen. `DEATH_DELAY` (3.0 s) is the whole freeze, and `DEATH_FADE_DURATION` (1.5 s) is how long the player's body takes to fade out. The fade must be no longer than the delay.
 - **`map/map_loader.py`**: reads the TMX file with pytmx.
   - `load_level_data(map_path)` returns one dict with everything the level needs.
@@ -588,7 +601,15 @@ player.alpha  = round(255 × (1 − fade_progress))           (255 visible → 0
 
 So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
 
-**7. Reaching the exit.** After the death check, if `exit_rect` isn't `None` and the player's rect overlaps it, the level switches to `"level_complete"` and returns. The check comes after the death check, so dying and touching the exit on the same frame counts as a death. `exit_rect is not None` is checked first, and because `and` stops at the first false part, a map without an exit never tries to collide with `None`. After the switch `Level.update` is no longer called, so `run_time` stays at the finishing time.
+**7. Reaching the exit.** After the death check, if `exit_rect` isn't `None` and the player's rect overlaps it, `level_index` goes up by one. If there is another floor (`level_index < len(LEVEL_ORDER)`), `load_floor` loads it; otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns, so nothing else runs this frame against a floor that was just replaced.
+
+```
+LEVEL_ORDER = [floor 0, floor 1]
+
+exit on floor 0:  level_index 0 → 1,  1 < 2  →  load_floor(LEVEL_ORDER[1])
+exit on floor 1:  level_index 1 → 2,  2 < 2 is false  →  "level_complete"
+```
+ The check comes after the death check, so dying and touching the exit on the same frame counts as a death. `exit_rect is not None` is checked first, and because `and` stops at the first false part, a map without an exit never tries to collide with `None`. After the switch `Level.update` is no longer called, so `run_time` stays at the finishing time.
 
 **8. Ground items and camera.** Ground items advance their animation, and the camera centers on the player.
 
@@ -775,7 +796,8 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
 - The map has a `Keys` tile layer and an `Items` object layer (with placed `gold_key` and `small_health_potion` objects) that the loader doesn't read yet. Items currently only come from chests.
 - `start_new_run()` reloads the map inside the update of whichever menu calls it (`RunEndScreen` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
-- There is only one level. Reaching the exit ends the run with the finish screen, but there is no next-level transition yet.
+- The floor swap is instant, with no fade or floor card, and the frame after `load_floor` gets a large `dt` covering the load time, like a restart.
+- `LEVEL_ORDER` lists level one twice, to test the floor transition, until level two exists.
 - The exit is drawn only as a yellow outline until there is art for it.
 
 **HUD:**

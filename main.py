@@ -1,7 +1,6 @@
 import pygame
 
 from globals import (
-    DUNGEON_LEVEL_ONE,
     FRAME_RATE,
     GAME_SCALE,
     GREEN,
@@ -65,7 +64,7 @@ class Game:
         self.game_state_manager = GameStateManager("main_menu")
         self.main_menu = MainMenu(self.game_state_manager)
         self.options_menu = Options(self.game_state_manager)
-        self.level = Level(self.game_state_manager, DUNGEON_LEVEL_ONE)
+        self.level = Level(self.game_state_manager)
         self.game_over_screen = RunEndScreen(
             self.game_state_manager, "You Died!", RED, GAME_OVER_MUSIC
         )

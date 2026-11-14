@@ -90,7 +90,8 @@ OPTION_MENU_BUTTON_BACKGROUND = PALETTE_WALL
 MENU_BACKGROUND_COLOR = PALETTE_VOID
 
 
-DUNGEON_LEVEL_ONE = "Assets/Maps/Dungeon_Level_One.tmx"
+LEVEL_ORDER = ["Assets/Maps/Dungeon_Level_One.tmx", "Assets/Maps/Dungeon_Level_One.tmx"]
+
 
 PANEL_FRAME_PATH = "Assets/UI/panel_frame.png"
 FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"
