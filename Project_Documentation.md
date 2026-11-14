@@ -118,6 +118,7 @@ Typos in text art would otherwise fail silently (a short row leaves transparent 
 The sprites:
 - **`panel_frame`** (12×12, `Assets/UI/panel_frame.png`): the 9-slice frame used by the HUD and the inventory (section 6). `o` outline `PALETTE_SOOT`, `m` stone ring `PALETTE_WALL`, `l` light edge `PALETTE_LEATHER`, `s` shadow edge `PALETTE_SHADOW`, `f` fill `PALETTE_VOID`.
 - **`speed_boots`** (16×16, `Assets/Items/speed_boots.png`): one boot in side view with a wing on the heel, filling the full width. `o` outline `PALETTE_VOID` (like the health potion), leather in three shades (`d` `PALETTE_CLAY`, `m` `PALETTE_LEATHER`, `l` `PALETTE_TAN`, lit from the top-left), `s` sole and buckle `PALETTE_STEEL`, and the wing in `w` `PALETTE_ICE` with `a` `PALETTE_AZURE` shading.
+- **`padlock_silver`** and **`padlock_gold`** (7×10, `Assets/Objects/padlock_silver.png` and `padlock_gold.png`): the locks drawn on locked doors, so players can match a door to its key. Both entries use the same `PADLOCK_ROWS` constant, so the shape is defined once and only the colors differ: `o` outline and `k` keyhole in `PALETTE_VOID`, then light (`l`, top and left), mid (`m`) and dark (`d`, right side), in `PALETTE_ICE` / `PALETTE_STEEL` / `PALETTE_STONE` for silver and `PALETTE_CANDLE` / `PALETTE_GOLD` / `PALETTE_BRASS` for gold, lit from the top-left like the boots.
 
 **`tools/preview_map.py`.** Renders a `.tmx` map to one PNG, the way the game sees it, with markers on top, so a level can be checked without playing it. With no arguments it previews every map in `LEVEL_ORDER`; pass map paths to preview only those:
 
@@ -390,6 +391,8 @@ All states are built once at startup and kept alive, so leaving and returning to
   `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen. Helpers that systems call back into:
   - `unlock_door(door_id)` removes every door tile with that id.
   - `refresh_walls()` rebuilds `solid_tiles` (walls plus remaining doors).
+  - `refresh_padlocks()` rebuilds `padlocks`, a list of `(key, center)` pairs, one per locked door group. It groups the door tiles by `door_id` with `doors_by_id.setdefault(door.door_id, []).append(door)` (`setdefault` returns the list stored under a key, creating an empty one the first time: the usual "group things by a key" pattern), then takes each group's center from `rects[0].unionall(rects[1:])`, the rect around its tiles: the seam of a double door, or the middle of a vertical one. The padlock art is loaded once in `__init__` into `padlock_images` from `PADLOCK_IMAGE_PATHS`, keyed by key item id, the same value as `door.key`.
+  - `solid_tiles` and `padlocks` are both derived from `door_tiles`, so both are rebuilt together, in `load_floor` and in `unlock_door`, whenever the doors change. Forgetting the second call leaves a padlock floating where an opened door used to be.
   - `spawn_loot(drops, center)` creates `WorldItem`s scattered randomly around a point.
   - `run_time` (starts at 0.0) holds the seconds spent in this run, across all floors, and is drawn by the HUD's timer panel.
   - `splits` (starts empty, run-wide like `run_time`) holds the `run_time` at the moment each exit was touched, one entry per finished floor, the last floor included. That's the speedrun meaning of a split: the clock reading at each checkpoint. Only these raw readings are stored; each floor's own time is worked out from them on the end screen (`floor_times`). Because the floor transition pauses the run timer, no transition time ends up in any floor's time.
@@ -916,7 +919,7 @@ find_target(player, level) ──▶ ("chest", …) / ("item", …) / ("exit", e
 **Drawing order** (`Level.draw`). Steps 1 to 5 draw onto `world_surface`, at `position - camera`, and anything outside the camera (`is_on_screen`) is skipped. Every world-drawing call already takes the surface to draw on as a parameter, so tiles, items and actors don't know or care that it's a small canvas:
 1. Fill `world_surface` with `MENU_BACKGROUND_COLOR`, clearing last frame (the map doesn't cover the whole view, so old frames would otherwise smear around the edges).
 2. The pre-rendered floor surface.
-3. Decor, walls, then doors.
+3. Decor, walls, then doors, then a padlock centered on each locked door group, in the color of the key it needs (`padlock_images[key]`). `padlock_images.get(key)` returns `None` for a door with no key (only the old hand-made Level One has those), and that door is skipped instead of crashing.
 4. Ground items and chests, then the interaction outline around `interact_highlight()` (candle or steel), drawn after them so it isn't covered and before the actors so the player stays in front.
 5. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
 6. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).

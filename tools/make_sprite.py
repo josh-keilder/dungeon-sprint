@@ -4,16 +4,33 @@ import pygame
 
 from globals import (
     PALETTE_AZURE,
+    PALETTE_BRASS,
+    PALETTE_CANDLE,
     PALETTE_CLAY,
+    PALETTE_GOLD,
     PALETTE_ICE,
     PALETTE_LEATHER,
     PALETTE_SHADOW,
     PALETTE_SOOT,
     PALETTE_STEEL,
+    PALETTE_STONE,
     PALETTE_TAN,
     PALETTE_VOID,
     PALETTE_WALL,
 )
+
+PADLOCK_ROWS = [
+    "..ooo..",
+    ".ollmo.",
+    "olo.odo",
+    "olo.odo",
+    "ooooooo",
+    "ollllmo",
+    "olmkmdo",
+    "olmkmdo",
+    "ommmmdo",
+    "ooooooo",
+]
 
 SPRITES = {
     "panel_frame": {
@@ -39,6 +56,28 @@ SPRITES = {
             "ommmmmmmmmmo",
             ".oooooooooo.",
         ],
+    },
+    "padlock_silver": {
+        "path": "Assets/Objects/padlock_silver.png",
+        "colors": {
+            "o": PALETTE_VOID,  # outline
+            "l": PALETTE_ICE,  # light (top and left)
+            "m": PALETTE_STEEL,  # mid
+            "d": PALETTE_STONE,  # dark (right side)
+            "k": PALETTE_VOID,  # keyhole
+        },
+        "rows": PADLOCK_ROWS,
+    },
+    "padlock_gold": {
+        "path": "Assets/Objects/padlock_gold.png",
+        "colors": {
+            "o": PALETTE_VOID,
+            "l": PALETTE_CANDLE,
+            "m": PALETTE_GOLD,
+            "d": PALETTE_BRASS,
+            "k": PALETTE_VOID,
+        },
+        "rows": PADLOCK_ROWS,
     },
     "speed_boots": {
         "path": "Assets/Items/speed_boots.png",

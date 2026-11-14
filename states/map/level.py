@@ -20,6 +20,7 @@ from items.item_database import initialize_item_database
 from items.items import WorldItem
 from states.map.map_loader import load_level_data
 from systems import debug, interact, sound
+from systems.assets import load_image
 from systems.camera import camera, center_camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
@@ -46,6 +47,11 @@ MAX_TRANSITION_DT = 1 / 30
 
 INVENTORY_PAUSES_GAME = False
 
+PADLOCK_IMAGE_PATHS = {
+    "silver_key": "Assets/Objects/padlock_silver.png",
+    "gold_key": "Assets/Objects/padlock_gold.png",
+}
+
 
 class Level:
     def __init__(self, game_state_manager):
@@ -68,6 +74,11 @@ class Level:
 
         # HUD setup
         self.hud = HUD(self.item_database)
+
+        # Padlock art, by the key that opens the door
+        self.padlock_images = {
+            key: load_image(path) for key, path in PADLOCK_IMAGE_PATHS.items()
+        }
 
         # Which entry of LEVEL_ORDER is being played, and its map
         self.level_index = 0
@@ -116,6 +127,7 @@ class Level:
         # Everything that blocks movement: walls and locked doors
         self.solid_tiles = []
         self.refresh_walls()
+        self.refresh_padlocks()
 
         # Move the same player (health, inventory, gear) to this floor's spawn
         self.player.rect.center = level_data["player_spawn"]
@@ -253,6 +265,16 @@ class Level:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.world_surface)
 
+        # Padlocks on locked doors, in the color of the key they need
+        for key, center in self.padlocks:
+            image = self.padlock_images.get(key)
+            if image is None:
+                continue
+            padlock_rect = image.get_rect(
+                center=(center[0] - camera.x, center[1] - camera.y)
+            )
+            self.world_surface.blit(image, padlock_rect)
+
         # Ground items and chests
         for group in [self.ground_items, self.chests]:
             for sprite in group:
@@ -335,9 +357,21 @@ class Level:
                 door.kill()
 
         self.refresh_walls()
+        self.refresh_padlocks()
 
     def refresh_walls(self):
         self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles)
+
+    def refresh_padlocks(self):
+        doors_by_id = {}
+        for door in self.door_tiles:
+            doors_by_id.setdefault(door.door_id, []).append(door)
+
+        self.padlocks = []
+        for doors in doors_by_id.values():
+            rects = [door.rect for door in doors]
+            door_area = rects[0].unionall(rects[1:])
+            self.padlocks.append((doors[0].key, door_area.center))
 
     def spawn_loot(self, drops, center):
         for item_id, quantity in drops:
