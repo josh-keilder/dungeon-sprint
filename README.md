@@ -50,7 +50,7 @@ The game currently includes:
 - `states/` - Game state manager, dungeon level and map loading, start, options and game-over menus
 - `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, sound, settings, and more
 - `ui_components/` - Buttons, sliders, text labels, health bars, inventory screen, cursor
-- `tools/` - Developer scripts (line counter used by the pre-commit hook)
+- `tools/` - Developer scripts: sprite generator, map preview, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
 - `hooks/` - Git pre-commit hook
 - `Assets/` - Sprites, maps, audio, fonts, and UI art
 
@@ -71,6 +71,29 @@ For a full explanation of how the code works, see [Project_Documentation.md](Pro
 	python main.py
 	```
 
+## Developer Tools
+
+Run every tool from the project root as a module (`-m tools.<name>`), so it can import the game's code such as `globals.py`.
+
+- **Sprite generator** (`tools/make_sprite.py`): regenerates every sprite drawn as text in its `SPRITES` dict (the UI panel frame, the speed boots) and saves them as PNGs in `Assets/`.
+
+	```bash
+	venv/Scripts/python -m tools.make_sprite
+	```
+
+- **Map preview** (`tools/preview_map.py`): renders maps to PNGs in `map_previews/` (git-ignored), with the player spawn, enemy spawns, exit and door groups marked. With no arguments it previews every map in `LEVEL_ORDER`; pass map paths to preview only those.
+
+	```bash
+	venv/Scripts/python -m tools.preview_map
+	venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
+	```
+
+- **Line counter** (`tools/line_counter.py`): updates the Project Statistics section of this README. The pre-commit hook runs it automatically; enable the hook once per clone with `git config core.hooksPath hooks`.
+
+	```bash
+	venv/Scripts/python tools/line_counter.py
+	```
+
 ## Development Notes
 
 - The game is currently centered around a single dungeon level.
@@ -87,5 +110,5 @@ For a full explanation of how the code works, see [Project_Documentation.md](Pro
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 106
-- **Total Lines of Code:** 6255
+- **Total Files:** 107
+- **Total Lines of Code:** 6341

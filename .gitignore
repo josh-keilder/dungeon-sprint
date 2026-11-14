@@ -36,3 +36,6 @@ Thumbs.db
 *.log
 
 settings.json
+
+# Generated map previews (tools/preview_map.py)
+map_previews/

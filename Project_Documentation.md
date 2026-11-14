@@ -98,6 +98,36 @@ Typos in text art would otherwise fail silently (a short row leaves transparent 
 The sprites:
 - **`panel_frame`** (12×12, `Assets/UI/panel_frame.png`): the 9-slice frame used by the HUD and the inventory (section 6). `o` outline `PALETTE_SOOT`, `m` stone ring `PALETTE_WALL`, `l` light edge `PALETTE_LEATHER`, `s` shadow edge `PALETTE_SHADOW`, `f` fill `PALETTE_VOID`.
 - **`speed_boots`** (16×16, `Assets/Items/speed_boots.png`): one boot in side view with a wing on the heel, filling the full width. `o` outline `PALETTE_VOID` (like the health potion), leather in three shades (`d` `PALETTE_CLAY`, `m` `PALETTE_LEATHER`, `l` `PALETTE_TAN`, lit from the top-left), `s` sole and buckle `PALETTE_STEEL`, and the wing in `w` `PALETTE_ICE` with `a` `PALETTE_AZURE` shading.
+
+**`tools/preview_map.py`.** Renders a `.tmx` map to one PNG, the way the game sees it, with markers on top, so a level can be checked without playing it. With no arguments it previews every map in `LEVEL_ORDER`; pass map paths to preview only those:
+
+```bash
+venv/Scripts/python -m tools.preview_map
+venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
+```
+
+Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignore` because the images are generated.
+
+- **It reuses the game's loader.** `preview_map(map_path, font)` calls `load_level_data` from `map_loader.py`, the same function `Level` uses, so the preview always matches the game, and if map loading changes the preview follows; the tool only draws what it's given. The loader calls `.convert()` and `load_image`, which need a display, so `main()` first opens a hidden 1×1 window with `pygame.display.set_mode((1, 1), pygame.HIDDEN)`.
+- **Drawing.** It draws on a `.copy()` of the map surface, so the loader's surface is never touched, then the decor, walls, doors and chests in the game's order, each blitted at its `rect.topleft` with no camera (the whole map is the "screen"). Then the markers:
+  - **Door groups:** one `door_id` label per group. A door can be several tiles wide, so a `set` of already-labeled ids skips the rest; a set is a collection with fast "have I seen this?" checks.
+  - **Enemy spawns:** a 1-pixel `PALETTE_BLOOD` box at each spawn, labeled with the first three letters of the type (`enemy_type[:3]`, a slice), so `Skull` and `Skeleton` show as `SKU` and `SKE`.
+  - **Player spawn:** a `PALETTE_AZURE` dot with a `PALETTE_VOID` ring (a bigger circle drawn first). The two spawn kinds use different reference points, matching the game: the player spawn is the player's center, an enemy spawn is the enemy's top-left.
+  - **The exit:** a 1-pixel `PALETTE_GOLD` outline.
+  - Labels come from `draw_label(surface, font, text, pos)`: Silkscreen at `LABEL_FONT_SIZE` 8, its native size, so it's perfectly crisp at 1× and scales up with the image, in `PALETTE_ICE` on a `PALETTE_VOID` box 1 pixel bigger on every side (`inflate(2, 2)`), so it reads over any tile.
+- **Cropping and scaling.** Maps are usually bigger than the dungeon in them (Level One is 160×112 tiles), so the image is cropped to the walls and scaled up:
+
+  ```
+  bounds  = first wall rect .unionall(every other wall rect)     smallest rect containing all walls
+  bounds  = bounds.inflate(2 × PREVIEW_MARGIN, 2 × PREVIEW_MARGIN)  PREVIEW_MARGIN = 2 tiles on each side
+  bounds  = bounds.clip(whole image)                           stays inside the image if walls touch the edge
+  cropped = preview.subsurface(bounds)                         a view of that area, not a copy
+  image   = scale_by(cropped, PREVIEW_SCALE)                   PREVIEW_SCALE = 2
+  ```
+
+- **Arguments.** `sys.argv` is the list of words typed after the command (`sys.argv[0]` is the script), so `sys.argv[1:]` is the map paths, if any; when it's empty, the `or` falls back to `LEVEL_ORDER`. `dict.fromkeys(LEVEL_ORDER)` removes duplicates while keeping the order, because dict keys are unique, so a map listed twice is drawn once. `os.path.basename` and `os.path.splitext` turn `Assets/Maps/Dungeon_Level_One.tmx` into `Dungeon_Level_One` for the file name.
+- A map with no walls would crash at `wall_rects[0]` (an `IndexError`), since the crop is based on the walls. Every real map has walls, so this only matters for a half-made map.
+
 **`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
 
 ## 4. Startup and the main loop
@@ -488,6 +518,7 @@ Some systems hold module-level state that is shared by everyone who imports them
 
 - **`line_counter.py`**: see section 3.
 - **`make_sprite.py`**: see section 3.
+- **`preview_map.py`**: see section 3.
 
 ## 7. One gameplay frame, step by step
 
@@ -866,7 +897,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **Content and map:**
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
-- The map has a `Keys` tile layer and an `Items` object layer (with placed `gold_key` and `small_health_potion` objects) that the loader doesn't read yet. Items currently only come from chests.
+- The map has a `Keys` tile layer and an `Items` object layer (with placed `gold_key` and `small_health_potion` objects) that the loader doesn't read yet. Items currently only come from chests. The map preview tool doesn't show these layers either, since it draws what the loader returns.
 - `start_new_run()` reloads the map inside the update of whichever menu calls it (`RunEndScreen` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
 - If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
 - `LEVEL_ORDER` lists level one twice, to test the floor transition, until level two exists.
