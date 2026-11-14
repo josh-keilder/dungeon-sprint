@@ -253,7 +253,7 @@ class Level:
         scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
         screen.blit(scaled_world, (0, 0))
 
-        self.hud.draw(screen, self.player, self.run_time)
+        self.hud.draw(screen, self.player, self.run_time, self.level_index + 1)
 
         if self.show_inventory:
             self.inventory_ui.draw(screen, self.player.inventory)

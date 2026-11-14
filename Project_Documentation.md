@@ -396,7 +396,7 @@ Some systems hold module-level state that is shared by everyone who imports them
   ```
 
   Every piece goes through the same loop: cut it with `subsurface` (a view into the image, no copy), resize it to its target with `pygame.transform.scale` (corners resize to their own size, so they're unchanged), and blit it. The panel is built at 1× (`size // GAME_SCALE`) and scaled up by `GAME_SCALE` at the end, so its pixels are the same 3×3 blocks as the world. A size that isn't a multiple of 3 is rounded down (100 becomes 99), and the smallest panel is `2 × c` art pixels (24 screen pixels) each way.
-- **`hud.py`**: `HUD`, the in-game heads-up display. `Level` creates one and calls `hud.draw(screen, player, run_time)` once per frame; `draw` calls `draw_health` and `draw_timer`, so Level never changes when the HUD gains parts. The font and the panels are created once in `__init__`.
+- **`hud.py`**: `HUD`, the in-game heads-up display. `Level` creates one and calls `hud.draw(screen, player, run_time, floor_number)` once per frame, passing `level_index + 1` as the floor number; `draw` calls `draw_health`, `draw_timer`, `draw_floor` and `draw_quick_slots`, so Level never changes when the HUD gains parts. The HUD is given plain values rather than the `Level` itself, so it doesn't need to know about `LEVEL_ORDER` or `level_index`, only the number to show. The font and the panels are created once in `__init__`.
   - **Pixel-grid rules.** The HUD uses Silkscreen only at 24 (its 8 px grid × 3) or 48, so font pixels are the same 3×3 blocks as the world and the frames. Every size and position is a multiple of 3, and anything calculated is snapped with `value // GAME_SCALE * GAME_SCALE`.
   - **Health** (`draw_health`): a `HEALTH_PANEL_SIZE` (312×54) panel at `HUD_MARGIN` (12), with a `HEALTH_BAR_SIZE` (186×24) bar at `HEALTH_BAR_OFFSET` (18, 15). The empty bar is `PALETTE_SHADOW`, the fill `PALETTE_BLOOD`, and the `current/max` text `PALETTE_STEEL`, `HEALTH_TEXT_GAP` (9) to the right of the bar. Gaps in `PALETTE_VOID` split the bar into segments, drawn after the fill so they cut through both parts. `segment_hp_for(max_health)` picks the segment size so there are at most `HEALTH_MAX_SEGMENTS` (5) blocks, each a round number of HP: 25 max gives 5-HP blocks, 35 gives 10, 100 gives 20.
   - **Centering text** (`centered_text_y(text_surface, center_y)`): a rendered text surface is taller than its letters, because fonts reserve space above and below them (for Silkscreen at 24 the surface is 31 px tall but the digits only run from y 10 to 25). So text is centered by its visible pixels: `get_bounding_rect()` measures the ink, and its center is lined up with the target center.
@@ -417,6 +417,14 @@ Some systems hold module-level state that is shared by everyone who imports them
   start x     = panel_x + (panel width − sum of all cell widths) // 2
   glyph x     = cell x + (cell width − glyph width) // 2
   ```
+  - **Floor number** (`draw_floor`): a `FLOOR_PANEL_SIZE` (72×54) panel, the same height as the timer panel, `FLOOR_PANEL_GAP` (12) to its right, showing `F{floor_number}` in `PALETTE_STEEL`. Its x is worked out from the timer panel's x, so the timer stays exactly centered and moving it moves the floor panel too. The text is centered in the panel by its visible ink, the same way as the floor card. Its position is worked out on every draw, because the text width can change (`F9` → `F10`), while `update_text` only re-renders when the text actually changes, so it costs nothing until the floor changes.
+
+    ```
+    floor_panel_x = timer_panel_x + TIMER_PANEL_SIZE width + FLOOR_PANEL_GAP      (558 + 162 + 12 = 732)
+    text_x        = (floor_panel_x + panel width // 2 − ink center x), snapped to the grid
+    text_y        = centered_text_y(text, HUD_MARGIN + panel height // 2)
+    ```
+
   - **Quick slots** (`draw_quick_slots`, `draw_quick_slot`): two `QUICK_SLOT_SIZE` (72×72) slots at the bottom left, `QUICK_SLOT_GAP` (12) apart, for potions and gold keys. 72 is the 12 px frame border on each side plus a 48 px icon (16 art pixels × 3). One `draw_quick_slot(screen, slot_pos, icon, count, count_label, cooldown_fraction=0.0)` draws any slot in order: frame, icon, cooldown shade, count, each on top of the one before; `draw_quick_slots` calls it once per slot with that slot's values.
     - The icons come from the item database: `HUD(item_database)` takes `Level`'s database and scales each item's `.image` by `GAME_SCALE` once. The database is the one source for item images, so the HUD, the inventory and ground items always match.
     - The counts (`x7`) are outlined `TextLabel`s, one per slot, placed by their visible ink (`get_bounding_rect()`) one art pixel inside the slot's bottom-right corner. The potion slot also shows an orange `Q` (`PALETTE_TORCH`) on its top-left corner, so the player knows which key heals.
@@ -651,7 +659,7 @@ The check comes after the death check, so dying and touching the exit on the sam
 5. Ground items and chests.
 6. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
 7. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
-8. The HUD, `self.hud.draw(screen, player, run_time)`: the health panel (top left), the run timer (top center) and the quick slots (bottom left), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
+8. The HUD, `self.hud.draw(screen, player, run_time, level_index + 1)`: the health panel (top left), the run timer (top center), the floor number (right of the timer) and the quick slots (bottom left), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
 9. The inventory overlay, if open.
 10. During a floor transition, `fade_overlay` at `transition_alpha()`, over everything including the HUD, then the floor card text during `"card"`.
 
@@ -828,6 +836,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **HUD:**
 - The health panel has a fixed width, so health text wider than `25/25` (for example `100/100`) won't fit. Its width should be worked out from the text before max health goes above 99.
+- The floor panel also has a fixed width, which fits up to `F9`.
 
 **Menus and saving:**
 - Choosing Main Menu from the pause menu throws the run away with no warning. A confirmation box that tells the player their progress won't be saved is planned. It would go in the Options Main Menu branch, before `start_new_run`.

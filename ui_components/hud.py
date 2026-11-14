@@ -38,6 +38,10 @@ TIMER_PANEL_SIZE = (162, 54)
 TIMER_DIGITS = "0123456789"
 TIMER_CHARACTERS = TIMER_DIGITS + ":."
 
+# Floor number
+FLOOR_PANEL_SIZE = (72, 54)
+FLOOR_PANEL_GAP = 12
+
 # Quick slots
 QUICK_SLOT_SIZE = (72, 72)
 QUICK_SLOT_GAP = 12
@@ -95,6 +99,11 @@ class HUD:
             self.timer_glyphs["0"], HUD_MARGIN + TIMER_PANEL_SIZE[1] // 2
         )
 
+        # Floor number
+        self.floor_panel = make_panel(frame_image, FLOOR_PANEL_SIZE)
+        self.floor_panel_x = self.timer_panel_x + TIMER_PANEL_SIZE[0] + FLOOR_PANEL_GAP
+        self.floor_label = TextLabel("", color=PALETTE_STEEL, font=self.font)
+
         # Quick slots
         self.quick_slot_panel = make_panel(frame_image, QUICK_SLOT_SIZE)
         slot_y = SCREEN_HEIGHT - HUD_MARGIN - QUICK_SLOT_SIZE[1]
@@ -133,9 +142,10 @@ class HUD:
         self.cooldown_shade = pygame.Surface(QUICK_SLOT_INNER_SIZE, pygame.SRCALPHA)
         self.cooldown_shade.fill((0, 0, 0, COOLDOWN_SHADE_ALPHA))
 
-    def draw(self, screen, player, run_time):
+    def draw(self, screen, player, run_time, floor_number):
         self.draw_health(screen, player.health)
         self.draw_timer(screen, run_time)
+        self.draw_floor(screen, floor_number)
         self.draw_quick_slots(screen, player)
 
     def draw_health(self, screen, health):
@@ -201,6 +211,18 @@ class HUD:
             return self.timer_digit_width
 
         return self.timer_glyphs[character].get_width()
+
+    def draw_floor(self, screen, floor_number):
+        screen.blit(self.floor_panel, (self.floor_panel_x, HUD_MARGIN))
+
+        self.floor_label.update_text(f"F{floor_number}")
+        text_surface = self.floor_label.text_surface
+        text_bounds = text_surface.get_bounding_rect()
+        panel_center_x = self.floor_panel_x + FLOOR_PANEL_SIZE[0] // 2
+        text_x = (panel_center_x - text_bounds.centerx) // GAME_SCALE * GAME_SCALE
+        text_y = centered_text_y(text_surface, HUD_MARGIN + FLOOR_PANEL_SIZE[1] // 2)
+        self.floor_label.pos = (text_x, text_y)
+        self.floor_label.draw(screen)
 
     def draw_quick_slots(self, screen, player):
         potion_cooldown_fraction = time_left(player.heal_cooldown) / HEAL_COOLDOWN
