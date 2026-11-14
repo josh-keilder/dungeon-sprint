@@ -14,6 +14,7 @@ def load_level_data(map_path):
     level_data["player_spawn"] = find_player_spawn(tmx_data)
     level_data["enemy_spawns"] = find_enemy_spawns(tmx_data)
     level_data["exit_rect"] = find_exit(tmx_data)
+    level_data["placed_items"] = find_placed_items(tmx_data)
 
     return level_data
 
@@ -110,3 +111,20 @@ def find_exit(tmx_data):
                 map_object.x, map_object.y, map_object.width, map_object.height
             )
     return None
+
+
+def find_placed_items(tmx_data):
+    placed_items = []
+
+    for layer in tmx_data.objectgroups:
+        if layer.name != "Items":
+            continue
+
+        for map_object in layer:
+            center = (
+                map_object.x + map_object.width / 2,
+                map_object.y + map_object.height / 2,
+            )
+            placed_items.append((map_object.name, center))
+
+    return placed_items

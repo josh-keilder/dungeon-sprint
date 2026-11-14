@@ -43,11 +43,15 @@ VOID = " "
 PLAYER = "@"
 EXIT = "X"
 CHEST = "C"
+PLACED_ITEMS = {"g": "gold_key"}
 ENEMY_TYPES = {"s": "Skull", "k": "Skeleton"}
 DOOR_IDS = {"1": "door_1", "2": "door_2", "3": "door_3"}
 
 KNOWN_CHARACTERS = (
-    {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST} | set(ENEMY_TYPES) | set(DOOR_IDS)
+    {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST}
+    | set(ENEMY_TYPES)
+    | set(DOOR_IDS)
+    | set(PLACED_ITEMS)
 )
 
 
@@ -175,7 +179,7 @@ def build_tile_layers(grid, rng):
 
 
 def build_objects(grid):
-    objects = {"Chests": [], "Entity_Spawns": []}
+    objects = {"Chests": [], "Entity_Spawns": [], "Items": []}
     exit_cells = []
 
     for y, row in enumerate(grid):
@@ -191,6 +195,9 @@ def build_objects(grid):
                 objects["Entity_Spawns"].append((enemy_name, left, top, 0, 0))
             elif character == CHEST:
                 objects["Chests"].append(("chest", left, top, TILE_SIZE, TILE_SIZE))
+            elif character in PLACED_ITEMS:
+                center = (left + TILE_SIZE // 2, top + TILE_SIZE // 2)
+                objects["Items"].append((PLACED_ITEMS[character], *center, 0, 0))
             elif character == EXIT:
                 exit_cells.append((x, y))
 

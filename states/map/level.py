@@ -98,6 +98,15 @@ class Level:
         self.chests = level_data["chests"]
         self.exit_rect = level_data["exit_rect"]
 
+        # Placed items (keys), from the map's Items layer
+        for item_id, center in level_data["placed_items"]:
+            WorldItem(
+                groups=self.ground_items,
+                pos=center,
+                item_data=self.item_database[item_id],
+                quantity=1,
+            )
+
         # Enemy Spawning
         self.enemies = load_enemies(level_data["enemy_spawns"])
 

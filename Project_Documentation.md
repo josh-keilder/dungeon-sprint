@@ -109,7 +109,7 @@ venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignore` because the images are generated.
 
 - **It reuses the game's loader.** `preview_map(map_path, font)` calls `load_level_data` from `map_loader.py`, the same function `Level` uses, so the preview always matches the game, and if map loading changes the preview follows; the tool only draws what it's given. The loader calls `.convert()` and `load_image`, which need a display, so `main()` first opens a hidden 1×1 window with `pygame.display.set_mode((1, 1), pygame.HIDDEN)`.
-- **Drawing.** It draws on a `.copy()` of the map surface, so the loader's surface is never touched, then the decor, walls, doors and chests in the game's order, each blitted at its `rect.topleft` with no camera (the whole map is the "screen"). Then the markers:
+- **Drawing.** It draws on a `.copy()` of the map surface, so the loader's surface is never touched, then the decor, walls, doors and chests in the game's order, each blitted at its `rect.topleft` with no camera (the whole map is the "screen"), then the placed items (keys) with their real images, centered on their positions. `main` builds the item database once with `initialize_item_database()` and passes it to `preview_map(map_path, font, item_database)`, so the images are the game's own. Then the markers:
   - **Door groups:** one `door_id` label per group. A door can be several tiles wide, so a `set` of already-labeled ids skips the rest; a set is a collection with fast "have I seen this?" checks.
   - **Enemy spawns:** a 1-pixel `PALETTE_BLOOD` box at each spawn, labeled with the first three letters of the type (`enemy_type[:3]`, a slice), so `Skull` and `Skeleton` show as `SKU` and `SKE`.
   - **Player spawn:** a `PALETTE_AZURE` dot with a `PALETTE_VOID` ring (a bigger circle drawn first). The two spawn kinds use different reference points, matching the game: the player spawn is the player's center, an enemy spawn is the enemy's top-left.
@@ -146,6 +146,7 @@ The legend:
 | `X` | exit (at least one; several cells become one exit rect, so they should form a rectangle) |
 | `C` | chest |
 | `s` / `k` | Skull / Skeleton spawn (`ENEMY_TYPES`) |
+| `g` | placed gold key (`PLACED_ITEMS`); place one per door group |
 | `1` `2` `3` | door tiles for `door_1` to `door_3` (`DOOR_IDS`), 2 tiles in a row or column |
 
 Everything except `#` and space has floor under it; `is_open(character)` is that rule, and the rest of the converter leans on it.
@@ -183,11 +184,11 @@ The **grid** is the shared format: hand-written and generated levels go through 
   Walls and the void get `VOID_GID` on the Floor layer, as in the hand-made map.
 - **Doors** (`door_gid`). A door is 2 tiles, and its partner decides the half: partner below → top half (47), above → bottom half (57), right → left half (67), left → right half (68). The door's `Logic_Layer` tile is `LOGIC_FIRST_GID + n − 1`: `Logic_Tiles.tsx` starts at GID 101 and its tiles 0, 1 and 2 carry the `door_id` properties `door_1`, `door_2` and `door_3`, which `map_loader` reads.
 - **Layers** (`build_tile_layers(grid, rng)`) are 2D lists of GIDs (0 for empty), one per `TILE_LAYER_NAMES` entry, in the names and order `map_loader` expects. Each is built with `[[0] * width for _ in range(height)]`, which makes separate rows; `[[0] * width] * height` would list one row `height` times, so writing to one row would change them all. `Wall_Decor` and `Floor_Decor` are left empty.
-- **Objects** (`build_objects(grid)`) are `(name, x, y, width, height)` tuples in pixels, with the names `map_loader` looks for, using the game's reference points: `Player` at the tile's center (the game sets `rect.center` to it); `Enemy_<type>` and `chest` at the tile's top-left; and one `Exit` rect covering every `X` cell, from the smallest x and y to the largest (`+ 1` to include the last cell). Chests go in a `Chests` object group, everything else in `Entity_Spawns`.
+- **Objects** (`build_objects(grid)`) are `(name, x, y, width, height)` tuples in pixels, with the names `map_loader` looks for, using the game's reference points: `Player` at the tile's center (the game sets `rect.center` to it); `Enemy_<type>` and `chest` at the tile's top-left; and one `Exit` rect covering every `X` cell, from the smallest x and y to the largest (`+ 1` to include the last cell). Placed items (`PLACED_ITEMS`, so far only `g` for `gold_key`) are point objects named by their item id, at the tile's center, because `WorldItem` places itself by `rect.center`. Chests go in a `Chests` object group, placed items in `Items`, and everything else in `Entity_Spawns`. `g` is used rather than `K` because `k` is already the Skeleton.
 - **Writing** (`write_tmx`). A `.tmx` is XML, built with Python's `xml.etree.ElementTree` (`ET`): `ET.Element` makes the `<map>` root, `ET.SubElement` adds the tileset references (`TILESETS`: `Dungeon.tsx` at 1, `Logic_Tiles.tsx` at 101), one `<layer>` per tile layer with its GIDs as CSV text (`layer_csv`, the same format Tiled writes), and the object groups. Attribute values must be strings. Every layer and object group gets a unique id from `next_id` and every object one from `object_id`, and `nextlayerid` / `nextobjectid` tell Tiled which numbers to use next if the map is edited by hand. Spawn points have no size, so their width and height are left out. `ET.indent` adds line breaks and indentation, so the file and its diffs are readable.
 - **Reproducible output.** `random.Random(map_name)` is a generator seeded with the map's name: the same seed always gives the same "random" picks, so converting the same file twice writes an identical map and `git diff` only shows real changes, while each map still gets its own variety.
 - **Two typos from building it, worth remembering** because both were valid Python that ran and quietly did the wrong thing: `{WALL < FLOOR, ...}` (a comparison, `False`, instead of two set items) and `cell_at(grid, x + dx, y=dx)` (a keyword argument setting `y` to `dx`). The cure is checking real output, not just that the code runs.
-- **Limits:** 3 door groups (the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles, walls at least 2 thick, no decor, and no `Items` / `Keys` layers. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
+- **Limits:** 3 door groups (the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles, walls at least 2 thick, no decor, and only keys as placed items. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
 
 **`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
 
@@ -302,7 +303,7 @@ All states are built once at startup and kept alive, so leaving and returning to
 - **`new_run.py`**: `start_new_run(game_state_manager)` builds a fresh `Level`, starting on the first floor of `LEVEL_ORDER`, and registers it as `"level"`, replacing the old run. It's a plain function in its own module so any menu can start a new run without depending on another menu. Used by `RunEndScreen` (Restart and Main Menu) and `Options` (Main Menu from a paused run).
 - **`map/level.py`**: `Level(game_state_manager)`, one whole run: every floor in `LEVEL_ORDER`, one after another. Runs and draws gameplay. Its setup is split by how long things live:
   - **`__init__`** sets up what lasts the whole run: `run_time`, the item database, the player, the HUD, the inventory screen and the death timer. It creates the player at `(0, 0)`, sets `level_index` to 0 (which entry of `LEVEL_ORDER` is being played), then calls `load_floor` for the first floor, which places the player.
-  - **`load_floor(map_path)`** swaps in a floor: fresh `ground_items` (items left on the floor don't carry over), the map data from `load_level_data` (map surface, decor, walls, doors, chests, exit), the enemies, and `solid_tiles` through `refresh_walls()`. Then it moves the **same** player object to the floor's spawn: it sets `rect.center`, syncs `pos` to the rect (enemy contact checks read `player.pos` before the player updates), zeroes `velocity` so the player doesn't slide in at full speed, and centers the camera. Because the player object is kept, health, inventory, gear and cooldowns carry over with no extra code, and because `run_time` lives on the `Level`, the timer keeps counting across floors.
+  - **`load_floor(map_path)`** swaps in a floor: fresh `ground_items` (items left on the floor don't carry over), the map data from `load_level_data` (map surface, decor, walls, doors, chests, exit), the placed items from the map's `Items` layer (each spawned as a `WorldItem` of quantity 1 into `ground_items`, looked up in the item database, so an unknown id is a `KeyError` at load time, the right moment to find a typo), the enemies, and `solid_tiles` through `refresh_walls()`. Then it moves the **same** player object to the floor's spawn: it sets `rect.center`, syncs `pos` to the rect (enemy contact checks read `player.pos` before the player updates), zeroes `velocity` so the player doesn't slide in at full speed, and centers the camera. Because the player object is kept, health, inventory, gear and cooldowns carry over with no extra code, and because `run_time` lives on the `Level`, the timer keeps counting across floors.
 
   ```
   Level.__init__ (once per run)          load_floor (once per floor)
@@ -348,6 +349,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
   - `find_player_spawn` and `find_enemy_spawns` read spawn objects.
   - `find_exit` returns a `pygame.Rect` for the object named `Exit`, or `None` if there isn't one.
+  - `find_placed_items` returns `(item_id, center)` pairs for the objects in the `Items` object group, stored as `level_data["placed_items"]`. Each object is named by its item id. It loops over `tmx_data.objectgroups` to find the group by name, so a map with no `Items` group just has no placed items (`get_layer_by_name` would crash instead). The center is worked out as `(x + width / 2, y + height / 2)`, which works for both kinds of object: Level One's 10×8 rectangles drawn in Tiled, and the converter's 0-sized points, whose center is just their x and y.
 - **`map/tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id`.
 - **`menus/main_menu.py`**: `MainMenu(game_state_manager)`, the title screen (section 5).
   - `draw` fills the screen with `MENU_BACKGROUND_COLOR`, then draws the "DUNGEON SPRINT" title (`TITLE_FONT_SIZE` 96, at `TITLE_Y` 50, centered with `(SCREEN_WIDTH - width) // 2`) and the buttons.
@@ -881,8 +883,11 @@ Results are cached by the set of animation names plus `crop_size`. Two texture d
 **`CHEST_LOOT`** (`loot_table_data.py`). Each entry is rolled independently, so one chest can drop several things:
 
 ```python
-{"item_id": "small_health_potion", "chance": 0.9, "min_quantity": 1, "max_quantity": 3}
+{"item_id": "small_health_potion", "chance": 0.5, "min_quantity": 1, "max_quantity": 3}
+{"item_id": "speed_boots", "chance": 0.08, "min_quantity": 1, "max_quantity": 1}
 ```
+
+Keys are not chest loot: they're placed on the map (the `Items` layer), so every floor is guaranteed to have the keys its doors need, and routes don't depend on luck. Chests are for random extras: potions and gear.
 
 `chance` is 0.0 to 1.0, and the quantity is a random whole number between min and max inclusive.
 
@@ -919,7 +924,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 4. For a new behaviour, write a `<behavior>_velocity` function in `systems/enemy_ai.py` and add a branch for it in `Enemy.update_movement`.
 
 **A new floor.**
-1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one `@`, at least one `X`.
+1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one `g` key per door group, one `@`, at least one `X`.
 2. Convert it: `venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports.
 3. Preview it: `venv/Scripts/python -m tools.preview_map Assets/Maps/<name>.tmx`, then check `map_previews/<name>.png`.
 4. Add its path to `LEVEL_ORDER` in `globals.py`, where the order is the play order.
@@ -966,11 +971,12 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 
 **Content and map:**
 - Skeletons reuse the skull sprite until `skeleton_texture_data` is filled in.
-- The map has a `Keys` tile layer and an `Items` object layer (with placed `gold_key` and `small_health_potion` objects) that the loader doesn't read yet. Items currently only come from chests. The map preview tool doesn't show these layers either, since it draws what the loader returns.
+- Level One's `Keys` tile layer is unused and hidden: it was only a visual stand-in, and the `Items` object layer, which the loader reads, replaces it.
+- The code calls one map both a "level" and a "floor". The plan, for the organization pass: **floor** for one map, **run** for the whole attempt (`LEVEL_ORDER` → `FLOOR_ORDER`, `level_index` → `floor_index`, `load_level_data` → `load_floor_data`, the `Level` class and `"level"` state → `Run` / `"run"`, `"level_complete"` → `"run_complete"`, map files → `floor_1.tmx` and so on), and **difficulty** for Easy / Medium / Hard.
 - `start_new_run()` reloads the map inside the update of whichever menu calls it (`RunEndScreen` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
 - If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
 - `LEVEL_ORDER`'s second floor is `test_room.tmx`, a tiny stand-in, until real floors are designed.
-- The ASCII converter supports only 3 door groups (`door_1` to `door_3`, the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles long and walls at least 2 thick. It writes no decor and no `Items` / `Keys` layers, and several `X` cells become one bounding rect, so they should form a rectangle.
+- The ASCII converter supports only 3 door groups (`door_1` to `door_3`, the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles long and walls at least 2 thick. It writes no decor, places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
 - The exit is drawn only as a yellow outline until there is art for it.
 
 **HUD:**

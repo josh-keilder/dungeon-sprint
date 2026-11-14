@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="160" height="112" tilewidth="16" tileheight="16" infinite="0" nextlayerid="17" nextobjectid="33">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="160" height="112" tilewidth="16" tileheight="16" infinite="0" nextlayerid="17" nextobjectid="34">
  <editorsettings>
   <export format="csv"/>
  </editorsettings>
@@ -819,21 +819,13 @@
 </data>
  </layer>
  <objectgroup id="11" name="Items">
-  <object id="12" name="gold_key" x="1283.33" y="613.667" width="10" height="8"/>
+  <object id="12" name="gold_key" x="1284.83" y="604.417" width="10" height="8"/>
   <object id="13" name="gold_key" x="915.333" y="549" width="10" height="8"/>
-  <object id="14" name="gold_key" x="803.54" y="548.79" width="10" height="8"/>
-  <object id="21" name="small_health_potion" x="1147.5" y="559" width="10" height="8"/>
-  <object id="22" name="small_health_potion" x="1188.5" y="559.167" width="10" height="8"/>
-  <object id="23" name="small_health_potion" x="1062.33" y="660" width="10" height="8"/>
-  <object id="24" name="small_health_potion" x="1074.33" y="566.667" width="10" height="8"/>
-  <object id="25" name="small_health_potion" x="1236.33" y="674.667" width="10" height="8"/>
  </objectgroup>
  <objectgroup id="16" name="Chests">
-  <object id="27" name="chest" x="910.5" y="603.5" width="16" height="16"/>
-  <object id="28" name="chest" x="801.5" y="589" width="16" height="16"/>
-  <object id="29" name="chest" x="1108" y="606.5" width="16" height="16"/>
-  <object id="30" name="chest" x="1183" y="641" width="16" height="16"/>
-  <object id="31" name="chest" x="863" y="656.5" width="16" height="16"/>
+  <object id="29" name="chest" x="1136" y="544.25" width="16" height="16"/>
+  <object id="30" name="chest" x="1184.25" y="543.75" width="16" height="16"/>
+  <object id="33" name="chest" x="785.333" y="944.667" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="5" name="Entity_Spawns">
   <object id="1" name="Player" x="848" y="592">
@@ -842,16 +834,16 @@
    </properties>
    <point/>
   </object>
-  <object id="5" name="Enemy_Skeleton" x="1200" y="800">
+  <object id="5" name="Enemy_Skeleton" x="1167.33" y="625.333">
    <point/>
   </object>
-  <object id="6" name="Enemy_Skull" x="1100" y="800">
+  <object id="6" name="Enemy_Skull" x="1300.67" y="1037.33">
    <point/>
   </object>
-  <object id="8" name="Enemy_Skeleton" x="1100" y="860">
+  <object id="8" name="Enemy_Skeleton" x="1168" y="827.333">
    <point/>
   </object>
-  <object id="9" name="Enemy_Skull" x="1201" y="857">
+  <object id="9" name="Enemy_Skull" x="898.333" y="977">
    <point/>
   </object>
   <object id="32" name="Exit" x="1408" y="1008" width="16" height="32"/>

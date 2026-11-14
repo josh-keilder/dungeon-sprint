@@ -13,6 +13,7 @@ from globals import (
     PALETTE_VOID,
     TILE_SIZE,
 )
+from items.item_database import initialize_item_database
 from states.map.map_loader import load_level_data
 
 PREVIEW_SCALE = 2
@@ -29,13 +30,17 @@ def draw_label(surface, font, text, pos):
     surface.blit(label, pos)
 
 
-def preview_map(map_path, font):
+def preview_map(map_path, font, item_database):
     level_data = load_level_data(map_path)
     preview = level_data["map_surface"].copy()
 
     for group_name in ("decor_tiles", "wall_tiles", "door_tiles", "chests"):
         for sprite in level_data[group_name]:
             preview.blit(sprite.image, sprite.rect.topleft)
+
+    for item_id, center in level_data["placed_items"]:
+        item_image = item_database[item_id].image
+        preview.blit(item_image, item_image.get_rect(center=center))
 
     labeled_door_ids = set()
     for door in level_data["door_tiles"]:
@@ -71,11 +76,13 @@ def main():
     pygame.display.set_mode((1, 1), pygame.HIDDEN)
     font = pygame.font.Font(FONT_PATH, LABEL_FONT_SIZE)
 
+    item_database = initialize_item_database()
+
     map_paths = sys.argv[1:] or list(dict.fromkeys(LEVEL_ORDER))
 
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
     for map_path in map_paths:
-        image = preview_map(map_path, font)
+        image = preview_map(map_path, font, item_database)
         map_name = os.path.splitext(os.path.basename(map_path))[0]
         output_path = os.path.join(OUTPUT_FOLDER, f"{map_name}.png")
         pygame.image.save(image, output_path)
