@@ -53,6 +53,10 @@ COOLDOWN_SHADE_ALPHA = 160
 EMPTY_ICON_ALPHA = 80
 
 
+# Interaction prompt, bottom center
+PROMPT_CENTER_Y = SCREEN_HEIGHT - HUD_MARGIN - 36
+
+
 # Helpers
 def segment_hp_for(max_health):
     for step in HEALTH_SEGMENT_STEPS:
@@ -142,11 +146,20 @@ class HUD:
         self.cooldown_shade = pygame.Surface(QUICK_SLOT_INNER_SIZE, pygame.SRCALPHA)
         self.cooldown_shade.fill((0, 0, 0, COOLDOWN_SHADE_ALPHA))
 
-    def draw(self, screen, player, run_time, floor_number):
+        # Interaction prompt
+        self.prompt_label = TextLabel(
+            "", color=PALETTE_STEEL, font=self.font, outline_color=PALETTE_VOID
+        )
+        self.prompt_blocked_label = TextLabel(
+            "", color=PALETTE_BLOOD, font=self.font, outline_color=PALETTE_VOID
+        )
+
+    def draw(self, screen, player, run_time, floor_number, prompt):
         self.draw_health(screen, player.health)
         self.draw_timer(screen, run_time)
         self.draw_floor(screen, floor_number)
         self.draw_quick_slots(screen, player)
+        self.draw_prompt(screen, prompt)
 
     def draw_health(self, screen, health):
         screen.blit(self.health_panel, (HUD_MARGIN, HUD_MARGIN))
@@ -287,3 +300,16 @@ class HUD:
         )
 
         count_label.draw(screen)
+
+    def draw_prompt(self, screen, prompt):
+        if prompt is None:
+            return
+
+        text, available = prompt
+        label = self.prompt_label if available else self.prompt_blocked_label
+
+        label.update_text(text)
+        text_bounds = label.text_surface.get_bounding_rect()
+        text_x = (SCREEN_WIDTH // 2 - text_bounds.centerx) // GAME_SCALE * GAME_SCALE
+        label.pos = (text_x, centered_text_y(label.text_surface, PROMPT_CENTER_Y))
+        label.draw(screen)

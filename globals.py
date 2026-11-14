@@ -12,10 +12,6 @@ GAME_SCALE = 3
 WORLD_WIDTH = math.ceil(SCREEN_WIDTH / GAME_SCALE)
 WORLD_HEIGHT = math.ceil(SCREEN_HEIGHT / GAME_SCALE)
 
-# Gameplay distances
-UNLOCK_DOOR_DISTANCE = 32
-
-
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

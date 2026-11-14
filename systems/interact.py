@@ -12,16 +12,28 @@ def find_target(player, level):
         if reach_box.colliderect(chest.rect):
             return ("chest", chest)
 
-    if has_item(player.inventory, "gold_key"):
-        for door in level.door_tiles:
-            if reach_box.colliderect(door.rect):
-                return ("door", door)
-
     for item in level.ground_items:
         if reach_box.colliderect(item.rect):
             return ("item", item)
 
+    for door in level.door_tiles:
+        if reach_box.colliderect(door.rect):
+            return ("door", door)
+
     return None
+
+
+def describe_target(player, found):
+    kind, target = found
+
+    if kind == "chest":
+        return ("Press F to open chest", True)
+    if kind == "door":
+        if has_item(player.inventory, "gold_key"):
+            return ("Press F to unlock door", True)
+        return ("Gold key required to unlock door", False)
+
+    return (f"Press F to pick up {target.item_data.name}", True)
 
 
 def open_chest(chest, level):
@@ -49,6 +61,10 @@ def interact(player, level):
     found = find_target(player, level)
 
     if found is None:
+        return
+
+    _, available = describe_target(player, found)
+    if not available:
         return
 
     kind, target = found

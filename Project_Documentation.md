@@ -313,7 +313,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ```
 
   `math.ceil` rounds up, so the scaled world always covers the whole screen. 2 gives 640×360 and 4 gives 320×180. Keep the scale a whole number: a screen pixel can't be split, so at 2.5× some art pixels come out 2 screen pixels wide and others 3, which looks lopsided and shimmers as the camera scrolls (smoothing instead makes it blurry).
-  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), `UNLOCK_DOOR_DISTANCE`, the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `LEVEL_ORDER` (the map paths in play order; the run goes through them one after another, and the last one's exit ends the run. It lists the Easy floors, built with the ASCII converter from `Assets/Maps/Source/easy_floor_<n>.txt`; for now only `easy_floor_1.tmx`, which replaces the hand-built `Dungeon_Level_One.tmx`. That file stays in the repo as Tiled reference until all five Easy floors are in, and `test_room.tmx` stays as the converter's small test map), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
+  The rest of `globals.py`: Screen size, `FRAME_RATE`, `TILE_SIZE` (16), `PLAYER_SPRITE_SIZE` (64), the color palette (all colors are kept even when unused), the tileset palette (all 34 colors in `Assets/Dungeon_Tileset.png` as `PALETTE_*` constants, grouped by family and ordered dark to light within each: darks and floors such as `PALETTE_VOID` (37, 19, 26) and `PALETTE_SHADOW` (84, 55, 64); walls, earth and wood such as `PALETTE_WALL` (110, 74, 72); reds `PALETTE_BLOOD` (188, 76, 81) and `PALETTE_ROSE`; fire and gold such as `PALETTE_TORCH` (191, 112, 77); moss and parchment; and stone, steel and ice such as `PALETTE_STONE` (144, 145, 158), `PALETTE_STEEL` (173, 193, 207) and `PALETTE_ICE` (202, 230, 245). UI and generated art use these names so everything stays on the tileset's colors. The UI color rules: steel is the normal text color, stone is secondary text such as item descriptions, and torch orange means "you can interact with this": hovered buttons and sliders, and the `Q` hotkey. In the world, the interaction outline is `PALETTE_CANDLE` when F will work and `PALETTE_STEEL` when it won't), `OPTION_MENU_BUTTON_BACKGROUND` (defined as `PALETTE_WALL`, unused but kept), `MENU_BACKGROUND_COLOR` (defined as `PALETTE_VOID`, the fill color of the Main Menu and Options screens; one name says which color, the other what it's for), `LEVEL_ORDER` (the map paths in play order; the run goes through them one after another, and the last one's exit ends the run. It lists the Easy floors, built with the ASCII converter from `Assets/Maps/Source/easy_floor_<n>.txt`; for now only `easy_floor_1.tmx`, which replaces the hand-built `Dungeon_Level_One.tmx`. That file stays in the repo as Tiled reference until all five Easy floors are in, and `test_room.tmx` stays as the converter's small test map), `FONT_PATH` (the menu font, `Assets/Fonts/Silkscreen-Regular.ttf`), `PANEL_FRAME_PATH` (`Assets/UI/panel_frame.png`, the frame art shared by the HUD and the inventory), `BUTTON_FONT_SIZE` (32, the button font size shared by every menu), and `OVERLAY_ALPHA` (160 of 255, how dark the overlay is when the game-over and paused options screens are drawn over the level).
 - **`Assets/Fonts/`**: `Silkscreen-Regular.ttf`, a pixel font under the SIL Open Font License. Load it with `pygame.font.Font(FONT_PATH, size)`. Because it is a pixel font, render it without anti-aliasing (`False`) and use sizes that are multiples of 8, or the letters blur.
 
 ### `entities/`
@@ -447,12 +447,12 @@ All states are built once at startup and kept alive, so leaving and returning to
 | `health.py` | Health dict rules | `new_health`, `take_damage`, `heal`, `is_dead`, `set_max_health` |
 | `stats.py` | Base stats plus equipment bonuses | `compute_stats` |
 | `inventory.py` | Inventory dict rules | `new_inventory`, `add_item`, `remove_item`, `has_item`, `count_item`, `can_equip` |
-| `interact.py` | The F key: chests, doors, pickups | `interact`, `find_target`, `open_chest`, `unlock_door`, `pick_up_item` |
+| `interact.py` | The F key: chests, doors, pickups, and what F would act on | `interact`, `find_target`, `describe_target`, `open_chest`, `unlock_door`, `pick_up_item` |
 | `loot.py` | Rolls a loot table | `roll_loot` |
 | `consumables.py` | Using items and the heal cooldown | `use_small_health_potion` |
 | `animation.py` | Animation dict rules | `new_animation`, `set_animation`, `advance_animation` |
 | `assets.py` | Loading and caching images and animations | `load_image`, `load_animations`, `slice_frames`, `crop_center`, `add_flipped_left` |
-| `hitbox.py` | Pixel-perfect masks | `get_mask`, `sprites_overlap`, `draw_hitbox` |
+| `hitbox.py` | Pixel-perfect masks and outlines | `get_mask`, `sprites_overlap`, `draw_hitbox`, `draw_highlight`, `grow_mask` |
 | `camera.py` | The shared camera rect, the size of the world canvas (`WORLD_WIDTH` × `WORLD_HEIGHT`), not the screen, so a bigger `GAME_SCALE` means fewer tiles in view | `camera`, `center_camera`, `is_on_screen` |
 | `display.py` | Creating the window | `create_window` |
 | `debug.py` | Debug flags | `show_hitboxes`, `toggle_hitboxes` |
@@ -567,7 +567,7 @@ Some systems hold module-level state that is shared by everyone who imports them
   ```
 
   Every piece goes through the same loop: cut it with `subsurface` (a view into the image, no copy), resize it to its target with `pygame.transform.scale` (corners resize to their own size, so they're unchanged), and blit it. The panel is built at 1× (`size // GAME_SCALE`) and scaled up by `GAME_SCALE` at the end, so its pixels are the same 3×3 blocks as the world. A size that isn't a multiple of 3 is rounded down (100 becomes 99), and the smallest panel is `2 × c` art pixels (24 screen pixels) each way.
-- **`hud.py`**: `HUD`, the in-game heads-up display. `Level` creates one and calls `hud.draw(screen, player, run_time, floor_number)` once per frame, passing `level_index + 1` as the floor number; `draw` calls `draw_health`, `draw_timer`, `draw_floor` and `draw_quick_slots`, so Level never changes when the HUD gains parts. The HUD is given plain values rather than the `Level` itself, so it doesn't need to know about `LEVEL_ORDER` or `level_index`, only the number to show. The font and the panels are created once in `__init__`.
+- **`hud.py`**: `HUD`, the in-game heads-up display. `Level` creates one and calls `hud.draw(screen, player, run_time, floor_number, prompt)` once per frame, passing `level_index + 1` as the floor number and `interact_prompt` as the prompt; `draw` calls `draw_health`, `draw_timer`, `draw_floor`, `draw_quick_slots` and `draw_prompt`, so Level never changes when the HUD gains parts. The HUD is given plain values rather than the `Level` itself, so it doesn't need to know about `LEVEL_ORDER` or `level_index`, only the number to show. The font and the panels are created once in `__init__`.
   - **Pixel-grid rules.** The HUD uses Silkscreen only at 24 (its 8 px grid × 3) or 48, so font pixels are the same 3×3 blocks as the world and the frames. Every size and position is a multiple of 3, and anything calculated is snapped with `value // GAME_SCALE * GAME_SCALE`.
   - **Health** (`draw_health`): a `HEALTH_PANEL_SIZE` (312×54) panel at `HUD_MARGIN` (12), with a `HEALTH_BAR_SIZE` (186×24) bar at `HEALTH_BAR_OFFSET` (18, 15). The empty bar is `PALETTE_SHADOW`, the fill `PALETTE_BLOOD`, and the `current/max` text `PALETTE_STEEL`, `HEALTH_TEXT_GAP` (9) to the right of the bar. Gaps in `PALETTE_VOID` split the bar into segments, drawn after the fill so they cut through both parts. `segment_hp_for(max_health)` picks the segment size so there are at most `HEALTH_MAX_SEGMENTS` (5) blocks, each a round number of HP: 25 max gives 5-HP blocks, 35 gives 10, 100 gives 20.
   - **Centering text** (`centered_text_y(text_surface, center_y)`): a rendered text surface is taller than its letters, because fonts reserve space above and below them (for Silkscreen at 24 the surface is 31 px tall but the digits only run from y 10 to 25). So text is centered by its visible pixels: `get_bounding_rect()` measures the ink, and its center is lined up with the target center.
@@ -614,6 +614,7 @@ Some systems hold module-level state that is shared by everyone who imports them
       ```
 
       One full-size shade is made once, and `screen.blit(shade, pos, area)` draws only its top `shade height` rows: `blit`'s third argument, `area`, is a rect inside the source, so only that part is drawn.
+- **The interaction prompt** (`draw_prompt(screen, prompt)`): when `prompt` isn't `None`, it shows the `(text, available)` from `describe_target`, centered by its visible ink at the bottom of the screen, on `PROMPT_CENTER_Y` (`SCREEN_HEIGHT − HUD_MARGIN − 36`, level with the middle of the quick slots), snapped to the 3 px grid. Available actions use `prompt_label` (`PALETTE_STEEL`) and blocked ones `prompt_blocked_label` (`PALETTE_BLOOD`), both outlined in `PALETTE_VOID`; two labels means neither has to re-render when the color changes. Red text is the only thing that says *why* F won't work, while the outline just marks what you're near.
 - **`create_outline.py`**: `make_outline` builds a one-pixel outline surface from an image's mask. It outlines each separate shape in the mask (`mask.connected_components()`), because `mask.outline()` alone only traces the first shape, which for text would be just the first letter. Holes inside a shape, like the inside of an "A", are not outlined. `draw_outline` blits it shifted one pixel in each direction to make a thicker outline.
 - **`cursor.py`**: `Cursor`, the custom mouse cursor, drawn slightly down and right of the real mouse position.
 
@@ -756,6 +757,19 @@ multiplier
 
 **How `move_and_collide` works.** It moves on X, pushes the rect out of the first wall it overlaps, then does the same on Y. Doing the axes separately lets you slide along walls. Walls whose center is more than 64 pixels away on that axis are skipped for speed. It returns `(hit_x, hit_y)`.
 
+**Then the interaction target** is worked out (see "The interaction target, outline and prompt" below), and drawn later with **`draw_highlight(screen, sprites, camera, color)`** from `systems/hitbox.py`. `draw_hitbox` (the debug outline) draws each sprite's `mask.outline()` on the sprite's own edge pixels, which went wrong for interaction in two ways: each door tile was outlined separately, so the shared edge between the halves showed as a line down the middle, and `outline()` only traces **one** connected shape, so the chest, whose art has a transparent row between lid and body, only got its lid outlined. `draw_highlight` instead builds one combined shape from all the sprites, seals 1-pixel gaps, and draws a ring just **outside** it, so the art isn't painted over:
+
+  ```
+  grow:   every set pixel also sets its 4 neighbors       (grow_mask; 1 px bigger all round)
+  shrink: grow the OUTSIDE instead, then flip it back      (invert, grow_mask, invert)
+  close:  grow, then shrink   → fills 1-pixel gaps (the chest's lid seam), keeps the outer edge
+  ring:   grow(shape) − shape → the pixels just outside the shape
+  ```
+
+  - The work area is the union of the sprites' rects (converted to whole-pixel `pygame.Rect`s, since sprites use float rects and a mask needs whole sizes), grown by 2 pixels on every side (`inflate(4, 4)`) so the ring and the close step aren't cut off.
+  - `mask.draw(other, offset)` copies another mask's set pixels in at an offset (used to combine the sprites, and 4 times by `grow_mask`); `invert()` flips every pixel; `erase(other, offset)` clears pixels; `to_surface(setcolor=color, unsetcolor=(0, 0, 0, 0))` turns the ring into an image with everything else transparent.
+  - It's rebuilt each frame for at most a couple of 16-pixel sprites, which is cheap.
+
 **4. Enemy update.** Each enemy gets the solid tiles and the player's position:
 - **`fly`** (Skull): ignores walls. While `flee_timer` is running it moves away from the player, while `return_timer` is running it moves toward the player, within `CHASE_RANGE` (200) it chases, and otherwise it drifts slowly in a random diagonal that occasionally changes.
 - **`wander_chase`** (Skeleton): collides with walls. If it has line of sight to the player (no wall rect crosses the line between them), it chases. Otherwise it wanders at half speed.
@@ -821,20 +835,46 @@ The check comes after the death check, so dying and touching the exit on the sam
 
 **8. Ground items and camera.** Ground items advance their animation, and the camera centers on the player.
 
-**What `interact` does (F).** It looks in a box 15 pixels larger than the player and takes the first match in this priority order:
-1. **A chest:** rolls `CHEST_LOOT`, spawns the drops around the chest, and removes the chest.
-2. **A door, only if you have a `gold_key`:** removes every door tile with the same `door_id`, rebuilds the solid tiles, and uses up one key.
-3. **A ground item:** adds it to the inventory. If only part of the stack fits, the rest stays on the ground with the reduced quantity.
+**What `interact` does (F).** Everything about F comes from one question, `find_target(player, level)`: "what would F act on right now?" It looks in a box `REACH` (15) pixels larger than the player and returns the first match, as `(kind, sprite)`, in this priority order:
+1. **A chest.**
+2. **A ground item.**
+3. **A door tile**, even without a key. Doors are checked last because a locked door is now always a target: if they came first, a potion lying next to a locked door could never be picked up, since F would keep choosing the door. With doors last, things you can always act on win.
+
+`describe_target(player, found)` turns the target into the prompt text and whether F will work, `(text, available)`:
+
+| Target | Text | Available |
+|---|---|---|
+| chest | `Press F to open chest` | yes |
+| ground item | `Press F to pick up <item_data.name>` | yes |
+| door, with a `gold_key` | `Press F to unlock door` | yes |
+| door, without a key | `Gold key required to unlock door` | no |
+
+`interact` asks the same question before acting and does nothing if the target isn't available, so the key check lives in exactly one place, shared by the prompt and the action. Then:
+- **A chest:** rolls `CHEST_LOOT`, spawns the drops around the chest, and removes the chest.
+- **A door:** removes every door tile with the same `door_id`, rebuilds the solid tiles, and uses up one key.
+- **A ground item:** adds it to the inventory. If only part of the stack fits, the rest stays on the ground with the reduced quantity.
+
+**The interaction target, outline and prompt.** Right after the player moves, `Level.update` stores `interact_target` (from `find_target`) and `interact_prompt` (from `describe_target`, or `None`), so they match where the player is this frame; `draw` only uses them. Both are cleared in `__init__`, in `load_floor` (the target would otherwise point at a sprite from the old floor, and its outline would show during the fade-in, which skips `update`), and every frame of the death freeze (so no prompt shows while dying).
+
+```
+find_target(player, level) ──▶ ("door", door) / ("chest", chest) / ("item", item) / None
+        ├──▶ describe_target ──▶ (text, available)
+        ├──▶ outline: interact_highlight() → the whole door group, or the one chest or item
+        │             PALETTE_CANDLE if F will work, PALETTE_STEEL if it won't
+        └──▶ HUD prompt: bottom center, steel text, or blood for "key required"
+```
+
+`interact_highlight()` returns the sprites to outline: every door tile with the target's `door_id` (a door is 2 tiles, and unlocking works on the whole group, so the outline does too), or just the chest or item. They're drawn with `draw_highlight` (see `hitbox.py`). The outline and the prompt come from the same answer as F itself, so they can never disagree with what F does.
 
 **Drawing order** (`Level.draw`). Steps 1 to 6 draw onto `world_surface`, at `position - camera`, and anything outside the camera (`is_on_screen`) is skipped. Every world-drawing call already takes the surface to draw on as a parameter, so tiles, items and actors don't know or care that it's a small canvas:
 1. Fill `world_surface` with `MENU_BACKGROUND_COLOR`, clearing last frame (the map doesn't cover the whole view, so old frames would otherwise smear around the edges).
 2. The pre-rendered floor surface.
-3. Decor, walls, then doors. Doors within `UNLOCK_DOOR_DISTANCE` (32) of the player get a `PALETTE_STEEL` outline. This outline doesn't check for a key.
+3. Decor, walls, then doors.
 4. The exit, as a 2-pixel `YELLOW` outline (`exit_rect.move(-camera.x, -camera.y)` returns a shifted copy, so the stored rect is unchanged).
-5. Ground items and chests.
+5. Ground items and chests, then the interaction outline around `interact_highlight()` (candle or steel), drawn after them so it isn't covered and before the actors so the player stays in front.
 6. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too.
 7. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
-8. The HUD, `self.hud.draw(screen, player, run_time, level_index + 1)`: the health panel (top left), the run timer (top center), the floor number (right of the timer) and the quick slots (bottom left), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
+8. The HUD, `self.hud.draw(screen, player, run_time, level_index + 1, interact_prompt)`: the health panel (top left), the run timer (top center), the floor number (right of the timer), the quick slots (bottom left) and the interaction prompt (bottom center), on the screen at full resolution. It comes after step 7, so it lands on top of the world.
 9. The inventory overlay, if open.
 10. During a floor transition, `fade_overlay` at `transition_alpha()`, over everything including the HUD, then the floor card text during `"card"`.
 

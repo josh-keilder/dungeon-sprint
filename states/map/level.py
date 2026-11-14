@@ -8,11 +8,11 @@ from globals import (
     GAME_SCALE,
     LEVEL_ORDER,
     MENU_BACKGROUND_COLOR,
+    PALETTE_CANDLE,
     PALETTE_STEEL,
     PALETTE_VOID,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    UNLOCK_DOOR_DISTANCE,
     WORLD_HEIGHT,
     WORLD_WIDTH,
     YELLOW,
@@ -25,7 +25,7 @@ from systems.camera import camera, center_camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
 from systems.health import is_dead
-from systems.hitbox import draw_hitbox
+from systems.hitbox import draw_highlight
 from systems.input import read_input
 from systems.loot import roll_loot
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
@@ -77,6 +77,9 @@ class Level:
         self.show_inventory = False
         self.inventory_ui = InventoryUI(self.player.inventory)
 
+        self.interact_target = None
+        self.interact_prompt = None
+
         self.dying = False
         self.death_timer = new_timer()
 
@@ -121,11 +124,17 @@ class Level:
         self.player.velocity.update(0, 0)
         center_camera(self.player.rect.center)
 
+        self.interact_target = None
+        self.interact_prompt = None
+
     def enter(self):
         sound.play_music(LEVEL_MUSIC)
 
     def update(self, dt):
         if self.dying:
+            self.interact_target = None
+            self.interact_prompt = None
+
             advance_timer(self.death_timer, dt)
             elapsed = DEATH_DELAY - time_left(self.death_timer)
             fade_progress = min(1.0, elapsed / DEATH_FADE_DURATION)
@@ -170,6 +179,15 @@ class Level:
             return
 
         self.player.update(dt, self.solid_tiles)
+
+        # What F would act on now; drives the outline and the HUD prompt
+        self.interact_target = interact.find_target(self.player, self)
+        self.interact_prompt = None
+        if self.interact_target is not None:
+            self.interact_prompt = interact.describe_target(
+                self.player, self.interact_target
+            )
+
         for enemy in self.enemies:
             enemy.update(dt, self.solid_tiles, self.player.pos)
 
@@ -233,20 +251,6 @@ class Level:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.world_surface)
 
-                    # Highlight doors when player is nearby
-                    if group == self.door_tiles:
-                        if (
-                            sprite.pos.distance_to(self.player.pos)
-                            < UNLOCK_DOOR_DISTANCE
-                        ):
-                            draw_hitbox(
-                                self.world_surface,
-                                sprite.image,
-                                sprite.rect,
-                                camera,
-                                PALETTE_STEEL,
-                            )
-
         if self.exit_rect is not None:
             pygame.draw.rect(
                 self.world_surface, YELLOW, self.exit_rect.move(-camera.x, -camera.y), 2
@@ -257,6 +261,14 @@ class Level:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.world_surface, camera)
+
+        # Outline what F would act on: candle if it will work, steel if not
+        if self.interact_target is not None:
+            _, available = self.interact_prompt
+            outline_color = PALETTE_CANDLE if available else PALETTE_STEEL
+            draw_highlight(
+                self.world_surface, self.interact_highlight(), camera, outline_color
+            )
 
         # Actors, sorted by y so lower ones draw on top
         actors = [self.player] + self.enemies
@@ -269,7 +281,13 @@ class Level:
         scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
         screen.blit(scaled_world, (0, 0))
 
-        self.hud.draw(screen, self.player, self.run_time, self.level_index + 1)
+        self.hud.draw(
+            screen,
+            self.player,
+            self.run_time,
+            self.level_index + 1,
+            self.interact_prompt,
+        )
 
         if self.show_inventory:
             self.inventory_ui.draw(screen, self.player.inventory)
@@ -280,6 +298,13 @@ class Level:
 
             if self.transition_phase == "card":
                 self.floor_label.draw(screen)
+
+    def interact_highlight(self):
+        kind, target = self.interact_target
+
+        if kind == "door":
+            return [door for door in self.door_tiles if door.door_id == target.door_id]
+        return [target]
 
     def show_floor_card(self):
         self.floor_label.update_text(f"Floor {self.level_index + 1}")
