@@ -165,9 +165,11 @@ The legend:
 | `@` | player spawn (exactly one) |
 | `X` | exit, drawn as a ladder down; use one per floor (several cells would become one combined exit rect) |
 | `C` | chest |
-| `s` / `k` | Skull / Skeleton spawn (`ENEMY_TYPES`) |
-| `g` | placed gold key (`PLACED_ITEMS`); place one per door group |
-| `1` `2` `3` | door tiles for `door_1` to `door_3` (`DOOR_IDS`), 2 tiles in a row or column |
+| `w` / `k` | Skull (drawn as a blue **w**isp) / Skeleton spawn (`ENEMY_TYPES`) |
+| `S` / `s` | **silver** door tile / silver key: the main path (`DOOR_KEYS`, `PLACED_ITEMS`) |
+| `G` / `g` | **gold** door tile / gold key: treasure rooms |
+
+A key's letter matches its door's letter. A door is two touching tiles of the same letter, in a row or column; the converter finds the groups itself and numbers them, so ids are never typed. Place one key of the right color per door group.
 
 Everything except `#` and space has floor under it; `is_open(character)` is that rule, and the rest of the converter leans on it.
 
@@ -203,33 +205,51 @@ The **grid** is the shared format: hand-written and generated levels go through 
   ```
 
   Walls and the void get `VOID_GID` on the Floor layer, as in the hand-made map.
-- **Doors** (`door_gid`). A door is 2 tiles, and its partner decides the half: partner below → top half (47), above → bottom half (57), right → left half (67), left → right half (68). The door's `Logic_Layer` tile is `LOGIC_FIRST_GID + n − 1`: `Logic_Tiles.tsx` starts at GID 101 and its tiles 0, 1 and 2 carry the `door_id` properties `door_1`, `door_2` and `door_3`, which `map_loader` reads.
+- **Door tiles** (`door_gid`). A door is 2 tiles, and its partner (the same letter next to it) decides the half: partner below → top half (47), above → bottom half (57), right → left half (67), left → right half (68). Both colors use the same wooden door art; the color is data on the door (see the `Doors` objects below).
+- **Door groups** (`find_door_groups(grid)`). `same_character_area(grid, start)` is a flood fill that only spreads into the **same character**, so from any door tile it finds its whole door. `find_door_groups` walks the door tiles in reading order (top to bottom, left to right) and returns `(key item id, set of cells)` pairs, for example `("gold_key", {(20, 4), (21, 4)})`. `seen |= cells` (union into) marks the group's cells so its second tile isn't counted again. A group that isn't exactly 2 tiles is a `ValueError` ("doors are 2 tiles"), where before a 3-tile door would silently have drawn the wrong pieces. Reading order keeps the numbering stable, so reconverting gives an identical file.
 - **Layers** (`build_tile_layers(grid, rng)`) are 2D lists of GIDs (0 for empty), one per `TILE_LAYER_NAMES` entry, in the names and order `map_loader` expects. Each is built with `[[0] * width for _ in range(height)]`, which makes separate rows; `[[0] * width] * height` would list one row `height` times, so writing to one row would change them all. `Wall_Decor` and `Floor_Decor` are left empty.
-- **Objects** (`build_objects(grid)`) are `(name, x, y, width, height)` tuples in pixels, with the names `map_loader` looks for, using the game's reference points: `Player` at the tile's center (the game sets `rect.center` to it); `Enemy_<type>` and `chest` at the tile's top-left; and one `Exit` rect covering every `X` cell, from the smallest x and y to the largest (`+ 1` to include the last cell). Placed items (`PLACED_ITEMS`, so far only `g` for `gold_key`) are point objects named by their item id, at the tile's center, because `WorldItem` places itself by `rect.center`. Chests go in a `Chests` object group, placed items in `Items`, and everything else in `Entity_Spawns`. `g` is used rather than `K` because `k` is already the Skeleton.
-- **Writing** (`write_tmx`). A `.tmx` is XML, built with Python's `xml.etree.ElementTree` (`ET`): `ET.Element` makes the `<map>` root, `ET.SubElement` adds the tileset references (`TILESETS`: `Dungeon.tsx` at 1, `Logic_Tiles.tsx` at 101), one `<layer>` per tile layer with its GIDs as CSV text (`layer_csv`, the same format Tiled writes), and the object groups. Attribute values must be strings. Every layer and object group gets a unique id from `next_id` and every object one from `object_id`, and `nextlayerid` / `nextobjectid` tell Tiled which numbers to use next if the map is edited by hand. Spawn points have no size, so their width and height are left out. `ET.indent` adds line breaks and indentation, so the file and its diffs are readable.
-- **Solvability check** (`can_finish`, run at the end of `validate_grid`). It answers: can a player starting at `@` reach the exit, picking up keys and opening doors along the way? It follows the game's rules: any `gold_key` opens any door group, and each group uses up one key. Keys are guaranteed by design (see the loot notes in section 8), and this is what checks it. Hard's generated floors will rely on the same check to reject unwinnable layouts.
-  - **Flood fill** (`flood_fill(grid, start, opened_doors)`): starting from `@`, it spreads to every open neighbor, then their neighbors, and so on, but never through a door that's still closed. What it covers is everywhere the player can walk right now. It's a breadth-first search: `queue` is a `deque` (a list built for removing from the front quickly), and `popleft()` takes the oldest cell, so the fill spreads outward in rings; `reachable` is a set, so "already seen?" is instant, and it's also the result. Three `continue`s skip a neighbor that was already seen, that's a wall or void, or that's a closed door.
+- **Objects** (`build_objects(grid)`) are `(name, x, y, width, height)` tuples in pixels, with the names `map_loader` looks for, using the game's reference points: `Player` at the tile's center (the game sets `rect.center` to it); `Enemy_<type>` and `chest` at the tile's top-left; and one `Exit` rect covering every `X` cell, from the smallest x and y to the largest (`+ 1` to include the last cell). Placed items (`PLACED_ITEMS`: `s` → `silver_key`, `g` → `gold_key`) are point objects named by their item id, at the tile's center, because `WorldItem` places itself by `rect.center`. Chests go in a `Chests` object group, placed items in `Items`, doors in `Doors`, and everything else in `Entity_Spawns`. The exit's and the doors' rects come from `cells_rect(cells)`, the bounding rect of a set of cells in pixels (shared, so the formula lives in one place).
+
+  **Doors are objects** with **properties**: one `door` object per group, covering its two tiles, numbered `door_1`, `door_2` … (`enumerate(..., start=1)`), carrying which key opens it:
+
+  ```xml
+  <object id="8" name="door" x="320" y="64" width="32" height="16">
+   <properties>
+    <property name="door_id" value="door_1" />
+    <property name="key" value="gold_key" />
+   </properties>
+  </object>
+  ```
+
+  This replaced the old `Logic_Layer`, a tile layer whose tiles came from `Logic_Tiles.tsx` (1 MB, of which only 3 tiles had ids). So there's no longer a limit on door groups, and the key a door needs is stored in the map data. A door object is a 6-item tuple, its properties dict last.
+- **Writing** (`write_tmx`). A `.tmx` is XML, built with Python's `xml.etree.ElementTree` (`ET`). Objects are unpacked as `object_name, x, y, object_width, object_height, *extra`: `*extra` (star unpacking, the opposite of `*center` when building a tuple) collects whatever is left over into a list, `[]` for ordinary objects and `[properties]` for a door, which then gets a nested `<properties>` element with one `<property name=… value=…>` per entry, the shape Tiled itself writes. The rest: `ET.Element` makes the `<map>` root, `ET.SubElement` adds the tileset references (`TILESETS`: `Dungeon.tsx` at 1, `Logic_Tiles.tsx` at 101), one `<layer>` per tile layer with its GIDs as CSV text (`layer_csv`, the same format Tiled writes), and the object groups. Attribute values must be strings. Every layer and object group gets a unique id from `next_id` and every object one from `object_id`, and `nextlayerid` / `nextobjectid` tell Tiled which numbers to use next if the map is edited by hand. Spawn points have no size, so their width and height are left out. `ET.indent` adds line breaks and indentation, so the file and its diffs are readable.
+- **Solvability check** (`can_finish`, run at the end of `validate_grid`). It answers: can a player starting at `@` reach the exit, picking up keys and opening doors along the way? It follows the game's rules: a door group opens with **its own color** of key (any silver key opens any silver door), and each group uses up one key. Keys are guaranteed by design (see the loot notes in section 8), and this is what checks it. Hard's generated floors will rely on the same check to reject unwinnable layouts.
+  - **Flood fill** (`flood_fill(grid, start, door_at, opened)`): starting from `@`, it spreads to every open neighbor, then their neighbors, and so on, but never through a door that's still closed. What it covers is everywhere the player can walk right now. It's a breadth-first search: `queue` is a `deque` (a list built for removing from the front quickly), and `popleft()` takes the oldest cell, so the fill spreads outward in rings; `reachable` is a set, so "already seen?" is instant, and it's also the result. Three `continue`s skip a neighbor that was already seen, that's a wall or void, or that's a closed door: a cell in `door_at` (a dict from each door cell to its group number) whose group isn't in `opened`.
 
     ```
     @ . . . 1 . . X      reachable now: the 4 cells left of door 1
     ```
 
-  - **Opening doors** (`can_finish(grid, start, opened_doors=frozenset())`): if the exit isn't reachable, it counts the keys in hand, then tries opening each closed door that touches the reachable area, calling itself with that door added. That's recursion; it ends because each call opens one more door and there are at most 3. Different doors lead to different places, so it tries every choice, and returns `True` as soon as one works.
+  - **Opening doors** (`can_finish(grid, start, door_groups, opened=frozenset())`): `opened` holds the numbers of the door groups opened so far. If the exit isn't reachable, it looks at each closed door group touching the reachable area and checks whether a key of **that door's color** is in hand, and if so calls itself with that group added. That's recursion; it ends because each call opens one more door. Different doors lead to different places, so it tries every choice, and returns `True` as soon as one works.
 
     ```
-    keys in hand = keys found in the reachable area − doors already opened
+    keys in hand (per color) = keys of that color found in the reachable area
+                               − doors of that color already opened
 
-    can_finish(opened = {})        1 key found, exit not reached → try door "1"
-    └─ can_finish(opened = {"1"})  reachable now includes X → True
+    test room: s . . S . X            silver door group 0, silver key s before it
+    can_finish(opened = {})           exit not reached; group 0 is silver, 1 silver key found, 0 used → try it
+    └─ can_finish(opened = {0})       reachable now includes X → True
+
+    with g instead of s:              group 0 is silver, 0 silver keys found → nothing to try → False
     ```
 
-    Counting every key in the reachable area is valid because that area only ever grows as doors open, so a player can always collect all of it before choosing the next door. `touching` is the set of characters next to the reachable area; `& set(DOOR_IDS)` keeps the doors and `- opened_doors` drops the open ones. `opened_doors | {door}` makes a **new** set for each try, so the tries don't affect each other. `any(...)` is true if at least one item is, and `sum(1 for ...)` counts matches.
+    Counting every key in the reachable area is valid because that area only ever grows as doors open, so a player can always collect all of it before choosing the next door. `door_at` maps each door cell to its group number (a dict comprehension with two `for`s); `touching` is the set of group numbers next to the reachable area, and `touching - opened` the closed ones. `PLACED_ITEMS.get(character)` gives the item id of a key character and `None` for anything else, so only keys of the right color are counted. `opened | {index}` makes a **new** set for each try, so the tries don't affect each other. `any(...)` is true if at least one item is, and `sum(1 for ...)` counts matches.
   - **Why the default is `frozenset()`:** a default value is created once, when the function is defined, and shared by every call, so a mutable default like `set()` or `[]` can quietly carry changes from one call into the next, a classic Python trap. A `frozenset` can't be changed, so it's safe.
-  - Helpers and constants: `find_cells(grid, characters)` lists the positions of the given characters (a comprehension with two `for`s, rows then cells); `KEY` (`"g"`) names the key character; `DIRECTIONS` holds the 4 neighbor offsets (up, right, down, left), shared by the void check and the flood fill.
+  - Helpers and constants: `find_cells(grid, characters)` lists the positions of the given characters (a comprehension with two `for`s, rows then cells); `SILVER_KEY` (`"s"`) and `GOLD_KEY` (`"g"`) name the key characters, and `DOOR_KEYS` maps each door letter to the key item that opens it; `DIRECTIONS` holds the 4 neighbor offsets (up, right, down, left), shared by the void check and the flood fill.
 - **Reproducible output.** `random.Random(map_name)` is a generator seeded with the map's name: the same seed always gives the same "random" picks, so converting the same file twice writes an identical map and `git diff` only shows real changes, while each map still gets its own variety.
 - **Two typos from building it, worth remembering** because both were valid Python that ran and quietly did the wrong thing: `{WALL < FLOOR, ...}` (a comparison, `False`, instead of two set items) and `cell_at(grid, x + dx, y=dx)` (a keyword argument setting `y` to `dx`). The cure is checking real output, not just that the code runs.
 - **Doors can guard optional loot.** A door doesn't have to block the way to the exit: on Easy floor 1 it locks a side room with a chest, so the key and the chest are a route choice. The solvability check only proves the **exit** can be reached, so it can't tell a required door from an optional one; that's a design decision, checked by playing.
-- **Limits:** 3 door groups (the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles, walls at least 2 thick, no decor, and only keys as placed items. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
+- **Limits:** doors exactly 2 tiles, walls at least 2 thick, no decor, and only keys as placed items. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
 
 **`tools/make_strip.py`.** Joins animation frames into one horizontal strip. The pack stores each animation as one file per frame (`keys_2_1.png` … `keys_2_4.png`), while the game's texture data expects one strip that `slice_frames` cuts into equal cells. The pack folder is git-ignored, so the game must never load from it: the tool **reads from the pack** and **writes into `Assets/`**, and only its output is committed. Running it needs the pack on your machine.
 
@@ -400,10 +420,11 @@ All states are built once at startup and kept alive, so leaving and returning to
 - **`map/map_loader.py`**: reads the TMX file with pytmx.
   - `load_level_data(map_path)` returns one dict with everything the level needs.
   - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
+  - `assign_door_properties(tmx_data, door_tiles)` reads the `Doors` object group: for each door object it builds a `pygame.Rect` from its position and size, and gives every door tile inside it the object's `door_id` and `key` (pytmx reads an object's `<properties>` into the dict `map_object.properties`). `load_level_data` calls it right after `build_map`. Maps no longer have a logic layer.
   - `find_player_spawn` and `find_enemy_spawns` read spawn objects.
   - `find_exit` returns a `pygame.Rect` for the object named `Exit`, or `None` if there isn't one.
   - `find_placed_items` returns `(item_id, center)` pairs for the objects in the `Items` object group, stored as `level_data["placed_items"]`. Each object is named by its item id. It loops over `tmx_data.objectgroups` to find the group by name, so a map with no `Items` group just has no placed items (`get_layer_by_name` would crash instead). The center is worked out as `(x + width / 2, y + height / 2)`, which works for both kinds of object: Level One's 10×8 rectangles drawn in Tiled, and the converter's 0-sized points, whose center is just their x and y.
-- **`map/tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id`.
+- **`map/tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id` and a `key` (the item id that opens them, `silver_key` or `gold_key`), both set by `assign_door_properties`.
 - **`menus/main_menu.py`**: `MainMenu(game_state_manager)`, the title screen (section 5).
   - `draw` fills the screen with `MENU_BACKGROUND_COLOR`, then draws the "DUNGEON SPRINT" title (`TITLE_FONT_SIZE` 96, at `TITLE_Y` 50, centered with `(SCREEN_WIDTH - width) // 2`) and the buttons.
   - Start, Options and Exit are `TextButton`s with a gray outline, centered and stacked at `START_BUTTON_Y` (300), `OPTIONS_BUTTON_Y` (380) and `EXIT_BUTTON_Y` (460).
@@ -1022,7 +1043,7 @@ Missing keys fall back to the defaults in `systems/settings.py`. A corrupted fil
 
 **Sounds.** Every `.wav` or `.ogg` in `Assets/Sounds` and `Assets/Music` is loaded and named by its filename without the extension. Sound files are named in lowercase snake_case, so their keys are too. Names currently used: `button_hover`, `button_click`, `pause`, `heal`, `death` and `roll_hit` (SFX), and `menu_music`, `level_music` and `game_over` (music). Each state picks its own track in `enter()` (section 5). A missing name prints a message instead of crashing.
 
-**The map** (`Assets/Maps/Dungeon_Level_One.tmx`, made in Tiled, 16x16 tiles). The loader looks for these names:
+**The maps** (`Assets/Maps/*.tmx`, 16x16 tiles; the floors are written by the ASCII converter, and Tiled can open them). The loader looks for these names:
 
 | Layer | Type | What the loader does |
 | --- | --- | --- |
@@ -1030,11 +1051,12 @@ Missing keys fall back to the defaults in `systems/settings.py`. A corrupted fil
 | `Walls` | Tile layer | One `WallTile` per tile. These block movement. |
 | `Wall_Decor`, `Floor_Decor` | Tile layers | `DecorTile`s, drawn but not solid |
 | `Door_Tiles` | Tile layer | One `Door` per tile. These block movement until unlocked. |
-| `Logic_Layer` | Tile layer | Not drawn. Its tiles carry a `door_id` property, and each door tile reads the `door_id` at the same x and y. |
 | `Chests` | Object layer | One `Chest` per object named `chest` (any capitalization) |
+| `Items` | Object layer | Placed items: each object is named by its item id (`silver_key`, `gold_key`) and spawned as a `WorldItem` at its center |
+| `Doors` | Object layer | One `door` object per door group, with `door_id` and `key` properties; every door tile inside its rect gets both |
 | `Entity_Spawns` | Object layer | `Player` is the player spawn. `Enemy_<Type>` objects (e.g. `Enemy_Skull`) are enemy spawns. A rectangle object named `Exit` is the level exit. A map without one can't be finished, but doesn't crash. |
 
-Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
+Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door. The exit is drawn by the ladder tile on `Floor_Decor`.
 
 ## 9. How to add things
 
@@ -1045,7 +1067,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 4. For a new behaviour, write a `<behavior>_velocity` function in `systems/enemy_ai.py` and add a branch for it in `Enemy.update_movement`.
 
 **A new floor.**
-1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one `g` key per door group, one `@`, one `X`.
+1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one key of the matching color per door group (`s` for an `S` door on the main path, `g` for a `G` treasure door), one `@`, one `X`.
 2. Convert it: `venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports. If it says the exit can't be reached, check that every door's key can be reached before that door.
 3. Preview it: `venv/Scripts/python -m tools.preview_map Assets/Maps/<name>.tmx`, then check `map_previews/<name>.png`.
 4. Add its path to `LEVEL_ORDER` in `globals.py`, where the order is the play order.
@@ -1097,7 +1119,9 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door.
 - `start_new_run()` reloads the map inside the update of whichever menu calls it (`RunEndScreen` or `Options`), so the first frame of the new run gets a large `dt` covering the load time.
 - If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
 - Easy has 1 of its 5 floors so far, so a run currently ends at floor 1's exit, and the floor transition and split rows only show once floor 2 exists.
-- The ASCII converter supports only 3 door groups (`door_1` to `door_3`, the ids `Logic_Tiles.tsx` defines), doors exactly 2 tiles long and walls at least 2 thick. It writes no decor, places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
+- The old hand-made `Dungeon_Level_One.tmx` still uses a `Logic_Layer`, which the loader no longer reads, so its doors load without ids. `Logic_Tile.tsx`, `Logic_Tiles.tsx` and their PNGs are only kept for it, and can go with it.
+- Until gameplay reads a door's `key`, every door still asks for a gold key in-game.
+- The ASCII converter needs doors exactly 2 tiles long and walls at least 2 thick. It writes no decor, places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
 - The old hand-made `Dungeon_Level_One.tmx` has no ladder tile, so its exit is invisible in-game now that the yellow outline is gone. It's only kept as Tiled reference.
 
 **HUD:**

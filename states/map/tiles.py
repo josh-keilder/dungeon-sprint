@@ -36,6 +36,7 @@ class Door(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(topleft=pos)
         self.pos = pygame.math.Vector2(pos)
         self.door_id = None
+        self.key = None
 
     def draw(self, screen):
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))

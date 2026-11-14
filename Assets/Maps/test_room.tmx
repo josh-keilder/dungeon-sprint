@@ -1,7 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<map version="1.10" orientation="orthogonal" renderorder="right-down" width="14" height="6" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="7">
+<map version="1.10" orientation="orthogonal" renderorder="right-down" width="14" height="6" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="8">
  <tileset firstgid="1" source="Dungeon.tsx" />
- <tileset firstgid="101" source="Logic_Tiles.tsx" />
  <layer id="1" name="Floor" width="14" height="6">
   <data encoding="csv">
 79,79,79,79,79,79,79,79,79,79,79,79,79,79,
@@ -52,26 +51,24 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <layer id="6" name="Logic_Layer" width="14" height="6">
-  <data encoding="csv">
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,101,0,0,0,0,0,
-0,0,0,0,0,0,0,0,101,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0
-</data>
- </layer>
- <objectgroup id="7" name="Chests">
+ <objectgroup id="6" name="Chests">
   <object id="1" name="chest" x="48" y="64" width="16" height="16" />
  </objectgroup>
- <objectgroup id="8" name="Entity_Spawns">
+ <objectgroup id="7" name="Entity_Spawns">
   <object id="2" name="Player" x="24" y="24" />
   <object id="3" name="Enemy_Skeleton" x="176" y="32" />
   <object id="4" name="Enemy_Skull" x="176" y="64" />
   <object id="5" name="Exit" x="192" y="64" width="16" height="16" />
  </objectgroup>
- <objectgroup id="9" name="Items">
-  <object id="6" name="gold_key" x="72" y="40" />
+ <objectgroup id="8" name="Items">
+  <object id="6" name="silver_key" x="72" y="40" />
+ </objectgroup>
+ <objectgroup id="9" name="Doors">
+  <object id="7" name="door" x="128" y="32" width="16" height="32">
+   <properties>
+    <property name="door_id" value="door_1" />
+    <property name="key" value="silver_key" />
+   </properties>
+  </object>
  </objectgroup>
 </map>

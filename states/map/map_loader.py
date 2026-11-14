@@ -10,6 +10,7 @@ def load_level_data(map_path):
     tmx_data = load_pygame(map_path)
 
     level_data = build_map(tmx_data)
+    assign_door_properties(tmx_data, level_data["door_tiles"])
 
     level_data["player_spawn"] = find_player_spawn(tmx_data)
     level_data["enemy_spawns"] = find_enemy_spawns(tmx_data)
@@ -28,8 +29,6 @@ def build_map(tmx_data):
     wall_tiles = pygame.sprite.Group()
     door_tiles = pygame.sprite.Group()
     chests = pygame.sprite.Group()
-
-    logic_layer = tmx_data.get_layer_by_name("Logic_Layer")
 
     for layer in tmx_data.visible_layers:
         if layer.name == "Floor":
@@ -54,17 +53,11 @@ def build_map(tmx_data):
 
         elif layer.name == "Door_Tiles":
             for x, y, tile_image in layer.tiles():
-                door_tile = Door(
+                Door(
                     groups=door_tiles,
                     image=tile_image,
                     pos=(x * TILE_SIZE, y * TILE_SIZE),
                 )
-                # Extract door_id property from the logic layer at the same coordinate
-                logic_properties = tmx_data.get_tile_properties(
-                    x, y, tmx_data.layers.index(logic_layer)
-                )
-                if logic_properties:
-                    door_tile.door_id = logic_properties.get("door_id")
 
         elif layer.name == "Chests":
             for map_object in layer:
@@ -128,3 +121,18 @@ def find_placed_items(tmx_data):
             placed_items.append((map_object.name, center))
 
     return placed_items
+
+
+def assign_door_properties(tmx_data, door_tiles):
+    for layer in tmx_data.objectgroups:
+        if layer.name != "Doors":
+            continue
+
+        for map_object in layer:
+            door_rect = pygame.Rect(
+                map_object.x, map_object.y, map_object.width, map_object.height
+            )
+            for door in door_tiles:
+                if door_rect.colliderect(door.rect):
+                    door.door_id = map_object.properties["door_id"]
+                    door.key = map_object.properties["key"]
