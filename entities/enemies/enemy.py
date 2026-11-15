@@ -1,6 +1,6 @@
 import pygame
 
-from constants import RED, TILE_SIZE
+from constants import RED, TILE_SIZE, YELLOW
 from systems import debug
 from systems.animation import advance_animation, new_animation
 from systems.assets import load_animations
@@ -32,12 +32,17 @@ class Enemy:
         self.invulnerability_duration = type_data["invulnerability_duration"]
         self.loot_table = type_data["loot_table"]
         self.behavior = type_data["behavior"]
+        self.touch_damage = type_data["touch_damage"]
 
         # Position, sprite and animation
         self.pos = pygame.math.Vector2(pos)
         self.animation = new_animation(animations, start_animation)
         self.image = animations[start_animation][0]
-        self.rect = self.image.get_frect(topleft=self.pos)
+
+        # Body: the box that moves, hits walls and gets hit; the art is drawn around it
+        body_x, body_y, body_width, body_height = type_data["body"]
+        self.art_offset = pygame.Vector2(body_x, body_y)
+        self.rect = pygame.FRect(self.pos, (body_width, body_height))
 
         # Health and hit timers
         self.health = new_health(type_data["max_health"])
@@ -61,10 +66,10 @@ class Enemy:
     def draw(self, screen, camera=None):
         blink_hidden = is_blink_hidden(self.invulnerability, self.blink_interval)
 
-        draw_pos = self.rect.topleft
-
+        art_x, art_y = self.art_topleft()
+        draw_pos = (art_x, art_y)
         if camera:
-            draw_pos = (self.rect.x - camera.x, self.rect.y - camera.y)
+            draw_pos = (art_x - camera.x, art_y - camera.y)
 
         if not blink_hidden:
             screen.blit(self.image, draw_pos)
@@ -86,7 +91,15 @@ class Enemy:
             )
 
         if debug.show_hitboxes:
-            draw_hitbox(screen, self.image, self.rect, camera, RED)
+            art_rect = pygame.FRect(self.art_topleft(), self.image.get_size())
+            draw_hitbox(screen, self.image, art_rect, camera, RED)
+            body_on_screen = (
+                self.rect.move(-camera.x, -camera.y) if camera else self.rect
+            )
+            pygame.draw.rect(screen, YELLOW, body_on_screen, 1)
+
+    def art_topleft(self):
+        return (self.rect.x - self.art_offset.x, self.rect.y - self.art_offset.y)
 
     def update_movement(self, dt, walls, target_pos):
         if self.behavior == "fly":

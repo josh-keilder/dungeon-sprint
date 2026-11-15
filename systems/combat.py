@@ -37,7 +37,11 @@ def resolve_contact(player, enemy):
         start_timer(enemy.invulnerability, enemy.invulnerability_duration)
         enemy_hit = True
 
-    if not is_running(player.invulnerability) and not is_rolling(player.roll):
+    if (
+        enemy.touch_damage
+        and not is_running(player.invulnerability)
+        and not is_rolling(player.roll)
+    ):
         take_damage(player.health, enemy.attack_damage)
         start_timer(player.invulnerability, PLAYER_INVULNERABILITY_DURATION)
 
