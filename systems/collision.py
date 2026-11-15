@@ -1,6 +1,7 @@
 from systems.hitbox import sprites_overlap
 
-CONTACT_CHECK_RANGE = 100
+# Broad phase: only enemies this close get the pixel-perfect mask check
+CONTACT_CHECK_RANGE = 100  # pixels
 
 
 def find_player_contacts(player, enemies):

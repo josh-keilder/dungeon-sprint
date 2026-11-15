@@ -1,9 +1,13 @@
 import os
 
+# Folders that aren't project code
+IGNORED_FOLDERS = ("venv", ".git", "__pycache__", ".venv")
 
-def count_lines_in_project(
-    start_path=".", ignore_folders={"venv", ".git", "__pycache__", ".venv"}
-):
+# The README section this tool rewrites
+STATS_HEADER = "\n## Project Statistics\n"
+
+
+def count_lines_in_project(start_path=".", ignore_folders=IGNORED_FOLDERS):
     total_lines = 0
     file_count = 0
 
@@ -31,7 +35,7 @@ def count_lines_in_project(
 
 
 def update_readme(line_count, file_count, readme_path="README.md"):
-    stats_header = "\n## Project Statistics\n"
+    stats_header = STATS_HEADER
     stats_content = (
         f"- **Total Files:** {file_count}\n- **Total Lines of Code:** {line_count}\n"
     )
@@ -50,7 +54,7 @@ def update_readme(line_count, file_count, readme_path="README.md"):
 
     with open(readme_path, "w", encoding="utf-8") as readme_file:
         readme_file.write(new_content)
-    print(f"README.md updated successfully!")
+    print("README.md updated successfully!")
 
 
 if __name__ == "__main__":

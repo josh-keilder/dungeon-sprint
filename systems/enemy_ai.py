@@ -2,30 +2,20 @@ import random
 
 import pygame
 
-SIGHT_SEARCH_MARGIN = 64
+# Line of sight: only walls near the sight line are checked
+SIGHT_SEARCH_MARGIN = 64  # pixels
 
-FLEE_TIME = 2.0
-RETURN_TIME = 3.0
-CHASE_RANGE = 200
-IDLE_TURN_CHANCE = 0.01
-FLY_WANDER_FACTOR = 0.2
-WALK_WANDER_FACTOR = 0.5
+# After a contact: run away, then come back
+FLEE_TIME = 2.0  # seconds
+RETURN_TIME = 3.0  # seconds
 
+# Chasing
+CHASE_RANGE = 200  # pixels; flyers chase the player inside this distance
 
-def has_line_of_sight(start, end, walls):
-    search_rect = pygame.Rect(
-        min(start.x, end.x),
-        min(start.y, end.y),
-        abs(start.x - end.x),
-        abs(start.y - end.y),
-    ).inflate(SIGHT_SEARCH_MARGIN, SIGHT_SEARCH_MARGIN)
-
-    for wall in walls:
-        if not search_rect.colliderect(wall.rect):
-            continue
-        if wall.rect.clipline(start, end):
-            return False
-    return True
+# Wandering when not chasing
+IDLE_TURN_CHANCE = 0.01  # chance per frame to pick a new direction
+FLY_WANDER_FACTOR = 0.2  # fraction of full speed
+WALK_WANDER_FACTOR = 0.5  # fraction of full speed
 
 
 def random_idle_direction():
@@ -65,3 +55,19 @@ def wander_chase_velocity(enemy, target_pos, walls):
         velocity = enemy.idle_direction * enemy.speed * WALK_WANDER_FACTOR
 
     return velocity
+
+
+def has_line_of_sight(start, end, walls):
+    search_rect = pygame.Rect(
+        min(start.x, end.x),
+        min(start.y, end.y),
+        abs(start.x - end.x),
+        abs(start.y - end.y),
+    ).inflate(SIGHT_SEARCH_MARGIN, SIGHT_SEARCH_MARGIN)
+
+    for wall in walls:
+        if not search_rect.colliderect(wall.rect):
+            continue
+        if wall.rect.clipline(start, end):
+            return False
+    return True

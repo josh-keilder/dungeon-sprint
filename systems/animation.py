@@ -1,4 +1,5 @@
-DEFAULT_ANIMATION_SPEED = 10.0
+# Playback
+DEFAULT_ANIMATION_SPEED = 10.0  # frames per second
 
 
 def new_animation(frames, start_name, speed=DEFAULT_ANIMATION_SPEED):

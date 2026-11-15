@@ -1,3 +1,4 @@
+# Equipment slots, in the order the inventory screen draws them
 EQUIPMENT_SLOT_NAMES = (
     "head",
     "chest",

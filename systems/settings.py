@@ -1,8 +1,10 @@
 import json
 import os
 
+# The settings file, saved in the project root (git-ignored)
 SETTINGS_FILE_PATH = "settings.json"
 
+# Current settings; starts as the defaults, then the saved file is merged over it
 SETTINGS = {
     "fps_enabled": False,
     "full_screen_enabled": False,

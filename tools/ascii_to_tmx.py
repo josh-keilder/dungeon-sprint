@@ -6,6 +6,32 @@ from collections import deque
 
 from globals import TILE_SIZE
 
+# Legend: one character per tile in the ASCII source
+WALL = "#"
+FLOOR = "."
+VOID = " "  # outside the dungeon
+PLAYER = "@"
+EXIT = "X"  # drawn as a ladder down
+CHEST = "C"
+CRATE = "B"  # breakable box: blocks until rolled into
+SILVER_KEY = "s"
+GOLD_KEY = "g"
+PLACED_ITEMS = {SILVER_KEY: "silver_key", GOLD_KEY: "gold_key"}
+ENEMY_TYPES = {"w": "Skull", "k": "Skeleton"}
+
+# Door tiles, and the key that opens them; a door is two touching tiles of the same letter
+DOOR_KEYS = {"S": "silver_key", "G": "gold_key"}
+
+KNOWN_CHARACTERS = (
+    {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST, CRATE}
+    | set(ENEMY_TYPES)
+    | set(DOOR_KEYS)
+    | set(PLACED_ITEMS)
+)
+
+# Neighbors: up, right, down, left
+DIRECTIONS = ((0, -1), (1, 0), (0, 1), (-1, 0))
+
 # Tile GIDs in Dungeon.tsx (firstgid 1), learned from Level One
 # The floor is one 4x3 slab picture, repeated: pick the piece by position
 FLOOR_PATTERN = (
@@ -24,6 +50,7 @@ OUTER_CORNER_GIDS = {"se": 1, "sw": 6, "ne": 41, "nw": 46}  # only a diagonal is
 DOOR_GIDS = {"top": 47, "bottom": 57, "left": 67, "right": 68}
 LADDER_GID = 40  # the exit: a ladder down into a hole
 
+# Output: the tile layers in the names and order map_loader expects
 TILE_LAYER_NAMES = (
     "Floor",
     "Walls",
@@ -31,40 +58,11 @@ TILE_LAYER_NAMES = (
     "Floor_Decor",
     "Door_Tiles",
 )
-
 MAPS_FOLDER = "Assets/Maps"
 TILESETS = (("1", "Dungeon.tsx"),)
 
-# Legend
-WALL = "#"
-FLOOR = "."
-VOID = " "
-PLAYER = "@"
-EXIT = "X"
-CHEST = "C"
-CRATE = "B"  # breakable box: blocks until rolled into
-SILVER_KEY = "s"
-GOLD_KEY = "g"
-PLACED_ITEMS = {SILVER_KEY: "silver_key", GOLD_KEY: "gold_key"}
-ENEMY_TYPES = {"w": "Skull", "k": "Skeleton"}
 
-# Door tiles, and the key that opens them; a door is two touching tiles of the same letter
-DOOR_KEYS = {"S": "silver_key", "G": "gold_key"}
-
-DIRECTIONS = ((0, -1), (1, 0), (0, 1), (-1, 0))
-
-KNOWN_CHARACTERS = (
-    {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST, CRATE}
-    | set(ENEMY_TYPES)
-    | set(DOOR_KEYS)
-    | set(PLACED_ITEMS)
-)
-
-
-def is_open(character):
-    return character not in (WALL, VOID)
-
-
+# Reading and checking the grid
 def read_grid(path):
     with open(path, encoding="utf-8") as file:
         rows = file.read().splitlines()
@@ -111,11 +109,123 @@ def validate_grid(grid):
         )
 
 
-def cell_at(grid, x, y):
-    if 0 <= y < len(grid) and 0 <= x < len(grid[0]):
-        return grid[y][x]
+# Solvability: can the exit be reached, opening doors with matching keys?
+def can_finish(grid, start, door_groups, opened=frozenset()):
+    door_at = {
+        cell: index for index, (_, cells) in enumerate(door_groups) for cell in cells
+    }
+    reachable = flood_fill(grid, start, door_at, opened)
 
-    return VOID
+    if any(grid[y][x] == EXIT for x, y in reachable):
+        return True
+
+    touching = {
+        door_at[(x + dx, y + dy)]
+        for x, y in reachable
+        for dx, dy in DIRECTIONS
+        if (x + dx, y + dy) in door_at
+    }
+
+    for index in touching - opened:
+        key_id = door_groups[index][0]
+        keys_found = sum(
+            1 for x, y in reachable if PLACED_ITEMS.get(grid[y][x]) == key_id
+        )
+        keys_used = sum(
+            1 for opened_index in opened if door_groups[opened_index][0] == key_id
+        )
+
+        if keys_found - keys_used > 0 and can_finish(
+            grid, start, door_groups, opened | {index}
+        ):
+            return True
+
+    return False
+
+
+def flood_fill(grid, start, door_at, opened):
+    reachable = {start}
+    queue = deque([start])
+
+    while queue:
+        x, y = queue.popleft()
+
+        for dx, dy in DIRECTIONS:
+            neighbor = (x + dx, y + dy)
+            if neighbor in reachable:
+                continue
+
+            character = cell_at(grid, *neighbor)
+            if not is_open(character):
+                continue
+            if neighbor in door_at and door_at[neighbor] not in opened:
+                continue
+
+            reachable.add(neighbor)
+            queue.append(neighbor)
+
+    return reachable
+
+
+def find_door_groups(grid):
+    door_groups = []
+    seen = set()
+
+    for cell in find_cells(grid, set(DOOR_KEYS)):
+        if cell in seen:
+            continue
+
+        cells = same_character_area(grid, cell)
+        seen |= cells
+        if len(cells) != 2:
+            raise ValueError(f"door at {cell} is {len(cells)} tiles; doors are 2 tiles")
+
+        x, y = cell
+        door_groups.append((DOOR_KEYS[grid[y][x]], cells))
+
+    return door_groups
+
+
+def same_character_area(grid, start):
+    x, y = start
+    character = grid[y][x]
+    area = {start}
+    queue = deque([start])
+
+    while queue:
+        x, y = queue.popleft()
+        for dx, dy in DIRECTIONS:
+            neighbor = (x + dx, y + dy)
+            if neighbor not in area and cell_at(grid, *neighbor) == character:
+                area.add(neighbor)
+                queue.append(neighbor)
+
+    return area
+
+
+# Tile layers
+def build_tile_layers(grid, rng):
+    width = len(grid[0])
+    height = len(grid)
+    layers = {name: [[0] * width for _ in range(height)] for name in TILE_LAYER_NAMES}
+
+    for y, row in enumerate(grid):
+        for x, character in enumerate(row):
+            if is_open(character):
+                layers["Floor"][y][x] = FLOOR_PATTERN[(y - 1) % 3][(x - 1) % 4]
+            else:
+                layers["Floor"][y][x] = VOID_GID
+
+            if character == WALL:
+                layers["Walls"][y][x] = wall_gid(grid, x, y, rng)
+
+            if character in DOOR_KEYS:
+                layers["Door_Tiles"][y][x] = door_gid(grid, x, y)
+
+            if character == EXIT:
+                layers["Floor_Decor"][y][x] = LADDER_GID
+
+    return layers
 
 
 def wall_gid(grid, x, y, rng):
@@ -169,30 +279,7 @@ def door_gid(grid, x, y):
     raise ValueError(f"door at ({x}, {y}) needs a second tile next to it")
 
 
-def build_tile_layers(grid, rng):
-    width = len(grid[0])
-    height = len(grid)
-    layers = {name: [[0] * width for _ in range(height)] for name in TILE_LAYER_NAMES}
-
-    for y, row in enumerate(grid):
-        for x, character in enumerate(row):
-            if is_open(character):
-                layers["Floor"][y][x] = FLOOR_PATTERN[(y - 1) % 3][(x - 1) % 4]
-            else:
-                layers["Floor"][y][x] = VOID_GID
-
-            if character == WALL:
-                layers["Walls"][y][x] = wall_gid(grid, x, y, rng)
-
-            if character in DOOR_KEYS:
-                layers["Door_Tiles"][y][x] = door_gid(grid, x, y)
-
-            if character == EXIT:
-                layers["Floor_Decor"][y][x] = LADDER_GID
-
-    return layers
-
-
+# Objects
 def build_objects(grid):
     objects = {
         "Chests": [],
@@ -233,11 +320,18 @@ def build_objects(grid):
     return objects
 
 
-def layer_csv(rows):
-    lines = [",".join(str(gid) for gid in row) for row in rows]
-    return "\n" + ",\n".join(lines) + "\n"
+def cells_rect(cells):
+    xs = [x for x, _ in cells]
+    ys = [y for _, y in cells]
+    return (
+        min(xs) * TILE_SIZE,
+        min(ys) * TILE_SIZE,
+        (max(xs) - min(xs) + 1) * TILE_SIZE,
+        (max(ys) - min(ys) + 1) * TILE_SIZE,
+    )
 
 
+# Writing the TMX
 def write_tmx(output_path, layers, objects, width, height):
     map_element = ET.Element(
         "map",
@@ -309,6 +403,23 @@ def write_tmx(output_path, layers, objects, width, height):
     tree.write(output_path, encoding="UTF-8", xml_declaration=True)
 
 
+def layer_csv(rows):
+    lines = [",".join(str(gid) for gid in row) for row in rows]
+    return "\n" + ",\n".join(lines) + "\n"
+
+
+# Grid helpers
+def is_open(character):
+    return character not in (WALL, VOID)
+
+
+def cell_at(grid, x, y):
+    if 0 <= y < len(grid) and 0 <= x < len(grid[0]):
+        return grid[y][x]
+
+    return VOID
+
+
 def find_cells(grid, characters):
     return [
         (x, y)
@@ -318,110 +429,7 @@ def find_cells(grid, characters):
     ]
 
 
-def flood_fill(grid, start, door_at, opened):
-    reachable = {start}
-    queue = deque([start])
-
-    while queue:
-        x, y = queue.popleft()
-
-        for dx, dy in DIRECTIONS:
-            neighbor = (x + dx, y + dy)
-            if neighbor in reachable:
-                continue
-
-            character = cell_at(grid, *neighbor)
-            if not is_open(character):
-                continue
-            if neighbor in door_at and door_at[neighbor] not in opened:
-                continue
-
-            reachable.add(neighbor)
-            queue.append(neighbor)
-
-    return reachable
-
-
-def can_finish(grid, start, door_groups, opened=frozenset()):
-    door_at = {
-        cell: index for index, (_, cells) in enumerate(door_groups) for cell in cells
-    }
-    reachable = flood_fill(grid, start, door_at, opened)
-
-    if any(grid[y][x] == EXIT for x, y in reachable):
-        return True
-
-    touching = {
-        door_at[(x + dx, y + dy)]
-        for x, y in reachable
-        for dx, dy in DIRECTIONS
-        if (x + dx, y + dy) in door_at
-    }
-
-    for index in touching - opened:
-        key_id = door_groups[index][0]
-        keys_found = sum(
-            1 for x, y in reachable if PLACED_ITEMS.get(grid[y][x]) == key_id
-        )
-        keys_used = sum(
-            1 for opened_index in opened if door_groups[opened_index][0] == key_id
-        )
-
-        if keys_found - keys_used > 0 and can_finish(
-            grid, start, door_groups, opened | {index}
-        ):
-            return True
-
-    return False
-
-
-def same_character_area(grid, start):
-    x, y = start
-    character = grid[y][x]
-    area = {start}
-    queue = deque([start])
-
-    while queue:
-        x, y = queue.popleft()
-        for dx, dy in DIRECTIONS:
-            neighbor = (x + dx, y + dy)
-            if neighbor not in area and cell_at(grid, *neighbor) == character:
-                area.add(neighbor)
-                queue.append(neighbor)
-
-    return area
-
-
-def find_door_groups(grid):
-    door_groups = []
-    seen = set()
-
-    for cell in find_cells(grid, set(DOOR_KEYS)):
-        if cell in seen:
-            continue
-
-        cells = same_character_area(grid, cell)
-        seen |= cells
-        if len(cells) != 2:
-            raise ValueError(f"door at {cell} is {len(cells)} tiles; doors are 2 tiles")
-
-        x, y = cell
-        door_groups.append((DOOR_KEYS[grid[y][x]], cells))
-
-    return door_groups
-
-
-def cells_rect(cells):
-    xs = [x for x, _ in cells]
-    ys = [y for _, y in cells]
-    return (
-        min(xs) * TILE_SIZE,
-        min(ys) * TILE_SIZE,
-        (max(xs) - min(xs) + 1) * TILE_SIZE,
-        (max(ys) - min(ys) + 1) * TILE_SIZE,
-    )
-
-
+# Entry point
 def main():
     path = sys.argv[1]
     grid = read_grid(path)

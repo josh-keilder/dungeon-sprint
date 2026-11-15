@@ -1,6 +1,8 @@
 from entities.enemies.enemy_texture_data import skull_enemy_texture_data
 from items.loot_table_data import SKELETON_LOOT, SKULL_LOOT
 
+# Enemy types: the key must match the map's spawn name after "Enemy_".
+# Every key is required; Enemy reads them with type_data["..."].
 ENEMY_TYPES = {
     "Skull": {
         "max_health": 100,

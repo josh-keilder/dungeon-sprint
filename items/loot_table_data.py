@@ -1,3 +1,7 @@
+# Loot tables: each entry is rolled on its own, so one roll can drop several things.
+# "chance" is 0.0 to 1.0; the quantity is a random whole number from min to max.
+
+# Containers
 CHEST_LOOT = [
     {
         "item_id": "small_health_potion",
@@ -17,7 +21,7 @@ CRATE_LOOT = [
     },
 ]
 
-
+# Enemies (attached to each type as "loot_table" in ENEMY_TYPES)
 SKULL_LOOT = [
     {
         "item_id": "small_health_potion",

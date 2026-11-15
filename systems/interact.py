@@ -2,7 +2,29 @@ from items.loot_table_data import CHEST_LOOT
 from systems.inventory import add_item, has_item, remove_item
 from systems.loot import roll_loot
 
-REACH = 15
+# Reach: how far around the player F can act
+REACH = 15  # pixels added to the player's rect (split over both sides)
+
+
+def interact(player, level):
+    found = find_target(player, level)
+
+    if found is None:
+        return
+
+    _, available = describe_target(player, found)
+    if not available:
+        return
+
+    kind, target = found
+    if kind == "chest":
+        open_chest(target, level)
+    elif kind == "door":
+        unlock_door(level, target, player.inventory)
+    elif kind == "item":
+        pick_up_item(target, player.inventory)
+    elif kind == "exit":
+        level.exit_requested = True
 
 
 def find_target(player, level):
@@ -63,24 +85,3 @@ def pick_up_item(item, inventory):
 
     item.item_data.quantity = leftover
     return False
-
-
-def interact(player, level):
-    found = find_target(player, level)
-
-    if found is None:
-        return
-
-    _, available = describe_target(player, found)
-    if not available:
-        return
-
-    kind, target = found
-    if kind == "chest":
-        open_chest(target, level)
-    elif kind == "door":
-        unlock_door(level, target, player.inventory)
-    elif kind == "item":
-        pick_up_item(target, player.inventory)
-    elif kind == "exit":
-        level.exit_requested = True

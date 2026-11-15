@@ -2,10 +2,12 @@ import os
 
 import pygame
 
+# Source frames: the original asset pack (git-ignored; only the strips are committed)
 PACK_FOLDER = "Assets/Dungeon Asset Pack"
 KEYS_FOLDER = f"{PACK_FOLDER}/items and trap_animation/keys"
 CRATE_FOLDER = f"{PACK_FOLDER}/items and trap_animation/box_2"
 
+# Strips to build: name -> the frame files in order, and where the strip is saved
 STRIPS = {
     "gold_key": {
         "frames": [f"{KEYS_FOLDER}/keys_1_{number}.png" for number in range(1, 5)],

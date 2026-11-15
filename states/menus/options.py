@@ -19,13 +19,17 @@ from ui_components.slider import Slider
 from ui_components.text_button import TextButton
 from ui_components.text_label import TextLabel
 
+# Title and labels
 TITLE_FONT_SIZE = 96
 LABEL_FONT_SIZE = 24
-TITLE_Y = 50
-NAVIGATION_BUTTON_MARGIN = 20
+TITLE_Y = 50  # pixels from the top
+
+# Buttons: Main Menu and Back in the bottom corners, toggles centered
+NAVIGATION_BUTTON_MARGIN = 20  # from the screen edges
 FPS_BUTTON_Y = 220
 FULL_SCREEN_BUTTON_Y = 300
 
+# Volume sliders, centered on SLIDER_X, with a label above each
 SLIDER_WIDTH = 300
 SLIDER_HEIGHT = 20
 SLIDER_X = SCREEN_WIDTH // 2
@@ -34,13 +38,14 @@ MUSIC_SLIDER_Y = 575
 SLIDER_LABEL_X = SLIDER_X - SLIDER_WIDTH // 2
 SLIDER_LABEL_OFFSET_Y = 45
 
+# Label templates, filled in with .format()
 FPS_LABEL = "FPS: {}"
 FULL_SCREEN_LABEL = "Fullscreen: {}"
 MUSIC_LABEL = "Music Volume: {}"
 SFX_LABEL = "SFX Volume: {}"
 
 
-def _on_off(enabled):
+def on_off(enabled):
     return "On" if enabled else "Off"
 
 
@@ -54,7 +59,7 @@ class Options:
         self.title_image = self.title_font.render("OPTIONS", False, PALETTE_STEEL)
         self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
 
-        # Slider math: Convert 0.0-1.0 float to 0-100 integer for UI display
+        # Volumes are saved as 0.0-1.0 and shown as 0-100
         self.music_slider_value = int(settings.get_setting("music_volume") * 100)
         self.sfx_slider_value = int(settings.get_setting("sfx_volume") * 100)
 
@@ -91,7 +96,7 @@ class Options:
             font=self.label_font,
         )
 
-        # Navigation Buttons
+        # Navigation buttons
         self.main_menu_button = TextButton(
             "Main Menu",
             self.button_font,
@@ -111,9 +116,9 @@ class Options:
             SCREEN_HEIGHT - NAVIGATION_BUTTON_MARGIN,
         )
 
-        # Toggle Buttons
+        # Toggle buttons
         self.fps_button = TextButton(
-            FPS_LABEL.format(_on_off(settings.get_setting("fps_enabled"))),
+            FPS_LABEL.format(on_off(settings.get_setting("fps_enabled"))),
             self.button_font,
             (SCREEN_WIDTH // 2, FPS_BUTTON_Y),
             hover_color=PALETTE_TORCH,
@@ -121,7 +126,7 @@ class Options:
 
         self.full_screen_button = TextButton(
             FULL_SCREEN_LABEL.format(
-                _on_off(settings.get_setting("full_screen_enabled"))
+                on_off(settings.get_setting("full_screen_enabled"))
             ),
             self.button_font,
             (SCREEN_WIDTH // 2, FULL_SCREEN_BUTTON_Y),
@@ -134,32 +139,6 @@ class Options:
     def enter(self):
         pass
 
-    def can_go_back(self):
-        return self.game_state_manager.get_previous_state() == "level"
-
-    def draw(self, screen):
-        if self.can_go_back():
-            self.game_state_manager.states["level"].draw(screen)
-            screen.blit(self.overlay, (0, 0))
-        else:
-            screen.fill(MENU_BACKGROUND_COLOR)
-
-        screen.blit(self.title_image, self.title_pos)
-
-        self.main_menu_button.draw(screen)
-        self.full_screen_button.draw(screen)
-        self.fps_button.draw(screen)
-
-        self.music_volume_slider.draw(screen)
-        self.music_volume_text.draw(screen)
-
-        self.sfx_volume_slider.draw(screen)
-        self.sfx_volume_text.draw(screen)
-
-        # Only show 'Back' if we have a gameplay state to return to
-        if self.can_go_back():
-            self.back_button.draw(screen)
-
     def update(self, dt):
         intent = read_input()
 
@@ -169,24 +148,24 @@ class Options:
         self.music_volume_slider.update()
         self.sfx_volume_slider.update()
 
-        # State Navigation
+        # Navigation
         if self.main_menu_button.is_clicked():
             if self.can_go_back():
                 start_new_run(self.game_state_manager)
             self.game_state_manager.set_state("main_menu")
             settings.save_settings()
 
-        # Settings Toggles
+        # Settings toggles
         if self.fps_button.is_clicked():
             fps_enabled = not settings.get_setting("fps_enabled")
             settings.set_setting("fps_enabled", fps_enabled)
-            self.fps_button.set_text(FPS_LABEL.format(_on_off(fps_enabled)))
+            self.fps_button.set_text(FPS_LABEL.format(on_off(fps_enabled)))
 
         if self.full_screen_button.is_clicked():
             fullscreen = not settings.get_setting("full_screen_enabled")
             settings.set_setting("full_screen_enabled", fullscreen)
             self.full_screen_button.set_text(
-                FULL_SCREEN_LABEL.format(_on_off(fullscreen))
+                FULL_SCREEN_LABEL.format(on_off(fullscreen))
             )
             create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)
 
@@ -213,3 +192,29 @@ class Options:
             if self.back_button.is_clicked() or intent["pause"]:
                 self.game_state_manager.go_back()
                 settings.save_settings()
+
+    def draw(self, screen):
+        if self.can_go_back():
+            self.game_state_manager.states["level"].draw(screen)
+            screen.blit(self.overlay, (0, 0))
+        else:
+            screen.fill(MENU_BACKGROUND_COLOR)
+
+        screen.blit(self.title_image, self.title_pos)
+
+        self.main_menu_button.draw(screen)
+        self.full_screen_button.draw(screen)
+        self.fps_button.draw(screen)
+
+        self.music_volume_slider.draw(screen)
+        self.music_volume_text.draw(screen)
+
+        self.sfx_volume_slider.draw(screen)
+        self.sfx_volume_text.draw(screen)
+
+        # Only show 'Back' if we have a gameplay state to return to
+        if self.can_go_back():
+            self.back_button.draw(screen)
+
+    def can_go_back(self):
+        return self.game_state_manager.get_previous_state() == "level"

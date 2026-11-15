@@ -12,9 +12,10 @@ from systems.movement import decay_velocity, move_and_collide
 from systems.timer import advance_timer, new_timer
 from ui_components.health_bar import draw_health_bar
 
+# Health bar, in world pixels, shown above the sprite once the enemy is hurt
 ENEMY_HEALTH_BAR_WIDTH = TILE_SIZE
 ENEMY_HEALTH_BAR_HEIGHT = 2
-ENEMY_HEALTH_BAR_GAP = 8
+ENEMY_HEALTH_BAR_GAP = 8  # from the sprite's top
 
 
 class Enemy:
@@ -22,6 +23,7 @@ class Enemy:
         animations = load_animations(type_data["texture_data"])
         start_animation = type_data["start_animation"]
 
+        # Values from the enemy type (ENEMY_TYPES)
         self.attack_damage = type_data["attack_damage"]
         self.speed = type_data["speed"]
         self.knockback_multiplier = type_data["knockback_multiplier"]
@@ -29,22 +31,24 @@ class Enemy:
         self.blink_interval = type_data["blink_interval"]
         self.invulnerability_duration = type_data["invulnerability_duration"]
         self.loot_table = type_data["loot_table"]
-
         self.behavior = type_data["behavior"]
-        self.pos = pygame.math.Vector2(pos)
 
+        # Position, sprite and animation
+        self.pos = pygame.math.Vector2(pos)
         self.animation = new_animation(animations, start_animation)
         self.image = animations[start_animation][0]
         self.rect = self.image.get_frect(topleft=self.pos)
 
+        # Health and hit timers
         self.health = new_health(type_data["max_health"])
-
         self.invulnerability = new_timer()
 
+        # AI state
         self.flee_timer = 0.0
         self.return_timer = 0.0
         self.idle_direction = random_idle_direction()
 
+        # Knockback from roll hits, decayed each frame
         self.knockback_velocity = pygame.Vector2()
 
     def update(self, dt, walls, target_pos):
@@ -53,28 +57,6 @@ class Enemy:
         self.update_knockback(dt, walls)
         advance_timer(self.invulnerability, dt)
         self.pos.xy = self.rect.topleft
-
-    def update_movement(self, dt, walls, target_pos):
-        if self.behavior == "fly":
-            velocity = fly_velocity(self, target_pos, dt)
-            self.rect.x += velocity.x * dt
-            self.rect.y += velocity.y * dt
-
-        elif self.behavior == "wander_chase":
-            velocity = wander_chase_velocity(self, target_pos, walls)
-            move_and_collide(self.rect, velocity * dt, walls)
-
-    def update_knockback(self, dt, walls):
-        hit_x, hit_y = move_and_collide(self.rect, self.knockback_velocity * dt, walls)
-
-        if hit_x:
-            self.knockback_velocity.x = 0
-        if hit_y:
-            self.knockback_velocity.y = 0
-
-        self.knockback_velocity = decay_velocity(
-            self.knockback_velocity, self.knockback_decay_rate, dt
-        )
 
     def draw(self, screen, camera=None):
         blink_hidden = is_blink_hidden(self.invulnerability, self.blink_interval)
@@ -105,3 +87,25 @@ class Enemy:
 
         if debug.show_hitboxes:
             draw_hitbox(screen, self.image, self.rect, camera, RED)
+
+    def update_movement(self, dt, walls, target_pos):
+        if self.behavior == "fly":
+            velocity = fly_velocity(self, target_pos, dt)
+            self.rect.x += velocity.x * dt
+            self.rect.y += velocity.y * dt
+
+        elif self.behavior == "wander_chase":
+            velocity = wander_chase_velocity(self, target_pos, walls)
+            move_and_collide(self.rect, velocity * dt, walls)
+
+    def update_knockback(self, dt, walls):
+        hit_x, hit_y = move_and_collide(self.rect, self.knockback_velocity * dt, walls)
+
+        if hit_x:
+            self.knockback_velocity.x = 0
+        if hit_y:
+            self.knockback_velocity.y = 0
+
+        self.knockback_velocity = decay_velocity(
+            self.knockback_velocity, self.knockback_decay_rate, dt
+        )

@@ -1,5 +1,7 @@
 import pygame
 
+# Button hover outlines: a 1-pixel ring drawn by blitting the outline 4 times, offset
+
 
 def make_outline(image, color):
     mask = pygame.mask.from_surface(image)

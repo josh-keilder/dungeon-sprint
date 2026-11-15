@@ -6,7 +6,15 @@ from items.item_texture_data import crate_texture_data
 from systems.animation import advance_animation, new_animation
 from systems.assets import load_animations, load_image
 
+# Chest art
+CHEST_IMAGE_PATH = "Assets/Objects/chest_1.png"
 
+# Crate breaking: a quick squash before the debris burst
+CRATE_IMPACT_FRAMES = (2, 3)  # squash frames played on a hit: wide, then flattened
+CRATE_IMPACT_SPEED = 20  # impact frames per second
+
+
+# Item data: templates in the item database, and stacks in the inventory
 class Item:
     def __init__(
         self,
@@ -58,6 +66,7 @@ class EquipmentItem(Item):
         self.bonuses = bonuses
 
 
+# World sprites: things placed on a floor
 class WorldItem(pygame.sprite.Sprite):
     def __init__(self, groups, pos, item_data, quantity):
         super().__init__(groups)
@@ -69,14 +78,11 @@ class WorldItem(pygame.sprite.Sprite):
         self.image = item_data.image
         self.rect = self.image.get_rect(center=pos)
 
-    def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-
     def update(self, dt):
         self.image = advance_animation(self.animation, dt)
 
-
-CHEST_IMAGE_PATH = "Assets/Objects/chest_1.png"
+    def draw(self, screen, camera):
+        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
 
 
 class Chest(pygame.sprite.Sprite):
@@ -89,24 +95,19 @@ class Chest(pygame.sprite.Sprite):
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
 
 
-CRATE_IMPACT_FRAMES = (2, 3)  # squash frames played on a hit: wide, then flattened
-CRATE_IMPACT_SPEED = 20  # impact frames per second
-
-
 class Crate(pygame.sprite.Sprite):
     def __init__(self, groups, pos):
         super().__init__(groups)
+
+        # Art: frame 0 is the resting crate
         self.frames = load_animations(crate_texture_data)["crate"]
         self.image = self.frames[0]
         self.rect = self.image.get_frect(topleft=pos)
 
+        # Breaking: solid -> breaking (impact frames) -> done_breaking (the level acts)
         self.breaking = False
         self.done_breaking = False
         self.break_time = 0.0
-
-    def start_breaking(self):
-        self.breaking = True
-        self.image = self.frames[CRATE_IMPACT_FRAMES[0]]
 
     def update(self, dt):
         if not self.breaking:
@@ -123,3 +124,7 @@ class Crate(pygame.sprite.Sprite):
 
     def draw(self, screen, camera):
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+
+    def start_breaking(self):
+        self.breaking = True
+        self.image = self.frames[CRATE_IMPACT_FRAMES[0]]

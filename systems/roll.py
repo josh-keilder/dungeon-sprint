@@ -1,8 +1,9 @@
 from systems.timer import advance_timer, is_running, start_timer, time_left
 
-ROLL_DURATION = 0.4
-ROLL_COOLDOWN = 1.0
-ROLL_EASE_OUT_START = 0.7
+# Roll timing
+ROLL_DURATION = 0.4  # seconds
+ROLL_COOLDOWN = 1.0  # seconds, counted from the start of the roll
+ROLL_EASE_OUT_START = 0.7  # fraction of the roll after which its speed eases to 0
 
 
 def try_start_roll(roll, direction):

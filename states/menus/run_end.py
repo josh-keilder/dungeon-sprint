@@ -16,9 +16,11 @@ from systems import sound
 from ui_components.text_button import TextButton
 from ui_components.time_format import format_run_time, to_centiseconds
 
+# Title
 TITLE_FONT_SIZE = 64
-TITLE_Y = 120
+TITLE_Y = 120  # pixels from the top
 
+# Split table: label column on the left, right-aligned times on the right
 SPLITS_TOP_Y = 230
 SPLIT_ROW_HEIGHT = 42
 SPLIT_LABEL_X = SCREEN_WIDTH // 2 - 180
@@ -26,6 +28,7 @@ SPLIT_TIME_RIGHT = SCREEN_WIDTH // 2 + 180
 SPLIT_TOTAL_GAP = 18
 SPLIT_DIVIDER_HEIGHT = 3
 
+# Buttons, by the y of their top edge
 RESTART_BUTTON_Y = 540
 MAIN_MENU_BUTTON_Y = 610
 
@@ -87,6 +90,28 @@ class RunEndScreen:
             sound.stop_music()
             sound.play_music(self.music, loops=0)
 
+    def update(self, dt):
+        self.restart_button.update()
+        self.main_menu_button.update()
+
+        if self.main_menu_button.is_clicked():
+            start_new_run(self.game_state_manager)
+            self.game_state_manager.set_state("main_menu")
+
+        if self.restart_button.is_clicked():
+            start_new_run(self.game_state_manager)
+            self.game_state_manager.set_state("level")
+
+    def draw(self, screen):
+        self.game_state_manager.states["level"].draw(screen)
+        screen.blit(self.overlay, (0, 0))
+        screen.blit(self.title_image, self.title_pos)
+        for image, pos in self.split_rows:
+            screen.blit(image, pos)
+        pygame.draw.rect(screen, PALETTE_SHADOW, self.divider_rect)
+        self.restart_button.draw(screen)
+        self.main_menu_button.draw(screen)
+
     def render_splits(self, splits, run_time, died):
         self.split_rows = []
         times = floor_times(splits, run_time)
@@ -116,25 +141,3 @@ class RunEndScreen:
         self.split_rows.append(
             (time_image, (SPLIT_TIME_RIGHT - time_image.get_width(), row_y))
         )
-
-    def update(self, dt):
-        self.restart_button.update()
-        self.main_menu_button.update()
-
-        if self.main_menu_button.is_clicked():
-            start_new_run(self.game_state_manager)
-            self.game_state_manager.set_state("main_menu")
-
-        if self.restart_button.is_clicked():
-            start_new_run(self.game_state_manager)
-            self.game_state_manager.set_state("level")
-
-    def draw(self, screen):
-        self.game_state_manager.states["level"].draw(screen)
-        screen.blit(self.overlay, (0, 0))
-        screen.blit(self.title_image, self.title_pos)
-        for image, pos in self.split_rows:
-            screen.blit(image, pos)
-        pygame.draw.rect(screen, PALETTE_SHADOW, self.divider_rect)
-        self.restart_button.draw(screen)
-        self.main_menu_button.draw(screen)

@@ -1,7 +1,7 @@
 import pygame
 
+# Caches: every image and animation set is loaded from disk once, then shared
 _IMAGE_CACHE = {}
-
 _ANIMATION_CACHE = {}
 
 
@@ -11,6 +11,28 @@ def load_image(path):
         _IMAGE_CACHE[path] = image
 
     return _IMAGE_CACHE[path]
+
+
+def load_animations(texture_data, crop_size=None):
+    cache_key = (tuple(texture_data.keys()), crop_size)
+
+    if cache_key not in _ANIMATION_CACHE:
+        animations = {}
+
+        for name, entry in texture_data.items():
+            sheet = load_image(entry["file_path"])
+            frames = slice_frames(sheet, entry)
+
+            if crop_size is not None:
+                frames = crop_center(frames, crop_size)
+
+            animations[name] = frames
+
+        add_flipped_left(animations)
+
+        _ANIMATION_CACHE[cache_key] = animations
+
+    return _ANIMATION_CACHE[cache_key]
 
 
 def slice_frames(sheet, entry):
@@ -56,25 +78,3 @@ def add_flipped_left(animations):
             flipped.append(pygame.transform.flip(frame, True, False))
 
         animations[left_name] = flipped
-
-
-def load_animations(texture_data, crop_size=None):
-    cache_key = (tuple(texture_data.keys()), crop_size)
-
-    if cache_key not in _ANIMATION_CACHE:
-        animations = {}
-
-        for name, entry in texture_data.items():
-            sheet = load_image(entry["file_path"])
-            frames = slice_frames(sheet, entry)
-
-            if crop_size is not None:
-                frames = crop_center(frames, crop_size)
-
-            animations[name] = frames
-
-        add_flipped_left(animations)
-
-        _ANIMATION_CACHE[cache_key] = animations
-
-    return _ANIMATION_CACHE[cache_key]

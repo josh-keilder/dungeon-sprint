@@ -11,12 +11,16 @@ from globals import (
 from systems import sound
 from ui_components.text_button import TextButton
 
+# Title
 TITLE_FONT_SIZE = 96
-TITLE_Y = 50
+TITLE_Y = 50  # pixels from the top
+
+# Buttons, by the y of their top edge
 START_BUTTON_Y = 300
 OPTIONS_BUTTON_Y = 380
 EXIT_BUTTON_Y = 460
 
+# Music
 MAIN_MENU_MUSIC = "menu_music"
 
 
@@ -54,20 +58,12 @@ class MainMenu:
     def enter(self):
         sound.play_music(MAIN_MENU_MUSIC)
 
-    def draw(self, screen):
-        screen.fill(MENU_BACKGROUND_COLOR)
-
-        screen.blit(self.title_image, self.title_pos)
-        self.start_button.draw(screen)
-        self.exit_button.draw(screen)
-        self.options_button.draw(screen)
-
     def update(self, dt):
         self.start_button.update()
         self.exit_button.update()
         self.options_button.update()
 
-        # Navigation Logic
+        # Navigation
         if self.start_button.is_clicked():
             self.game_state_manager.set_state("level")
 
@@ -76,3 +72,11 @@ class MainMenu:
 
         elif self.exit_button.is_clicked():
             pygame.event.post(pygame.event.Event(pygame.QUIT))
+
+    def draw(self, screen):
+        screen.fill(MENU_BACKGROUND_COLOR)
+
+        screen.blit(self.title_image, self.title_pos)
+        self.start_button.draw(screen)
+        self.exit_button.draw(screen)
+        self.options_button.draw(screen)

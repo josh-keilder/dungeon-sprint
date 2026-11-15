@@ -1,3 +1,4 @@
+# Debug flags, toggled in game (P draws hitboxes)
 show_hitboxes = False
 
 

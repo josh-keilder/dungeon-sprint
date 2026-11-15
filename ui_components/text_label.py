@@ -2,12 +2,18 @@ import pygame
 
 from globals import FONT_PATH, GAME_SCALE, PALETTE_STEEL
 
+# Defaults: Silkscreen at 24 sits on the 3x pixel grid
+DEFAULT_FONT_SIZE = 24
+
+# Outline: the outline-colored text is drawn one art pixel away in 4 directions
+OUTLINE_OFFSETS = ((-GAME_SCALE, 0), (GAME_SCALE, 0), (0, -GAME_SCALE), (0, GAME_SCALE))
+
 
 class TextLabel:
     def __init__(
         self,
         text,
-        font_size=24,
+        font_size=DEFAULT_FONT_SIZE,
         color=PALETTE_STEEL,
         pos=(0, 0),
         font=None,
@@ -29,12 +35,7 @@ class TextLabel:
 
     def draw(self, screen):
         if self.outline_surface is not None:
-            for offset_x, offset_y in (
-                (-GAME_SCALE, 0),
-                (GAME_SCALE, 0),
-                (0, -GAME_SCALE),
-                (0, GAME_SCALE),
-            ):
+            for offset_x, offset_y in OUTLINE_OFFSETS:
                 screen.blit(
                     self.outline_surface,
                     (self.pos[0] + offset_x, self.pos[1] + offset_y),

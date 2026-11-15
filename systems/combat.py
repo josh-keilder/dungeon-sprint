@@ -5,13 +5,12 @@ from systems.health import take_damage
 from systems.roll import is_rolling
 from systems.timer import is_running, start_timer
 
-PLAYER_INVULNERABILITY_DURATION = 1.0
+# Player i-frames after being hit
+PLAYER_INVULNERABILITY_DURATION = 1.0  # seconds
 
-# Damage per pixel per second of roll speed
-ROLL_DAMAGE_PER_SPEED = 0.15
-
-# Knockback per pixel per second of roll speed
-KNOCKBACK_PER_SPEED = 1.2
+# Roll hits: both scale with the player's speed at the moment of impact
+ROLL_DAMAGE_PER_SPEED = 0.15  # damage per pixel per second
+KNOCKBACK_PER_SPEED = 1.2  # knockback speed per pixel per second
 
 
 def resolve_contact(player, enemy):

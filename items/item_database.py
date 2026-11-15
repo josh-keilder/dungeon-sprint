@@ -7,7 +7,7 @@ from items.item_texture_data import (
 from items.items import EquipmentItem, Item
 from systems.assets import load_animations
 
-# Item Values
+# Item values
 SMALL_HEALTH_POTION_VALUE = 10
 
 

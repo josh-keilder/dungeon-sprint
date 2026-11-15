@@ -3,6 +3,14 @@ import pygame
 from globals import PALETTE_SHADOW, PALETTE_TORCH
 from systems import sound
 
+# Knob shape, in pixels
+KNOB_WIDTH = 20
+KNOB_OVERHANG = 5  # how far the knob sticks out above and below the track
+
+# Rounded corners, in pixels
+TRACK_CORNER_RADIUS = 5
+KNOB_CORNER_RADIUS = 3
+
 
 class Slider:
     def __init__(
@@ -27,34 +35,28 @@ class Slider:
         self.right_x = self.pos[0] + (size[0] // 2)
         self.top_y = self.pos[1] - (size[1] // 2)
 
-        # Track Setup
+        # Track setup
         self.track_rect = pygame.Rect(
             self.left_x, self.top_y, self.size[0], self.size[1]
         )
         self.track_color = track_color
 
-        # Knob Setup
-        knob_width = 20
-        self.knob_rect = pygame.Rect(0, self.top_y - 5, knob_width, self.size[1] + 10)
+        # Knob setup
+        self.knob_rect = pygame.Rect(
+            0, self.top_y - KNOB_OVERHANG, KNOB_WIDTH, self.size[1] + 2 * KNOB_OVERHANG
+        )
         self.set_knob_position_from_value(initial_value)
         self.knob_color = knob_color
 
+        # Mouse state, refreshed by update
         self.dragging = False
         self.hovered = False
-
-    def set_knob_position_from_value(self, value):
-        ratio = (value - self.min_value) / (self.max_value - self.min_value)
-        self.knob_rect.centerx = self.left_x + (ratio * self.size[0])
-
-    def get_value_from_knob_position(self):
-        ratio = (self.knob_rect.centerx - self.left_x) / self.size[0]
-        return self.min_value + (ratio * (self.max_value - self.min_value))
 
     def update(self):
         mouse_pos = pygame.mouse.get_pos()
         mouse_held = pygame.mouse.get_pressed()[0]
 
-        # Hover Detection
+        # Hover detection
         if self.knob_rect.collidepoint(mouse_pos) or self.track_rect.collidepoint(
             mouse_pos
         ):
@@ -79,7 +81,9 @@ class Slider:
 
     def draw(self, screen):
         # Main background track
-        pygame.draw.rect(screen, PALETTE_SHADOW, self.track_rect, border_radius=5)
+        pygame.draw.rect(
+            screen, PALETTE_SHADOW, self.track_rect, border_radius=TRACK_CORNER_RADIUS
+        )
 
         # "Progress" fill: shows the distance between the start and the knob
         filled_rect = pygame.Rect(
@@ -88,11 +92,23 @@ class Slider:
             self.knob_rect.centerx - self.left_x,
             self.size[1],
         )
-        pygame.draw.rect(screen, self.track_color, filled_rect, border_radius=5)
+        pygame.draw.rect(
+            screen, self.track_color, filled_rect, border_radius=TRACK_CORNER_RADIUS
+        )
 
         # Knob rendering with visual feedback for interaction
         color = PALETTE_TORCH if self.hovered or self.dragging else self.knob_color
-        pygame.draw.rect(screen, color, self.knob_rect, border_radius=3)
+        pygame.draw.rect(
+            screen, color, self.knob_rect, border_radius=KNOB_CORNER_RADIUS
+        )
 
     def get_current_value(self):
         return int(self.value)
+
+    def set_knob_position_from_value(self, value):
+        ratio = (value - self.min_value) / (self.max_value - self.min_value)
+        self.knob_rect.centerx = self.left_x + (ratio * self.size[0])
+
+    def get_value_from_knob_position(self):
+        ratio = (self.knob_rect.centerx - self.left_x) / self.size[0]
+        return self.min_value + (ratio * (self.max_value - self.min_value))

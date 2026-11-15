@@ -3,7 +3,8 @@ from systems.health import heal
 from systems.inventory import has_item, remove_item
 from systems.timer import is_running, start_timer
 
-HEAL_COOLDOWN = 3.0
+# Healing
+HEAL_COOLDOWN = 3.0  # seconds between potions
 
 
 def use_small_health_potion(health, inventory, heal_cooldown):

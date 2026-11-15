@@ -33,7 +33,8 @@ TOOLTIP_PADDING = 18
 TOOLTIP_LINE_HEIGHT = 27
 TOOLTIP_MOUSE_OFFSET = 18
 
-INVENTORY_DIM_ALPHA = 120
+# The world behind the window
+INVENTORY_DIM_ALPHA = 120  # 0-255
 
 
 class InventoryUI:
@@ -131,7 +132,7 @@ class InventoryUI:
 
         if self.held_item:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            icon = self._get_icon(self.held_item)
+            icon = self.get_icon(self.held_item)
             if icon:
                 screen.blit(
                     icon,
@@ -168,85 +169,6 @@ class InventoryUI:
             if tooltip is not None:
                 self.draw_tooltip(screen, tooltip, mouse_pos)
 
-    def draw_slot(self, screen, rect, item):
-        screen.blit(self.slot_panel, rect.topleft)
-
-        if item is None:
-            return
-
-        icon = self._get_icon(item)
-        screen.blit(icon, (rect.x + SLOT_ICON_OFFSET, rect.y + SLOT_ICON_OFFSET))
-
-        if item.quantity > 1:
-            self.count_label.update_text(str(item.quantity))
-            count_bounds = self.count_label.text_surface.get_bounding_rect()
-            self.count_label.pos = (
-                rect.right - count_bounds.right - GAME_SCALE,
-                rect.bottom - count_bounds.bottom - GAME_SCALE,
-            )
-            self.count_label.draw(screen)
-
-    def draw_tooltip(self, screen, tooltip, mouse_pos):
-        tooltip_x = mouse_pos[0] + TOOLTIP_MOUSE_OFFSET
-        tooltip_y = mouse_pos[1] + TOOLTIP_MOUSE_OFFSET
-
-        if tooltip_x + tooltip.get_width() > SCREEN_WIDTH:
-            tooltip_x = mouse_pos[0] - TOOLTIP_MOUSE_OFFSET - tooltip.get_width()
-
-        if tooltip_y + tooltip.get_height() > SCREEN_HEIGHT:
-            tooltip_y = mouse_pos[1] - TOOLTIP_MOUSE_OFFSET - tooltip.get_height()
-
-        screen.blit(tooltip, (tooltip_x, tooltip_y))
-
-    def build_tooltip(self, lines):
-        rendered_lines = [self.font.render(text, False, color) for text, color in lines]
-
-        ink_top = rendered_lines[0].get_bounding_rect().top
-        ink_height = rendered_lines[0].get_bounding_rect().height
-
-        width = max(line.get_width() for line in rendered_lines) + 2 * TOOLTIP_PADDING
-        height = (
-            2 * TOOLTIP_PADDING
-            + (len(rendered_lines) - 1) * TOOLTIP_LINE_HEIGHT
-            + ink_height
-        )
-
-        width = math.ceil(width / GAME_SCALE) * GAME_SCALE
-        height = math.ceil(height / GAME_SCALE) * GAME_SCALE
-
-        tooltip = make_panel(self.frame_image, (width, height))
-
-        for line_index, line in enumerate(rendered_lines):
-            tooltip.blit(
-                line,
-                (
-                    TOOLTIP_PADDING,
-                    TOOLTIP_PADDING - ink_top + line_index * TOOLTIP_LINE_HEIGHT,
-                ),
-            )
-
-        return tooltip
-
-    def get_tooltip(self, key, lines):
-        if key not in self.tooltip_cache:
-            self.tooltip_cache[key] = self.build_tooltip(lines)
-
-        return self.tooltip_cache[key]
-
-    def get_slot_at_mouse(self, mouse_pos):
-        for slot_index, rect in enumerate(self.grid_slot_rects):
-            if rect.collidepoint(mouse_pos):
-                return slot_index
-
-        return None
-
-    def get_equipment_slot_at_mouse(self, mouse_pos):
-        for slot_index, rect in self.equipment_slot_rects.items():
-            if rect.collidepoint(mouse_pos):
-                return slot_index
-
-        return None
-
     def handle_click(self, mouse_pos, inventory):
         slot_index = self.get_slot_at_mouse(mouse_pos)
         equipment_slot_name = self.get_equipment_slot_at_mouse(mouse_pos)
@@ -278,7 +200,86 @@ class InventoryUI:
 
         return False
 
-    def _get_icon(self, item):
+    def draw_slot(self, screen, rect, item):
+        screen.blit(self.slot_panel, rect.topleft)
+
+        if item is None:
+            return
+
+        icon = self.get_icon(item)
+        screen.blit(icon, (rect.x + SLOT_ICON_OFFSET, rect.y + SLOT_ICON_OFFSET))
+
+        if item.quantity > 1:
+            self.count_label.update_text(str(item.quantity))
+            count_bounds = self.count_label.text_surface.get_bounding_rect()
+            self.count_label.pos = (
+                rect.right - count_bounds.right - GAME_SCALE,
+                rect.bottom - count_bounds.bottom - GAME_SCALE,
+            )
+            self.count_label.draw(screen)
+
+    def draw_tooltip(self, screen, tooltip, mouse_pos):
+        tooltip_x = mouse_pos[0] + TOOLTIP_MOUSE_OFFSET
+        tooltip_y = mouse_pos[1] + TOOLTIP_MOUSE_OFFSET
+
+        if tooltip_x + tooltip.get_width() > SCREEN_WIDTH:
+            tooltip_x = mouse_pos[0] - TOOLTIP_MOUSE_OFFSET - tooltip.get_width()
+
+        if tooltip_y + tooltip.get_height() > SCREEN_HEIGHT:
+            tooltip_y = mouse_pos[1] - TOOLTIP_MOUSE_OFFSET - tooltip.get_height()
+
+        screen.blit(tooltip, (tooltip_x, tooltip_y))
+
+    def get_tooltip(self, key, lines):
+        if key not in self.tooltip_cache:
+            self.tooltip_cache[key] = self.build_tooltip(lines)
+
+        return self.tooltip_cache[key]
+
+    def build_tooltip(self, lines):
+        rendered_lines = [self.font.render(text, False, color) for text, color in lines]
+
+        ink_top = rendered_lines[0].get_bounding_rect().top
+        ink_height = rendered_lines[0].get_bounding_rect().height
+
+        width = max(line.get_width() for line in rendered_lines) + 2 * TOOLTIP_PADDING
+        height = (
+            2 * TOOLTIP_PADDING
+            + (len(rendered_lines) - 1) * TOOLTIP_LINE_HEIGHT
+            + ink_height
+        )
+
+        width = math.ceil(width / GAME_SCALE) * GAME_SCALE
+        height = math.ceil(height / GAME_SCALE) * GAME_SCALE
+
+        tooltip = make_panel(self.frame_image, (width, height))
+
+        for line_index, line in enumerate(rendered_lines):
+            tooltip.blit(
+                line,
+                (
+                    TOOLTIP_PADDING,
+                    TOOLTIP_PADDING - ink_top + line_index * TOOLTIP_LINE_HEIGHT,
+                ),
+            )
+
+        return tooltip
+
+    def get_slot_at_mouse(self, mouse_pos):
+        for slot_index, rect in enumerate(self.grid_slot_rects):
+            if rect.collidepoint(mouse_pos):
+                return slot_index
+
+        return None
+
+    def get_equipment_slot_at_mouse(self, mouse_pos):
+        for slot_index, rect in self.equipment_slot_rects.items():
+            if rect.collidepoint(mouse_pos):
+                return slot_index
+
+        return None
+
+    def get_icon(self, item):
         if not item or not item.image:
             return None
 

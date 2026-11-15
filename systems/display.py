@@ -1,5 +1,6 @@
 import pygame
 
+# Window
 WINDOW_TITLE = "Dungeon Sprint"
 
 

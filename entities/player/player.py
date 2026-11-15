@@ -14,18 +14,23 @@ from systems.sound import play_sfx
 from systems.stats import compute_stats
 from systems.timer import advance_timer, new_timer
 
-BLINK_INTERVAL = 0.1
+# Hit feedback
+BLINK_INTERVAL = 0.1  # seconds per blink on/off while invulnerable
+
+# Inventory
+INVENTORY_SLOT_COUNT = 20
 
 
 class Player:
     def __init__(self, animations, pos=(0, 0)):
+        # Facing and movement
         self.last_direction = "down"
         self.walking = False
         self.pos = pygame.math.Vector2(pos)
-
         self.velocity = pygame.Vector2()
-        self.speed = 0.0
+        self.speed = 0.0  # pixels per second, measured each frame
 
+        # What the player asked for this frame, set by the level from input
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
 
         # Base values before equipment bonuses
@@ -39,12 +44,12 @@ class Player:
             "grip": 50,
         }
 
+        # Roll, and the hit and heal timers
         self.roll = {
             "direction": pygame.Vector2(),
             "active_timer": new_timer(),
             "cooldown_timer": new_timer(),
         }
-
         self.invulnerability = new_timer()
         self.heal_cooldown = new_timer()
 
@@ -53,20 +58,17 @@ class Player:
         self.image = animations["player_idle_down"][0]
         self.rect = self.image.get_frect()
         self.rect.center = pos
-
-        self.alpha = 255
+        self.alpha = 255  # lowered by the level during the death fade
 
         # Health, inventory, and stats
         self.health = new_health(self.base_stats["health"])
-
-        self.inventory = new_inventory(20)
-
+        self.inventory = new_inventory(INVENTORY_SLOT_COUNT)
         self.stats = compute_stats(
             self.base_stats, self.inventory["equipment"].values()
         )
 
     def update(self, dt, walls):
-        # Before anything moves the player, store where the player is.
+        # Where the player starts this frame, to measure the speed afterwards
         start_pos = pygame.Vector2(self.rect.center)
 
         move_direction = self.intent["move"]
@@ -95,7 +97,7 @@ class Player:
         self.update_movement(dt, walls)
         self.update_roll(dt, walls)
 
-        # Distance moved calculation comes after the movement updates, then calculate the player speed during that distance
+        # Speed = how far the player actually moved this frame, after walls
         distance_moved = pygame.Vector2(self.rect.center).distance_to(start_pos)
         self.speed = distance_moved / dt
 
@@ -125,17 +127,6 @@ class Player:
 
         if debug.show_hitboxes:
             draw_hitbox(screen, self.image, self.rect, camera, GREEN)
-
-    def handle_animation_state(self):
-        if is_rolling(self.roll):
-            action = "roll"
-        elif self.walking:
-            action = "walk"
-        else:
-            action = "idle"
-
-        animation_name = f"player_{action}_{self.last_direction}"
-        set_animation(self.animation, animation_name)
 
     def update_facing(self, move_direction):
         if move_direction.y < 0:
@@ -182,3 +173,14 @@ class Player:
                 self.velocity.y = 0
 
         advance_roll(self.roll, dt)
+
+    def handle_animation_state(self):
+        if is_rolling(self.roll):
+            action = "roll"
+        elif self.walking:
+            action = "walk"
+        else:
+            action = "idle"
+
+        animation_name = f"player_{action}_{self.last_direction}"
+        set_animation(self.animation, animation_name)

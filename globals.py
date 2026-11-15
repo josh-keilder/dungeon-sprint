@@ -1,18 +1,20 @@
 import math
 
-# Screen, timing, and sprite sizes
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-FRAME_RATE = 240
-TILE_SIZE = 16
-PLAYER_SPRITE_SIZE = 64
+# Screen and timing
+SCREEN_WIDTH = 1280  # pixels
+SCREEN_HEIGHT = 720  # pixels
+FRAME_RATE = 240  # frames per second cap
 
-# World canvas, drawn at 1x then scaled up by GAME_SCALE
+# World canvas: the world is drawn at 1x, then scaled up by GAME_SCALE
 GAME_SCALE = 3
-WORLD_WIDTH = math.ceil(SCREEN_WIDTH / GAME_SCALE)
-WORLD_HEIGHT = math.ceil(SCREEN_HEIGHT / GAME_SCALE)
+WORLD_WIDTH = math.ceil(SCREEN_WIDTH / GAME_SCALE)  # 427 world pixels
+WORLD_HEIGHT = math.ceil(SCREEN_HEIGHT / GAME_SCALE)  # 240 world pixels
 
-# Colors
+# Art sizes, in world pixels
+TILE_SIZE = 16
+PLAYER_SPRITE_SIZE = 64  # one frame of the player sheets, before cropping to a tile
+
+# Basic colors: kept for debug drawing and later use (game art uses the palette below)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -78,19 +80,16 @@ PALETTE_FROST = (167, 209, 230)
 PALETTE_MIST = (187, 211, 225)
 PALETTE_ICE = (202, 230, 245)
 
-# Kept in case I need this specific color
-OPTION_MENU_BUTTON_BACKGROUND = PALETTE_WALL
+# Named uses of palette colors
+MENU_BACKGROUND_COLOR = PALETTE_VOID  # Main Menu and Options fill
 
-MENU_BACKGROUND_COLOR = PALETTE_VOID
+# Shared UI
+FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"
+BUTTON_FONT_SIZE = 32  # every menu's buttons
+PANEL_FRAME_PATH = "Assets/UI/panel_frame.png"  # 9-slice frame for HUD and inventory
+OVERLAY_ALPHA = 160  # 0-255; how dark menus drawn over the level make it
 
-
+# The run: floor maps in play order
 LEVEL_ORDER = [
     "Assets/Maps/easy_floor_1.tmx",
 ]
-
-
-PANEL_FRAME_PATH = "Assets/UI/panel_frame.png"
-FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"
-BUTTON_FONT_SIZE = 32
-
-OVERLAY_ALPHA = 160

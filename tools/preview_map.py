@@ -16,11 +16,14 @@ from globals import (
 from items.item_database import initialize_item_database
 from states.map.map_loader import load_level_data
 
+# Output image
 PREVIEW_SCALE = 2
-PREVIEW_MARGIN = 2 * TILE_SIZE
-LABEL_FONT_SIZE = 8
-SPAWN_MARKER_RADIUS = 4
-OUTPUT_FOLDER = "map_previews"
+PREVIEW_MARGIN = 2 * TILE_SIZE  # world pixels kept around the walls
+OUTPUT_FOLDER = "map_previews"  # git-ignored
+
+# Markers
+LABEL_FONT_SIZE = 8  # Silkscreen's native size: crisp at 1x
+SPAWN_MARKER_RADIUS = 4  # world pixels
 
 
 def draw_label(surface, font, text, pos):

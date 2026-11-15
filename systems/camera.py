@@ -2,6 +2,7 @@ import pygame
 
 from globals import WORLD_HEIGHT, WORLD_WIDTH
 
+# The shared camera: the visible part of the world, in world pixels
 camera = pygame.Rect(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
 
 

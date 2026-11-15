@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<map version="1.10" orientation="orthogonal" renderorder="right-down" width="14" height="6" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="8">
+<map version="1.10" orientation="orthogonal" renderorder="right-down" width="14" height="6" tilewidth="16" tileheight="16" infinite="0" nextlayerid="11" nextobjectid="8">
  <tileset firstgid="1" source="Dungeon.tsx" />
  <layer id="1" name="Floor" width="14" height="6">
   <data encoding="csv">
@@ -71,4 +71,5 @@
    </properties>
   </object>
  </objectgroup>
+ <objectgroup id="10" name="Crates" />
 </map>

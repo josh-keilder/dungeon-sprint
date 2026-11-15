@@ -19,6 +19,7 @@ from globals import (
     PALETTE_WALL,
 )
 
+# Shared art rows: both padlocks use the same shape in different colors
 PADLOCK_ROWS = [
     "..ooo..",
     ".ollmo.",
@@ -32,6 +33,7 @@ PADLOCK_ROWS = [
     "ooooooo",
 ]
 
+# Sprites to build: name -> output path, letter -> palette color, and the pixel rows
 SPRITES = {
     "panel_frame": {
         "path": "Assets/UI/panel_frame.png",
