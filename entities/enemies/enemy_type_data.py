@@ -23,10 +23,11 @@ ENEMY_TYPES = {
         "body": (0, 0, 16, 16),
         "touch_damage": True,  # hurts the player on contact
         "animation_prefix": None,  # Skull: one animation, no states
+        "attack": None,  # Skull: hurts on touch instead
     },
     "Skeleton": {
         "max_health": 100,
-        "attack_damage": 3,
+        "attack_damage": 6,
         "behavior": "wander_chase",
         "speed": 40,
         "texture_data": skeleton_texture_data,
@@ -39,5 +40,12 @@ ENEMY_TYPES = {
         "body": (8, 13, 14, 16),  # the skeleton's body inside its 32x32 frame
         "touch_damage": False,  # only its swing hurts (stage 3)
         "animation_prefix": "skeleton",  # animations named skeleton_<action>_<facing>
+        "attack": {
+            "range": 20,  # pixels: starts a swing when the player is this close
+            "frame_rate": 13,  # attack frames per second: frames 0-5 wind up in ~0.45s
+            "strike_frames": (6, 7),  # the frames that hurt: where the slash is drawn
+            "reach": 18,  # pixels the strike hitbox extends in front of the body
+            "cooldown": 1.0,  # seconds after a swing before the next one
+        },
     },
 }

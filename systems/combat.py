@@ -35,6 +35,10 @@ def resolve_contact(player, enemy):
         )
 
         start_timer(enemy.invulnerability, enemy.invulnerability_duration)
+
+        if enemy.attack is not None:
+            enemy.interrupt_attack()
+
         enemy_hit = True
 
     if (
@@ -47,3 +51,18 @@ def resolve_contact(player, enemy):
 
     trigger_flee(enemy)
     return enemy_hit
+
+
+def resolve_strike(player, enemy):
+    if enemy.attack_landed or not enemy.is_striking():
+        return False
+    if not player.rect.colliderect(enemy.strike_rect()):
+        return False
+
+    enemy.attack_landed = True
+    if is_running(player.invulnerability) or is_rolling(player.roll):
+        return False
+
+    take_damage(player.health, enemy.attack_damage)
+    start_timer(player.invulnerability, PLAYER_INVULNERABILITY_DURATION)
+    return True

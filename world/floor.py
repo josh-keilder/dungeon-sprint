@@ -8,7 +8,7 @@ from systems import sound
 from systems.assets import load_image
 from systems.camera import camera, is_on_screen
 from systems.collision import find_player_contacts
-from systems.combat import resolve_contact
+from systems.combat import resolve_contact, resolve_strike
 from systems.health import is_dead
 from systems.loot import roll_loot
 from systems.masks import draw_highlight
@@ -77,6 +77,7 @@ class Floor:
         for enemy in self.enemies:
             enemy.update(dt, self.solid_tiles, player.pos)
         self.resolve_enemy_contacts(player)
+        self.resolve_enemy_strikes(player)
         self.remove_dead_enemies()
 
         self.ground_items.update(dt)
@@ -147,6 +148,11 @@ class Floor:
 
             if is_dead(enemy.health):
                 enemy.start_dying()
+
+    def resolve_enemy_strikes(self, player):
+        for enemy in self.enemies:
+            if enemy.attack is not None and not enemy.dying:
+                resolve_strike(player, enemy)
 
     def remove_dead_enemies(self):
         for enemy in list(self.enemies):

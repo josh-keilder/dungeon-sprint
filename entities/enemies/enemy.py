@@ -14,7 +14,7 @@ from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_v
 from systems.health import new_health
 from systems.masks import draw_hitbox
 from systems.movement import decay_velocity, move_and_collide
-from systems.timer import advance_timer, new_timer, time_left
+from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.health_bar import draw_health_bar
 
 # Health bar, in world pixels, shown above the sprite once the enemy is hurt
@@ -32,6 +32,7 @@ class Enemy:
         start_animation = type_data["start_animation"]
 
         # Values from the enemy type (ENEMY_TYPES)
+        self.attack = type_data["attack"]
         self.attack_damage = type_data["attack_damage"]
         self.speed = type_data["speed"]
         self.knockback_multiplier = type_data["knockback_multiplier"]
@@ -71,6 +72,12 @@ class Enemy:
         self.return_timer = new_timer()
         self.idle_direction = random_idle_direction()
 
+        # Swing state (only for types with an "attack")
+        self.attacking = False
+        self.attack_time = 0.0
+        self.attack_landed = False
+        self.attack_cooldown = new_timer()
+
         # Knockback from roll hits, decayed each frame
         self.knockback_velocity = pygame.Vector2()
 
@@ -80,9 +87,16 @@ class Enemy:
             self.update_knockback(dt, walls)
         else:
             start_center = pygame.Vector2(self.rect.center)
-            velocity = self.update_movement(dt, walls, target_pos)
+            if self.attacking:
+                velocity = pygame.Vector2()
+                self.update_attack(dt)
+            else:
+                velocity = self.update_movement(dt, walls, target_pos)
+                self.try_start_attack(target_pos)
+
             self.update_knockback(dt, walls)
             advance_timer(self.invulnerability, dt)
+            advance_timer(self.attack_cooldown, dt)
 
             self.moving = pygame.Vector2(self.rect.center) != start_center
             if velocity.x < 0:
@@ -130,6 +144,15 @@ class Enemy:
             body_on_screen = (
                 self.rect.move(-camera.x, -camera.y) if camera else self.rect
             )
+
+            if self.is_striking():
+                strike_on_screen = (
+                    self.strike_rect().move(-camera.x, -camera.y)
+                    if camera
+                    else self.strike_rect()
+                )
+                pygame.draw.rect(screen, RED, strike_on_screen, 1)
+
             pygame.draw.rect(screen, YELLOW, body_on_screen, 1)
 
     def art_topleft(self):
@@ -139,6 +162,10 @@ class Enemy:
         return (self.rect.x - offset_x, self.rect.y - self.body_y)
 
     def update_animation(self, dt):
+        if self.attacking:
+            self.image = self.attack_frames()[self.attack_step()]
+            return
+
         if self.animation_prefix is not None:
             set_animation(self.animation, self.animation_name())
         self.image = advance_animation(self.animation, dt)
@@ -180,6 +207,46 @@ class Enemy:
         self.knockback_velocity = decay_velocity(
             self.knockback_velocity, self.knockback_decay_rate, dt
         )
+
+    def try_start_attack(self, target_pos):
+        if self.attack is None or is_running(self.attack_cooldown):
+            return
+        if self.pos.distance_to(target_pos) > self.attack["range"]:
+            return
+
+        self.attacking = True
+        self.attack_time = 0.0
+        self.attack_landed = False
+        self.facing = "right" if target_pos.x >= self.pos.x else "left"
+
+    def update_attack(self, dt):
+        self.attack_time += dt
+        if self.attack_step() >= len(self.attack_frames()):
+            self.attacking = False
+            start_timer(self.attack_cooldown, self.attack["cooldown"])
+
+    def attack_frames(self):
+        return self.animation["frames"][f"{self.animation_prefix}_attack_{self.facing}"]
+
+    def attack_step(self):
+        return int(self.attack_time * self.attack["frame_rate"])
+
+    def is_striking(self):
+        return self.attacking and self.attack_step() in self.attack["strike_frames"]
+
+    def strike_rect(self):
+        reach = self.attack["reach"]
+        strike = pygame.FRect(0, self.rect.y, reach, self.rect.height)
+        if self.facing == "right":
+            strike.left = self.rect.right
+        else:
+            strike.right = self.rect.left
+        return strike
+
+    def interrupt_attack(self):
+        if self.attacking and not self.is_striking() and not self.attack_landed:
+            self.attacking = False
+            start_timer(self.attack_cooldown, self.attack["cooldown"])
 
     def start_dying(self):
         self.dying = True
