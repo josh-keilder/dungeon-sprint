@@ -34,7 +34,7 @@ def preview_map(map_path, font, item_database):
     level_data = load_level_data(map_path)
     preview = level_data["map_surface"].copy()
 
-    for group_name in ("decor_tiles", "wall_tiles", "door_tiles", "chests"):
+    for group_name in ("decor_tiles", "wall_tiles", "door_tiles", "chests", "crates"):
         for sprite in level_data[group_name]:
             preview.blit(sprite.image, sprite.rect.topleft)
 

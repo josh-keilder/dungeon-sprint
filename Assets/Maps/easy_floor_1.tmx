@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<map version="1.10" orientation="orthogonal" renderorder="right-down" width="44" height="19" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="9">
+<map version="1.10" orientation="orthogonal" renderorder="right-down" width="44" height="19" tilewidth="16" tileheight="16" infinite="0" nextlayerid="11" nextobjectid="13">
  <tileset firstgid="1" source="Dungeon.tsx" />
  <layer id="1" name="Floor" width="44" height="19">
   <data encoding="csv">
@@ -136,5 +136,11 @@
     <property name="key" value="gold_key" />
    </properties>
   </object>
+ </objectgroup>
+ <objectgroup id="10" name="Crates">
+  <object id="9" name="crate" x="80" y="128" width="16" height="16" />
+  <object id="10" name="crate" x="96" y="128" width="16" height="16" />
+  <object id="11" name="crate" x="480" y="160" width="16" height="16" />
+  <object id="12" name="crate" x="256" y="272" width="16" height="16" />
  </objectgroup>
 </map>

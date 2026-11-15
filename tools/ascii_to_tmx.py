@@ -42,6 +42,7 @@ VOID = " "
 PLAYER = "@"
 EXIT = "X"
 CHEST = "C"
+CRATE = "B"  # breakable box: blocks until rolled into
 SILVER_KEY = "s"
 GOLD_KEY = "g"
 PLACED_ITEMS = {SILVER_KEY: "silver_key", GOLD_KEY: "gold_key"}
@@ -53,7 +54,7 @@ DOOR_KEYS = {"S": "silver_key", "G": "gold_key"}
 DIRECTIONS = ((0, -1), (1, 0), (0, 1), (-1, 0))
 
 KNOWN_CHARACTERS = (
-    {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST}
+    {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST, CRATE}
     | set(ENEMY_TYPES)
     | set(DOOR_KEYS)
     | set(PLACED_ITEMS)
@@ -193,7 +194,13 @@ def build_tile_layers(grid, rng):
 
 
 def build_objects(grid):
-    objects = {"Chests": [], "Entity_Spawns": [], "Items": [], "Doors": []}
+    objects = {
+        "Chests": [],
+        "Entity_Spawns": [],
+        "Items": [],
+        "Doors": [],
+        "Crates": [],
+    }
     exit_cells = []
 
     for y, row in enumerate(grid):
@@ -209,6 +216,8 @@ def build_objects(grid):
                 objects["Entity_Spawns"].append((enemy_name, left, top, 0, 0))
             elif character == CHEST:
                 objects["Chests"].append(("chest", left, top, TILE_SIZE, TILE_SIZE))
+            elif character == CRATE:
+                objects["Crates"].append(("crate", left, top, TILE_SIZE, TILE_SIZE))
             elif character in PLACED_ITEMS:
                 center = (left + TILE_SIZE // 2, top + TILE_SIZE // 2)
                 objects["Items"].append((PLACED_ITEMS[character], *center, 0, 0))

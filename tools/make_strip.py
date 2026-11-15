@@ -4,6 +4,7 @@ import pygame
 
 PACK_FOLDER = "Assets/Dungeon Asset Pack"
 KEYS_FOLDER = f"{PACK_FOLDER}/items and trap_animation/keys"
+CRATE_FOLDER = f"{PACK_FOLDER}/items and trap_animation/box_2"
 
 STRIPS = {
     "gold_key": {
@@ -13,6 +14,10 @@ STRIPS = {
     "silver_key": {
         "frames": [f"{KEYS_FOLDER}/keys_2_{number}.png" for number in range(1, 5)],
         "path": "Assets/Items/silver_key_strip.png",
+    },
+    "crate": {
+        "frames": [f"{CRATE_FOLDER}/box_2_{number}.png" for number in range(1, 5)],
+        "path": "Assets/Objects/crate_strip.png",
     },
 }
 

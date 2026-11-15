@@ -18,6 +18,7 @@ from globals import (
 )
 from items.item_database import initialize_item_database
 from items.items import WorldItem
+from items.loot_table_data import CRATE_LOOT
 from states.map.map_loader import load_level_data
 from systems import debug, interact, sound
 from systems.assets import load_image
@@ -28,6 +29,8 @@ from systems.health import is_dead
 from systems.hitbox import draw_highlight
 from systems.input import read_input
 from systems.loot import roll_loot
+from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
+from systems.roll import is_rolling
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.hud import HUD, centered_text_y
 from ui_components.inventory_ui import InventoryUI
@@ -35,6 +38,9 @@ from ui_components.text_label import TextLabel
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
+
+# how close (in pixels) a rolling player must be to break a crate
+CRATE_TOUCH_MARGIN = 2
 
 LEVEL_MUSIC = "level_music"
 
@@ -104,12 +110,15 @@ class Level:
         # Ground items, spawned during play; left-behind items don't carry over
         self.ground_items = pygame.sprite.Group()
 
+        self.particles = []
+
         level_data = load_level_data(map_path)
         self.map_surface = level_data["map_surface"]
         self.decor_tiles = level_data["decor_tiles"]
         self.wall_tiles = level_data["wall_tiles"]
         self.door_tiles = level_data["door_tiles"]
         self.chests = level_data["chests"]
+        self.crates = level_data["crates"]
         self.exit_rect = level_data["exit_rect"]
 
         # Placed items (keys), from the map's Items layer
@@ -193,6 +202,9 @@ class Level:
 
         self.player.update(dt, self.solid_tiles)
 
+        if is_rolling(self.player.roll):
+            self.break_touched_crates()
+
         # What F would act on now; drives the outline and the HUD prompt
         self.interact_target = interact.find_target(self.player, self)
         self.interact_prompt = None
@@ -234,6 +246,8 @@ class Level:
             return
 
         self.ground_items.update(dt)
+        self.update_crates(dt)
+        update_particles(self.particles, dt)
         center_camera(self.player.rect.center)
 
     def update_transition(self, dt):
@@ -276,7 +290,7 @@ class Level:
             self.world_surface.blit(image, padlock_rect)
 
         # Ground items and chests
-        for group in [self.ground_items, self.chests]:
+        for group in [self.crates, self.ground_items, self.chests]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.world_surface, camera)
@@ -298,6 +312,9 @@ class Level:
         for actor in actors:
             if is_on_screen(actor.rect):
                 actor.draw(self.world_surface, camera)
+
+        # Particles, on top of the world
+        draw_particles(self.world_surface, self.particles, camera)
 
         scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
         screen.blit(scaled_world, (0, 0))
@@ -359,8 +376,31 @@ class Level:
         self.refresh_walls()
         self.refresh_padlocks()
 
+    def break_touched_crates(self):
+        touch_box = self.player.rect.inflate(CRATE_TOUCH_MARGIN, CRATE_TOUCH_MARGIN)
+        broke_any = False
+
+        for crate in self.crates:
+            if not crate.breaking and touch_box.colliderect(crate.rect):
+                crate.start_breaking()
+                drops = roll_loot(CRATE_LOOT)
+                self.spawn_loot(drops, crate.rect.center)
+                broke_any = True
+
+        if broke_any:
+            self.refresh_walls()
+
+    def update_crates(self, dt):
+        for crate in self.crates.sprites():
+            crate.update(dt)
+
+            if crate.done_breaking:
+                emit_burst(self.particles, crate.rect.center, CRATE_DEBRIS)
+                crate.kill()
+
     def refresh_walls(self):
-        self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles)
+        solid_crates = [crate for crate in self.crates if not crate.breaking]
+        self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles) + solid_crates
 
     def refresh_padlocks(self):
         doors_by_id = {}

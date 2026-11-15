@@ -2,7 +2,7 @@ import pygame
 from pytmx.util_pygame import load_pygame
 
 from globals import TILE_SIZE
-from items.items import Chest
+from items.items import Chest, Crate
 from states.map.tiles import DecorTile, Door, WallTile
 
 
@@ -29,6 +29,7 @@ def build_map(tmx_data):
     wall_tiles = pygame.sprite.Group()
     door_tiles = pygame.sprite.Group()
     chests = pygame.sprite.Group()
+    crates = pygame.sprite.Group()
 
     for layer in tmx_data.visible_layers:
         if layer.name == "Floor":
@@ -64,12 +65,17 @@ def build_map(tmx_data):
                 if map_object.name.lower() == "chest":
                     Chest(pos=(map_object.x, map_object.y), groups=chests)
 
+        elif layer.name == "Crates":
+            for map_object in layer:
+                Crate(pos=(map_object.x, map_object.y), groups=crates)
+
     return {
         "map_surface": map_surface,
         "decor_tiles": decor_tiles,
         "wall_tiles": wall_tiles,
         "door_tiles": door_tiles,
         "chests": chests,
+        "crates": crates,
     }
 
 

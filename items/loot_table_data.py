@@ -8,6 +8,15 @@ CHEST_LOOT = [
     {"item_id": "speed_boots", "chance": 0.08, "min_quantity": 1, "max_quantity": 1},
 ]
 
+CRATE_LOOT = [
+    {
+        "item_id": "small_health_potion",
+        "chance": 0.15,
+        "min_quantity": 1,
+        "max_quantity": 2,
+    },
+]
+
 
 SKULL_LOOT = [
     {

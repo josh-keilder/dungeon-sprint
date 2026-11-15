@@ -2,8 +2,9 @@ import copy
 
 import pygame
 
+from items.item_texture_data import crate_texture_data
 from systems.animation import advance_animation, new_animation
-from systems.assets import load_image
+from systems.assets import load_animations, load_image
 
 
 class Item:
@@ -83,6 +84,42 @@ class Chest(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = load_image(CHEST_IMAGE_PATH)
         self.rect = self.image.get_frect(topleft=pos)
+
+    def draw(self, screen, camera):
+        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+
+
+CRATE_IMPACT_FRAMES = (2, 3)  # squash frames played on a hit: wide, then flattened
+CRATE_IMPACT_SPEED = 20  # impact frames per second
+
+
+class Crate(pygame.sprite.Sprite):
+    def __init__(self, groups, pos):
+        super().__init__(groups)
+        self.frames = load_animations(crate_texture_data)["crate"]
+        self.image = self.frames[0]
+        self.rect = self.image.get_frect(topleft=pos)
+
+        self.breaking = False
+        self.done_breaking = False
+        self.break_time = 0.0
+
+    def start_breaking(self):
+        self.breaking = True
+        self.image = self.frames[CRATE_IMPACT_FRAMES[0]]
+
+    def update(self, dt):
+        if not self.breaking:
+            return
+
+        self.break_time += dt
+        step = int(self.break_time * CRATE_IMPACT_SPEED)
+
+        if step >= len(CRATE_IMPACT_FRAMES):
+            self.done_breaking = True
+            return
+
+        self.image = self.frames[CRATE_IMPACT_FRAMES[step]]
 
     def draw(self, screen, camera):
         screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
