@@ -2,8 +2,8 @@ import pygame
 from pytmx.util_pygame import load_pygame
 
 from globals import TILE_SIZE
-from items.items import Chest, Crate
-from states.map.tiles import DecorTile, Door, WallTile
+from world.objects import Chest, Crate
+from world.tiles import DecorTile, Door, WallTile
 
 
 def load_level_data(map_path):

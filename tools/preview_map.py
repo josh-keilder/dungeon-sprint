@@ -14,7 +14,7 @@ from globals import (
     TILE_SIZE,
 )
 from items.item_database import initialize_item_database
-from states.map.map_loader import load_level_data
+from world.map_loader import load_level_data
 
 # Output image
 PREVIEW_SCALE = 2

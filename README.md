@@ -46,10 +46,11 @@ The game currently includes:
 - `main.py` - Game startup and main loop
 - `globals.py` - Shared constants: screen size, tile size, colors, map path
 - `entities/` - Player and enemy classes, their stats and sprite data
-- `items/` - Item classes, item database, sprite data, and loot tables
-- `states/` - Game state manager, dungeon level and map loading, start, options and game-over menus
+- `items/` - Item data: item classes, item database, sprite data, and loot tables
+- `states/` - Screens: the game state manager, the gameplay state, and the main, options and end-of-run menus
+- `world/` - Everything that makes up a floor: map loading, tiles, and the objects placed on it (ground items, chests, crates)
 - `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, sound, settings, and more
-- `ui_components/` - Buttons, sliders, text labels, health bars, inventory screen, cursor
+- `ui_components/` - Buttons, sliders, text labels and text layout, health bars, HUD, inventory screen, FPS counter, cursor
 - `tools/` - Developer scripts: sprite generator, strip maker, map preview, ASCII → TMX map converter, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
 - `hooks/` - Git pre-commit hook
 - `Assets/` - Sprites, maps, audio, fonts, and UI art
@@ -123,5 +124,5 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 112
-- **Total Lines of Code:** 7419
+- **Total Files:** 113
+- **Total Lines of Code:** 7418

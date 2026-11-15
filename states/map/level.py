@@ -17,9 +17,7 @@ from globals import (
     WORLD_WIDTH,
 )
 from items.item_database import initialize_item_database
-from items.items import WorldItem
 from items.loot_table_data import CRATE_LOOT
-from states.map.map_loader import load_level_data
 from systems import debug, interact, sound
 from systems.assets import load_image
 from systems.camera import camera, center_camera, is_on_screen
@@ -36,6 +34,8 @@ from ui_components.hud import HUD
 from ui_components.inventory_ui import InventoryUI
 from ui_components.text_label import TextLabel
 from ui_components.text_layout import centered_text_x, centered_text_y
+from world.map_loader import load_level_data
+from world.objects import WorldItem
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5

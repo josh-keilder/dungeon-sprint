@@ -12,6 +12,8 @@ These are the rules the project was refactored around. New code should follow th
 
 **One job per module.** Every file does one thing. `systems/roll.py` only knows about rolling, `systems/health.py` only knows about health, and so on. If a file starts doing two jobs, split it.
 
+**Folders by kind.** `states/` holds screens (the gameplay state and the menus), `world/` everything that makes up a floor (map loading, tiles, objects on the floor), `entities/` the player and enemies, `items/` item data (classes, database, sprite layouts, loot tables), `systems/` the rules, `ui_components/` reusable UI, and `tools/` developer scripts.
+
 **Services are modules of functions.** Shared behaviour lives in `systems/` as plain functions. A system takes the data it works on as arguments and either changes it in place or returns a new value. For example, `take_damage(health, amount)` changes a health dict, and `steer(...)` returns a new velocity.
 
 **Identity is plain data.** An entity's state is stored as simple dicts on the object, and the systems operate on those dicts:
@@ -377,19 +379,9 @@ All states are built once at startup and kept alive, so leaving and returning to
 
 ### `items/`
 
-- **`items.py`**:
+- **`items.py`**: item **data** only (the sprites that put items in the world are in `world/objects.py`):
   - `Item`: an item template or stack. It has `id`, `name`, `animations`, `description`, `quantity`, `max_stack`, `animation_speed`, `value_text` and `image` (first idle frame). `clone()` is a shallow copy, so a clone has its own `quantity` but shares the same images.
   - `EquipmentItem(Item)`: adds `slot` and `bonuses`, and always has `max_stack` 1.
-  - `WorldItem`: a sprite for an item lying on the ground. It holds a clone of the item data and its own animation.
-  - `Chest`: a sprite placed from the map.
-  - `Crate`: a breakable box placed from the map. It has three states:
-
-    ```
-    solid ──rolled into (start_breaking)──▶ breaking: shows impact frame 2 (wide), then 3 (flattened)
-          ──impact over──▶ done_breaking = True ──▶ the level bursts debris and kills it
-    ```
-
-    `start_breaking()` shows the first impact frame **immediately**, so the hit lands on the same frame as the roll. `update(dt)` is a **one-shot** animation: the looping helper (`advance_animation`) wraps back to frame 0 with `%`, but a hit should play once, so it counts seconds since the hit and turns them into a step, `step = int(break_time × CRATE_IMPACT_SPEED)`. `CRATE_IMPACT_FRAMES` (`(2, 3)`) turns each step into a frame number in the strip, so changing which frames play is a one-line edit; at `CRATE_IMPACT_SPEED` 20 per second, the 2 frames take about a tenth of a second. When the steps run out it sets `done_breaking` instead of removing itself: the crate knows **when** its impact ends, but the particle list belongs to the level, so the level acts on the flag (the same "flag, then the owner acts" split as `exit_requested`). Its frames come from `load_animations(crate_texture_data)`, which is cached, so every crate shares the same 4 surfaces.
 - **`item_database.py`**: `initialize_item_database()` builds and returns the dict of item templates, keyed by item id: `gold_key` ("Opens treasure rooms"), `silver_key` ("Opens the way forward"), `small_health_potion`, `speed_boots`. The two keys use the pack's spinning key animations; on the ground they animate, while the HUD quick slots and the inventory show their first frame (`item.image`) as a still icon. It also defines `SMALL_HEALTH_POTION_VALUE` (10), how much HP a potion heals: it's the potion's own data, so it lives next to the potion's definition rather than in `globals.py` (which is for settings shared across the whole game). It's used for the tooltip's "Value: 10 HP" here, and imported by `systems/consumables.py` for the actual healing, so the two can never disagree.
 - **`item_texture_data.py`**: sprite sheet layouts for each item, plus `crate_texture_data` for the crate strip. The keys' entries (`gold_key_texture_data`, `silver_key_texture_data`) point at the 4-frame strips made by `make_strip`; the old `animated_gold_key.png` and the unused static `gold_key.png` were removed.
 - **`loot_table_data.py`**: the loot tables: `CHEST_LOOT`, what a chest can drop, `CRATE_LOOT`, what a broken crate can drop, and one table per enemy type (`SKULL_LOOT`, `SKELETON_LOOT`), what it can drop when it dies (section 8).
@@ -444,15 +436,6 @@ All states are built once at startup and kept alive, so leaving and returning to
 
     - `fade_overlay` is a screen-sized surface filled with `PALETTE_VOID`. It's drawn last, over the HUD too, so the whole screen fades together, with the card text on top during `"card"`.
   - `dying` (starts `False`) is the flag that says the death sequence has started, and `death_timer` (made with `new_timer()`) holds the seconds left before the game-over screen. `DEATH_DELAY` (3.0 s) is the whole freeze, and `DEATH_FADE_DURATION` (1.5 s) is how long the player's body takes to fade out. The fade must be no longer than the delay.
-- **`map/map_loader.py`**: reads the TMX file with pytmx.
-  - `load_level_data(map_path)` returns one dict with everything the level needs.
-  - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
-  - `assign_door_properties(tmx_data, door_tiles)` reads the `Doors` object group: for each door object it builds a `pygame.Rect` from its position and size, and gives every door tile inside it the object's `door_id` and `key` (pytmx reads an object's `<properties>` into the dict `map_object.properties`). `load_level_data` calls it right after `build_map`. Maps no longer have a logic layer.
-  - `build_map` also turns the `Crates` object group into `Crate` sprites (`level_data["crates"]`), placed by each object's x and y like chests.
-  - `find_player_spawn` and `find_enemy_spawns` read spawn objects.
-  - `find_exit` returns a `pygame.Rect` for the object named `Exit`, or `None` if there isn't one.
-  - `find_placed_items` returns `(item_id, center)` pairs for the objects in the `Items` object group, stored as `level_data["placed_items"]`. Each object is named by its item id. It loops over `tmx_data.objectgroups` to find the group by name, so a map with no `Items` group just has no placed items (`get_layer_by_name` would crash instead). The center is worked out as `(x + width / 2, y + height / 2)`, which works for both kinds of object: Level One's 10×8 rectangles drawn in Tiled, and the converter's 0-sized points, whose center is just their x and y.
-- **`map/tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id` and a `key` (the item id that opens them, `silver_key` or `gold_key`), both set by `assign_door_properties`.
 - **`menus/main_menu.py`**: `MainMenu(game_state_manager)`, the title screen (section 5).
   - `draw` fills the screen with `MENU_BACKGROUND_COLOR`, then draws the "DUNGEON SPRINT" title (`TITLE_FONT_SIZE` 96, at `TITLE_Y` 50, centered with `(SCREEN_WIDTH - width) // 2`) and the buttons.
   - Start, Options and Exit are `TextButton`s with a gray outline, centered and stacked at `START_BUTTON_Y` (300), `OPTIONS_BUTTON_Y` (380) and `EXIT_BUTTON_Y` (460).
@@ -702,6 +685,31 @@ Some systems hold module-level state that is shared by everyone who imports them
 - **The interaction prompt** (`draw_prompt(screen, prompt)`): when `prompt` isn't `None`, it shows the `(text, available)` from `describe_target`, centered by its visible ink at the bottom of the screen, on `PROMPT_CENTER_Y` (`SCREEN_HEIGHT − HUD_MARGIN − 36`, level with the middle of the quick slots), snapped to the 3 px grid. Available actions use `prompt_label` (`PALETTE_STEEL`) and blocked ones `prompt_blocked_label` (`PALETTE_BLOOD`), both outlined in `PALETTE_VOID`; two labels means neither has to re-render when the color changes. Red text is the only thing that says *why* F won't work, while the outline just marks what you're near.
 - **`create_outline.py`**: `make_outline` builds a one-pixel outline surface from an image's mask. It outlines each separate shape in the mask (`mask.connected_components()`), because `mask.outline()` alone only traces the first shape, which for text would be just the first letter. Holes inside a shape, like the inside of an "A", are not outlined. `draw_outline` blits it shifted one pixel in each direction to make a thicker outline.
 - **`cursor.py`**: `Cursor`, the custom mouse cursor, centered `CURSOR_OFFSET` (5) pixels down and right of the real mouse position.
+
+### `world/`
+
+Everything that makes up a floor: how a map file is read, the tile sprites, and the objects placed on a floor. `states/` holds only screens, and `items/` only item data.
+
+- **`map_loader.py`**: reads the TMX file with pytmx.
+  - `load_level_data(map_path)` returns one dict with everything the level needs.
+  - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
+  - `assign_door_properties(tmx_data, door_tiles)` reads the `Doors` object group: for each door object it builds a `pygame.Rect` from its position and size, and gives every door tile inside it the object's `door_id` and `key` (pytmx reads an object's `<properties>` into the dict `map_object.properties`). `load_level_data` calls it right after `build_map`. Maps no longer have a logic layer.
+  - `build_map` also turns the `Crates` object group into `Crate` sprites (`level_data["crates"]`), placed by each object's x and y like chests.
+  - `find_player_spawn` and `find_enemy_spawns` read spawn objects.
+  - `find_exit` returns a `pygame.Rect` for the object named `Exit`, or `None` if there isn't one.
+  - `find_placed_items` returns `(item_id, center)` pairs for the objects in the `Items` object group, stored as `level_data["placed_items"]`. Each object is named by its item id. It loops over `tmx_data.objectgroups` to find the group by name, so a map with no `Items` group just has no placed items (`get_layer_by_name` would crash instead). The center is worked out as `(x + width / 2, y + height / 2)`, which works for both kinds of object: Level One's 10×8 rectangles drawn in Tiled, and the converter's 0-sized points, whose center is just their x and y.
+- **`tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id` and a `key` (the item id that opens them, `silver_key` or `gold_key`), both set by `assign_door_properties`.
+- **`objects.py`**: the sprites placed on a floor, moved here from `items/items.py` so item **data** and world **sprites** live apart.
+  - `WorldItem`: a sprite for an item lying on the ground. It holds a clone of the item data and its own animation.
+  - `Chest`: a sprite placed from the map.
+  - `Crate`: a breakable box placed from the map. It has three states:
+
+    ```
+    solid ──rolled into (start_breaking)──▶ breaking: shows impact frame 2 (wide), then 3 (flattened)
+          ──impact over──▶ done_breaking = True ──▶ the level bursts debris and kills it
+    ```
+
+    `start_breaking()` shows the first impact frame **immediately**, so the hit lands on the same frame as the roll. `update(dt)` is a **one-shot** animation: the looping helper (`advance_animation`) wraps back to frame 0 with `%`, but a hit should play once, so it counts seconds since the hit and turns them into a step, `step = int(break_time × CRATE_IMPACT_SPEED)`. `CRATE_IMPACT_FRAMES` (`(2, 3)`) turns each step into a frame number in the strip, so changing which frames play is a one-line edit; at `CRATE_IMPACT_SPEED` 20 per second, the 2 frames take about a tenth of a second. When the steps run out it sets `done_breaking` instead of removing itself: the crate knows **when** its impact ends, but the particle list belongs to the level, so the level acts on the flag (the same "flag, then the owner acts" split as `exit_requested`). Its frames come from `load_animations(crate_texture_data)`, which is cached, so every crate shares the same 4 surfaces.
 
 ### `tools/`
 
