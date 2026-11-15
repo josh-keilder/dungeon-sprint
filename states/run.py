@@ -133,7 +133,7 @@ class Run:
         if self.inventory_open and INVENTORY_PAUSES_GAME:
             return
 
-        self.player.update(dt, self.floor.solid_tiles)
+        self.player.update(dt, self.floor.player_walls(self.player))
         self.floor.update(dt, self.player)
 
         # What F would act on now; drives the outline and the HUD prompt

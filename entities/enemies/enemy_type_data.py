@@ -38,11 +38,11 @@ ENEMY_TYPES = {
         "invulnerability_duration": 1.0,
         "loot_table": SKELETON_LOOT,
         "body": (8, 13, 14, 16),  # the skeleton's body inside its 32x32 frame
-        "touch_damage": False,  # only its swing hurts (stage 3)
+        "touch_damage": False,  # only its swing hurts
         "animation_prefix": "skeleton",  # animations named skeleton_<action>_<facing>
         "attack": {
             "range": 20,  # pixels: starts a swing when the player is this close
-            "frame_rate": 13,  # attack frames per second: frames 0-5 wind up in ~0.45s
+            "frame_rate": 10,  # attack frames per second: frames 0-5 wind up in 0.6s
             "strike_frames": (6, 7),  # the frames that hurt: where the slash is drawn
             "reach": 18,  # pixels the strike hitbox extends in front of the body
             "cooldown": 1.0,  # seconds after a swing before the next one

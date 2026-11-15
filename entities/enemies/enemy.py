@@ -208,6 +208,10 @@ class Enemy:
             self.knockback_velocity, self.knockback_decay_rate, dt
         )
 
+    def shove(self, displacement, walls):
+        move_and_collide(self.rect, displacement, walls)
+        self.pos.xy = self.rect.topleft
+
     def try_start_attack(self, target_pos):
         if self.attack is None or is_running(self.attack_cooldown):
             return
@@ -251,6 +255,10 @@ class Enemy:
     def start_dying(self):
         self.dying = True
         self.death_time = 0.0
+        self.attacking = False
 
     def is_done_dying(self):
         return self.dying and self.death_time >= self.death_duration
+
+    def is_solid(self):
+        return not self.dying and self.behavior != "fly"

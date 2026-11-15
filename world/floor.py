@@ -14,6 +14,7 @@ from systems.loot import roll_loot
 from systems.masks import draw_highlight
 from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
+from systems.separation import separate_enemies
 from world.map_loader import load_floor_data
 from world.objects import GroundItem
 
@@ -78,6 +79,7 @@ class Floor:
             enemy.update(dt, self.solid_tiles, player.pos)
         self.resolve_enemy_contacts(player)
         self.resolve_enemy_strikes(player)
+        separate_enemies(self.enemies, player, self.solid_tiles)
         self.remove_dead_enemies()
 
         self.ground_items.update(dt)
@@ -138,6 +140,17 @@ class Floor:
             ]
 
         return [sprite]
+
+    def player_walls(self, player):
+        if is_rolling(player.roll):
+            return self.solid_tiles
+
+        solid_enemies = [
+            enemy
+            for enemy in self.enemies
+            if enemy.is_solid() and not enemy.rect.colliderect(player.rect)
+        ]
+        return self.solid_tiles + solid_enemies
 
     def resolve_enemy_contacts(self, player):
         living_enemies = [enemy for enemy in self.enemies if not enemy.dying]
