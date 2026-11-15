@@ -1,6 +1,6 @@
 import pygame
 
-from globals import FONT_PATH, GAME_SCALE, PALETTE_STEEL
+from constants import FONT_PATH, GAME_SCALE, PALETTE_STEEL
 
 # Defaults: Silkscreen at 24 sits on the 3x pixel grid
 DEFAULT_FONT_SIZE = 24

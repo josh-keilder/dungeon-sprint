@@ -1,7 +1,6 @@
 import pygame
 
-from entities.player.load_player import load_player
-from globals import (
+from constants import (
     FLOOR_ORDER,
     GAME_SCALE,
     MENU_BACKGROUND_COLOR,
@@ -10,6 +9,7 @@ from globals import (
     WORLD_HEIGHT,
     WORLD_WIDTH,
 )
+from entities.player.load_player import load_player
 from items.item_database import initialize_item_database
 from systems import debug, interact, sound
 from systems.camera import center_camera

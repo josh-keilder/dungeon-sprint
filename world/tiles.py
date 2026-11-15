@@ -1,6 +1,6 @@
 import pygame
 
-from globals import BLUE
+from constants import BLUE
 from systems import debug
 from systems.camera import camera
 from systems.masks import draw_hitbox

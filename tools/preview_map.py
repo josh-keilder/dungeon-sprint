@@ -3,7 +3,7 @@ import sys
 
 import pygame
 
-from globals import (
+from constants import (
     FLOOR_ORDER,
     FONT_PATH,
     PALETTE_AZURE,

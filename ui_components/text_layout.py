@@ -1,4 +1,4 @@
-from globals import GAME_SCALE
+from constants import GAME_SCALE
 
 # Text is placed by its visible ink (get_bounding_rect), not by its surface: a rendered
 # surface has empty space above and below the letters, so lining up surfaces would leave

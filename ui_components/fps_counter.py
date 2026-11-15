@@ -1,4 +1,4 @@
-from globals import PALETTE_STEEL, PALETTE_VOID, SCREEN_WIDTH
+from constants import PALETTE_STEEL, PALETTE_VOID, SCREEN_WIDTH
 from ui_components.text_label import TextLabel
 from ui_components.text_layout import centered_text_y
 

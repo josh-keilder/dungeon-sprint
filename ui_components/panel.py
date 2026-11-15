@@ -1,6 +1,6 @@
 import pygame
 
-from globals import GAME_SCALE
+from constants import GAME_SCALE
 
 # 9-slice: corner size in art pixels.
 # Must match the border of the panel_frame sprite in tools/make_sprite.py

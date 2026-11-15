@@ -1,6 +1,6 @@
 import pygame
 
-from globals import PALETTE_SHADOW, PALETTE_TORCH
+from constants import PALETTE_SHADOW, PALETTE_TORCH
 from systems import sound
 
 # Knob shape, in pixels

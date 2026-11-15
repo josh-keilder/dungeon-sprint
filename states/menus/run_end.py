@@ -1,6 +1,6 @@
 import pygame
 
-from globals import (
+from constants import (
     BUTTON_FONT_SIZE,
     FONT_PATH,
     OVERLAY_ALPHA,

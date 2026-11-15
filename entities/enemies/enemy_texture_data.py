@@ -1,4 +1,4 @@
-from globals import TILE_SIZE
+from constants import TILE_SIZE
 
 # Placeholder: skeletons use the skull art until their own sprites exist
 skeleton_texture_data = {}

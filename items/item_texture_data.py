@@ -1,4 +1,4 @@
-from globals import TILE_SIZE
+from constants import TILE_SIZE
 
 # Sheet layouts: each entry is a one-row strip of square frames, sliced by load_animations
 

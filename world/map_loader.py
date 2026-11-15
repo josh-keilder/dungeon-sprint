@@ -1,7 +1,7 @@
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from globals import TILE_SIZE
+from constants import TILE_SIZE
 from world.objects import Chest, Crate
 from world.tiles import DecorTile, Door, WallTile
 

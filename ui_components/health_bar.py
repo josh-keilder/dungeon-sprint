@@ -1,6 +1,6 @@
 import pygame
 
-from globals import PALETTE_BLOOD, PALETTE_SHADOW, PALETTE_VOID
+from constants import PALETTE_BLOOD, PALETTE_SHADOW, PALETTE_VOID
 
 # Enemy health bars: a void border around a shadow bar with a blood fill
 HEALTH_BAR_BORDER = 1  # pixels on every side

@@ -1,4 +1,4 @@
-from globals import PLAYER_SPRITE_SIZE
+from constants import PLAYER_SPRITE_SIZE
 
 # Player sheets: one row per animation, 64x64 frames, cropped to a tile on load
 player_texture_data = {

@@ -1,4 +1,4 @@
-from globals import PALETTE_STEEL, PALETTE_TORCH
+from constants import PALETTE_STEEL, PALETTE_TORCH
 from ui_components.button import Button
 
 

@@ -1,6 +1,6 @@
 import pygame
 
-from globals import RED, TILE_SIZE
+from constants import RED, TILE_SIZE
 from systems import debug
 from systems.animation import advance_animation, new_animation
 from systems.assets import load_animations

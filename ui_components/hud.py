@@ -1,6 +1,6 @@
 import pygame
 
-from globals import (
+from constants import (
     FONT_PATH,
     GAME_SCALE,
     PALETTE_BLOOD,

@@ -1,6 +1,6 @@
 import pygame
 
-from globals import (
+from constants import (
     FRAME_RATE,
     GREEN,
     RED,

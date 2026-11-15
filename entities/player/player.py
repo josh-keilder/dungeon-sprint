@@ -1,6 +1,6 @@
 import pygame
 
-from globals import GREEN
+from constants import GREEN
 from systems import debug
 from systems.animation import advance_animation, new_animation, set_animation
 from systems.blink import is_blink_hidden

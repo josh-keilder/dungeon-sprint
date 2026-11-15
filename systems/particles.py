@@ -3,7 +3,7 @@ import random
 
 import pygame
 
-from globals import PALETTE_CLAY, PALETTE_LEATHER, PALETTE_TORCH
+from constants import PALETTE_CLAY, PALETTE_LEATHER, PALETTE_TORCH
 
 # Presets: one recipe per effect. Ranges are (lowest, highest), picked at random per particle
 CRATE_DEBRIS = {

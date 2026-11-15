@@ -1,6 +1,6 @@
+from constants import TILE_SIZE
 from entities.player.player import Player
 from entities.player.player_texture_data import player_texture_data
-from globals import TILE_SIZE
 from systems.assets import load_animations
 
 

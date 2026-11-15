@@ -44,7 +44,7 @@ The game currently includes:
 ## Project Structure
 
 - `main.py` - Game startup and main loop
-- `globals.py` - Shared constants: screen size, tile size, colors, map path
+- `constants.py` - Shared constants: screen and world size, tile size, colors and the tileset palette, shared UI values, the floor order
 - `entities/` - Player and enemy classes, their stats and sprite data
 - `items/` - Item data: item classes, item database, sprite data, and loot tables
 - `states/` - Screens: the game state manager, the gameplay state, and the main, options and end-of-run menus
@@ -74,7 +74,7 @@ For a full explanation of how the code works, see [Project_Documentation.md](Pro
 
 ## Developer Tools
 
-Run every tool from the project root as a module (`-m tools.<name>`), so it can import the game's code such as `globals.py`.
+Run every tool from the project root as a module (`-m tools.<name>`), so it can import the game's code such as `constants.py`.
 
 - **Sprite generator** (`tools/make_sprite.py`): regenerates every sprite drawn as text in its `SPRITES` dict (the UI panel frame, the speed boots) and saves them as PNGs in `Assets/`.
 
@@ -125,4 +125,4 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 
 ## Project Statistics
 - **Total Files:** 115
-- **Total Lines of Code:** 7473
+- **Total Lines of Code:** 7471
