@@ -77,6 +77,7 @@ class Floor:
         for enemy in self.enemies:
             enemy.update(dt, self.solid_tiles, player.pos)
         self.resolve_enemy_contacts(player)
+        self.remove_dead_enemies()
 
         self.ground_items.update(dt)
         self.update_crates(dt)
@@ -138,12 +139,18 @@ class Floor:
         return [sprite]
 
     def resolve_enemy_contacts(self, player):
-        for enemy in find_player_contacts(player, self.enemies):
+        living_enemies = [enemy for enemy in self.enemies if not enemy.dying]
+        for enemy in find_player_contacts(player, living_enemies):
             enemy_hit = resolve_contact(player, enemy)
             if enemy_hit:
                 sound.play_sfx("roll_hit")
 
             if is_dead(enemy.health):
+                enemy.start_dying()
+
+    def remove_dead_enemies(self):
+        for enemy in list(self.enemies):
+            if enemy.is_done_dying():
                 drops = roll_loot(enemy.loot_table)
                 self.spawn_loot(drops, enemy.rect.center)
                 self.enemies.remove(enemy)

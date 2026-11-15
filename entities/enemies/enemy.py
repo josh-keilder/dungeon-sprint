@@ -2,20 +2,28 @@ import pygame
 
 from constants import RED, TILE_SIZE, YELLOW
 from systems import debug
-from systems.animation import advance_animation, new_animation
+from systems.animation import (
+    DEFAULT_ANIMATION_SPEED,
+    advance_animation,
+    new_animation,
+    set_animation,
+)
 from systems.assets import load_animations
 from systems.blink import is_blink_hidden
 from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_velocity
 from systems.health import new_health
 from systems.masks import draw_hitbox
 from systems.movement import decay_velocity, move_and_collide
-from systems.timer import advance_timer, new_timer
+from systems.timer import advance_timer, new_timer, time_left
 from ui_components.health_bar import draw_health_bar
 
 # Health bar, in world pixels, shown above the sprite once the enemy is hurt
 ENEMY_HEALTH_BAR_WIDTH = TILE_SIZE
 ENEMY_HEALTH_BAR_HEIGHT = 2
 ENEMY_HEALTH_BAR_GAP = 8  # from the sprite's top
+
+# Animation states
+HURT_DURATION = 0.5  # seconds of the hurt animation at the start of the i-frames
 
 
 class Enemy:
@@ -33,15 +41,25 @@ class Enemy:
         self.loot_table = type_data["loot_table"]
         self.behavior = type_data["behavior"]
         self.touch_damage = type_data["touch_damage"]
+        self.animation_prefix = type_data["animation_prefix"]
 
         # Position, sprite and animation
         self.pos = pygame.math.Vector2(pos)
         self.animation = new_animation(animations, start_animation)
         self.image = animations[start_animation][0]
 
+        # Animation state: which way it faces, whether it moved, and dying
+        self.facing = "right"
+        self.moving = False
+        self.dying = False
+        self.death_time = 0.0
+        death_frames = animations.get(f"{self.animation_prefix}_death_right", [])
+        self.death_duration = len(death_frames) / DEFAULT_ANIMATION_SPEED
+
         # Body: the box that moves, hits walls and gets hit; the art is drawn around it
         body_x, body_y, body_width, body_height = type_data["body"]
-        self.art_offset = pygame.Vector2(body_x, body_y)
+        self.body_x = body_x
+        self.body_y = body_y
         self.rect = pygame.FRect(self.pos, (body_width, body_height))
 
         # Health and hit timers
@@ -57,14 +75,30 @@ class Enemy:
         self.knockback_velocity = pygame.Vector2()
 
     def update(self, dt, walls, target_pos):
-        self.image = advance_animation(self.animation, dt)
-        self.update_movement(dt, walls, target_pos)
-        self.update_knockback(dt, walls)
-        advance_timer(self.invulnerability, dt)
+        if self.dying:
+            self.death_time += dt
+            self.update_knockback(dt, walls)
+        else:
+            start_center = pygame.Vector2(self.rect.center)
+            velocity = self.update_movement(dt, walls, target_pos)
+            self.update_knockback(dt, walls)
+            advance_timer(self.invulnerability, dt)
+
+            self.moving = pygame.Vector2(self.rect.center) != start_center
+            if velocity.x < 0:
+                self.facing = "left"
+            elif velocity.x > 0:
+                self.facing = "right"
+
+        self.update_animation(dt)
         self.pos.xy = self.rect.topleft
 
     def draw(self, screen, camera=None):
-        blink_hidden = is_blink_hidden(self.invulnerability, self.blink_interval)
+        blink_hidden = (
+            not self.dying
+            and self.blink_interval is not None
+            and is_blink_hidden(self.invulnerability, self.blink_interval)
+        )
 
         art_x, art_y = self.art_topleft()
         draw_pos = (art_x, art_y)
@@ -74,7 +108,7 @@ class Enemy:
         if not blink_hidden:
             screen.blit(self.image, draw_pos)
 
-        if self.health["current"] < self.health["maximum"]:
+        if self.health["current"] < self.health["maximum"] and not self.dying:
             bar_x = self.rect.centerx - ENEMY_HEALTH_BAR_WIDTH // 2
             bar_y = self.rect.top - ENEMY_HEALTH_BAR_GAP
 
@@ -87,7 +121,7 @@ class Enemy:
                 self.health,
                 *bar_pos,
                 ENEMY_HEALTH_BAR_WIDTH,
-                ENEMY_HEALTH_BAR_HEIGHT
+                ENEMY_HEALTH_BAR_HEIGHT,
             )
 
         if debug.show_hitboxes:
@@ -99,17 +133,41 @@ class Enemy:
             pygame.draw.rect(screen, YELLOW, body_on_screen, 1)
 
     def art_topleft(self):
-        return (self.rect.x - self.art_offset.x, self.rect.y - self.art_offset.y)
+        offset_x = self.body_x
+        if self.facing == "left":
+            offset_x = self.image.get_width() - self.body_x - self.rect.width
+        return (self.rect.x - offset_x, self.rect.y - self.body_y)
+
+    def update_animation(self, dt):
+        if self.animation_prefix is not None:
+            set_animation(self.animation, self.animation_name())
+        self.image = advance_animation(self.animation, dt)
+
+    def animation_name(self):
+        if self.dying:
+            action = "death"
+        elif (
+            time_left(self.invulnerability)
+            > self.invulnerability_duration - HURT_DURATION
+        ):
+            action = "hurt"
+        elif self.moving:
+            action = "move"
+        else:
+            action = "idle"
+        return f"{self.animation_prefix}_{action}_{self.facing}"
 
     def update_movement(self, dt, walls, target_pos):
         if self.behavior == "fly":
             velocity = fly_velocity(self, target_pos, dt)
             self.rect.x += velocity.x * dt
             self.rect.y += velocity.y * dt
+            return velocity
 
         elif self.behavior == "wander_chase":
             velocity = wander_chase_velocity(self, target_pos, walls)
             move_and_collide(self.rect, velocity * dt, walls)
+            return velocity
 
     def update_knockback(self, dt, walls):
         hit_x, hit_y = move_and_collide(self.rect, self.knockback_velocity * dt, walls)
@@ -122,3 +180,10 @@ class Enemy:
         self.knockback_velocity = decay_velocity(
             self.knockback_velocity, self.knockback_decay_rate, dt
         )
+
+    def start_dying(self):
+        self.dying = True
+        self.death_time = 0.0
+
+    def is_done_dying(self):
+        return self.dying and self.death_time >= self.death_duration

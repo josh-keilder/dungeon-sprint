@@ -22,6 +22,7 @@ ENEMY_TYPES = {
         # x, y, width, height inside the frame: the whole 16x16 skull
         "body": (0, 0, 16, 16),
         "touch_damage": True,  # hurts the player on contact
+        "animation_prefix": None,  # Skull: one animation, no states
     },
     "Skeleton": {
         "max_health": 100,
@@ -32,10 +33,11 @@ ENEMY_TYPES = {
         "start_animation": "skeleton_idle_right",
         "knockback_multiplier": 0.7,
         "knockback_decay_rate": 16,
-        "blink_interval": 0.15,
+        "blink_interval": None,
         "invulnerability_duration": 1.0,
         "loot_table": SKELETON_LOOT,
         "body": (8, 13, 14, 16),  # the skeleton's body inside its 32x32 frame
         "touch_damage": False,  # only its swing hurts (stage 3)
+        "animation_prefix": "skeleton",  # animations named skeleton_<action>_<facing>
     },
 }
