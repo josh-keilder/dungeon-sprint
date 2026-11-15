@@ -8,7 +8,7 @@ The code itself has no docstrings on purpose. Explanations live here so the sour
 
 ## 2. Design rules
 
-These are the rules the project was refactored around. New code should follow them.
+These are the rules the project was built around. New code should follow them.
 
 **One job per module.** Every file does one thing. `systems/roll.py` only knows about rolling, `systems/health.py` only knows about health, and so on. If a file starts doing two jobs, split it.
 
@@ -270,7 +270,8 @@ The **grid** is the shared format: hand-written and generated levels go through 
   - Helpers and constants: `find_cells(grid, characters)` lists the positions of the given characters (a comprehension with two `for`s, rows then cells); `SILVER_KEY` (`"s"`) and `GOLD_KEY` (`"g"`) name the key characters, and `DOOR_KEYS` maps each door letter to the key item that opens it; `DIRECTIONS` holds the 4 neighbor offsets (up, right, down, left), shared by the void check and the flood fill.
 - **Reproducible output.** `random.Random(map_name)` is a generator seeded with the map's name: the same seed always gives the same "random" picks, so converting the same file twice writes an identical map and `git diff` only shows real changes, while each map still gets its own variety.
 - **Two typos from building it, worth remembering** because both were valid Python that ran and quietly did the wrong thing: `{WALL < FLOOR, ...}` (a comparison, `False`, instead of two set items) and `cell_at(grid, x + dx, y=dx)` (a keyword argument setting `y` to `dx`). The cure is checking real output, not just that the code runs.
-- **Doors can guard optional loot.** A door doesn't have to block the way to the exit: on Easy floor 1 it locks a side room with a chest, so the key and the chest are a route choice. The solvability check only proves the **exit** can be reached, so it can't tell a required door from an optional one; that's a design decision, checked by playing.
+- **Doors can guard optional loot.** A door doesn't have to block the way to the exit: on Easy floor 1 the gold door locks a treasure room with a chest, so the gold key and the chest are a route choice, while the silver door is on the main path. The solvability check only proves the **exit** can be reached, so it can't tell a required door from an optional one; that's a design decision, checked by playing.
+- **Enemies are never optional.** The exit stays shut until every enemy on the floor is defeated (see "What `interact` does"), so an enemy placed in a side room makes that room part of the required route. Keep optional rooms empty, or accept that they aren't optional. The solvability check doesn't know this either.
 - **Limits:** doors exactly 2 tiles, walls at least 2 thick, no decor, and only keys as placed items. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
 
 **`tools/make_strip.py`.** Joins animation frames into one horizontal strip. The pack stores each animation as one file per frame (`keys_2_1.png` … `keys_2_4.png`), while the game's texture data expects one strip that `slice_frames` cuts into equal cells. The pack folder is git-ignored, so the game must never load from it: the tool **reads from the pack** and **writes into `Assets/`**, and only its output is committed. Running it needs the pack on your machine.
@@ -718,6 +719,7 @@ Everything that makes up a floor: how a map file is read, the tile sprites, and 
     - **Crates.** `refresh_solid_tiles()` adds every crate still in `crates` to `solid_tiles`, so crates block the player **and** enemies like walls. While the player is rolling, `update` calls `break_touched_crates(player)`: any crate touching the player's rect grown by `CRATE_TOUCH_MARGIN` (2 pixels) starts breaking, drops its `CRATE_LOOT` at its center, and, since a breaking crate isn't solid, `refresh_solid_tiles()` runs once if anything broke, so the roll carries straight through. The margin is needed because a solid crate pushes the player out, so the two never actually overlap; the grown rect catches "pressed right up against it". Walking into a crate just bumps it: rolling is the only way to break one, the same rule as damaging enemies. `update_crates(dt)` advances every crate and, for each one with `done_breaking`, emits a `CRATE_DEBRIS` burst at its center and kills it; it loops over `crates.sprites()`, a copy, so removing crates mid-loop is safe.
     - `solid_tiles` and `padlocks` are both derived from `door_tiles`, so both are rebuilt together, in `__init__` and in `unlock_door`, whenever the doors change. Forgetting the second call leaves a padlock floating where an opened door used to be.
     - `spawn_loot(drops, center)` creates `GroundItem`s scattered randomly around a point.
+    - `enemies_left()` counts the enemies that aren't dying, with `sum(1 for ...)`. Dying ones already count as defeated, so the exit opens the moment the last one is hit, without waiting out its death animation.
     - `exit_rect` is the current floor's exit area, or `None` if the map has none. `exit_requested` (`False` on every new floor) is set when the player presses F at the exit, and acted on by the run at frame step 7.
 - **`objects.py`**: the sprites placed on a floor, moved here from `items/items.py` so item **data** and world **sprites** live apart.
   - `GroundItem`: a sprite for an item lying on the ground (the `ground_items` group holds them). `item` is its own clone of the `Item` (so a stack on the ground has its own quantity), and it has its own animation.
@@ -994,7 +996,7 @@ player.alpha  = round(255 × (1 − fade_progress))           (255 visible → 0
 
 So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
 
-**7. Leaving through the exit.** Climbing down takes **F**: walking onto the ladder does nothing by itself, so nobody leaves a floor by accident. Pressing F at the exit only sets `exit_requested` (see "What `interact` does"); the leaving happens here, after the death check. If `exit_requested` is set, the run clears it, then records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`floor_index + 1 < len(FLOOR_ORDER)`). If there is, it calls `floor_transition.start()`, which begins the fade; `floor_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the run switches to `"run_complete"`. Either way `update` returns.
+**7. Leaving through the exit.** Climbing down takes **F**, and only once the floor is cleared: walking onto the ladder does nothing by itself, so nobody leaves a floor by accident, and F is refused while `floor.enemies_left()` is above 0. Pressing F at the exit only sets `exit_requested` (see "What `interact` does"); the leaving happens here, after the death check. If `exit_requested` is set, the run clears it, then records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`floor_index + 1 < len(FLOOR_ORDER)`). If there is, it calls `floor_transition.start()`, which begins the fade; `floor_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the run switches to `"run_complete"`. Either way `update` returns.
 
 ```
 FLOOR_ORDER = [floor 0, floor 1]
@@ -1007,13 +1009,13 @@ The check comes after the death check, so dying and pressing F at the exit on th
 
 **8. Camera.** The camera centers on the player. (Ground items, breaking crates and particles were already updated at the end of `floor.update`, in step 4.)
 
-**What `interact` does (F).** Everything about F comes from one question, `find_target(player, floor)`: "what would F act on right now?" All of `interact.py` takes the **floor**, since chests, ground items, doors and the exit all belong to it It looks in a box `REACH` (15) pixels larger than the player and returns the first match, as `(kind, sprite)`, in this priority order:
+**What `interact` does (F).** Everything about F comes from one question, `find_target(player, floor)`: "what would F act on right now?" All of `interact.py` takes the **floor**, since chests, ground items, doors, the exit and the enemy count all belong to it. It looks in a box `REACH` (15) pixels larger than the player and returns the first match, as `(kind, sprite)`, in this priority order:
 1. **A chest.**
 2. **A ground item.**
 3. **The exit**, when the reach box touches `exit_rect`; the target is the rect itself, since the exit isn't a sprite. It comes after the ground items, so loot lying on the ladder is picked up first.
 4. **A door tile**, even without a key. Doors are checked last because a locked door is now always a target: if they came first, a potion lying next to a locked door could never be picked up, since F would keep choosing the door. With doors last, things you can always act on win.
 
-`describe_target(player, found)` turns the target into the prompt text and whether F will work, `(text, available)`:
+`describe_target(player, floor, found)` turns the target into the prompt text and whether F will work, `(text, available)`. It takes the floor for the exit, whose target is only `exit_rect`, a rect with no way back to the floor's enemies:
 
 | Target | Text | Available |
 |---|---|---|
@@ -1022,9 +1024,10 @@ The check comes after the death check, so dying and pressing F at the exit on th
 | door, with its key (`door.key`) | `Press F to unlock door` | yes |
 | silver door, no silver key | `Silver key required to unlock door` | no |
 | gold door, no gold key | `Gold key required to unlock door` | no |
-| exit | `Press F to climb down` | yes |
+| exit, enemies left | `3 enemies left to defeat` (`1 enemy left to defeat` for one) | no |
+| exit, floor cleared | `Press F to climb down` | yes |
 
-`interact` asks the same question before acting and does nothing if the target isn't available, so the key check lives in exactly one place, shared by the prompt and the action. Then:
+`interact` asks the same question before acting and does nothing if the target isn't available, so the key check and the clear check each live in exactly one place, shared by the prompt, the outline color and the action. Then:
 - **A chest:** rolls `CHEST_LOOT`, spawns the drops around the chest, and removes the chest.
 - **A door:** removes every door tile with the same `door_id`, rebuilds the solid tiles, and uses up one key of the door's own color (`remove_item(inventory, door.key)`).
 

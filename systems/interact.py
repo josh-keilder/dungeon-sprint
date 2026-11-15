@@ -12,7 +12,7 @@ def interact(player, floor):
     if found is None:
         return
 
-    _, available = describe_target(player, found)
+    _, available = describe_target(player, floor, found)
     if not available:
         return
 
@@ -48,7 +48,7 @@ def find_target(player, floor):
     return None
 
 
-def describe_target(player, found):
+def describe_target(player, floor, found):
     kind, target = found
 
     if kind == "chest":
@@ -61,6 +61,11 @@ def describe_target(player, found):
         return (f"{key_name} required to unlock door", False)
 
     if kind == "exit":
+        remaining = floor.enemies_left()
+        if remaining > 0:
+            noun = "enemy" if remaining == 1 else "enemies"
+            return (f"{remaining} {noun} left to defeat", False)
+
         return ("Press F to climb down", True)
 
     return (f"Press F to pick up {target.item.name}", True)

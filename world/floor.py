@@ -152,6 +152,9 @@ class Floor:
         ]
         return self.solid_tiles + solid_enemies
 
+    def enemies_left(self):
+        return sum(1 for enemy in self.enemies if not enemy.dying)
+
     def resolve_enemy_contacts(self, player):
         living_enemies = [enemy for enemy in self.enemies if not enemy.dying]
         for enemy in find_player_contacts(player, living_enemies):

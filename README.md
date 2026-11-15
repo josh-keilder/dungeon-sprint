@@ -125,4 +125,4 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 
 ## Project Statistics
 - **Total Files:** 116
-- **Total Lines of Code:** 7758
+- **Total Lines of Code:** 7766

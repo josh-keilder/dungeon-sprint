@@ -141,7 +141,7 @@ class Run:
         self.interact_prompt = None
         if self.interact_target is not None:
             self.interact_prompt = interact.describe_target(
-                self.player, self.interact_target
+                self.player, self.floor, self.interact_target
             )
 
         if is_dead(self.player.health) and not self.dying:
