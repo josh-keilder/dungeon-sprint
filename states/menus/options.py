@@ -49,7 +49,7 @@ def on_off(enabled):
     return "On" if enabled else "Off"
 
 
-class Options:
+class OptionsMenu:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 

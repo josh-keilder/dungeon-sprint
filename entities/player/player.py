@@ -6,8 +6,8 @@ from systems.animation import advance_animation, new_animation, set_animation
 from systems.blink import is_blink_hidden
 from systems.consumables import use_small_health_potion
 from systems.health import new_health, set_max_health
-from systems.hitbox import draw_hitbox
 from systems.inventory import new_inventory
+from systems.masks import draw_hitbox
 from systems.movement import move_and_collide, steer
 from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
 from systems.sound import play_sfx
@@ -24,7 +24,7 @@ INVENTORY_SLOT_COUNT = 20
 class Player:
     def __init__(self, animations, pos=(0, 0)):
         # Facing and movement
-        self.last_direction = "down"
+        self.facing = "down"
         self.walking = False
         self.pos = pygame.math.Vector2(pos)
         self.velocity = pygame.Vector2()
@@ -104,7 +104,7 @@ class Player:
         advance_timer(self.invulnerability, dt)
         advance_timer(self.heal_cooldown, dt)
 
-        self.handle_animation_state()
+        self.update_animation()
         self.image = advance_animation(self.animation, dt)
 
         self.pos = pygame.math.Vector2(self.rect.topleft)
@@ -130,13 +130,13 @@ class Player:
 
     def update_facing(self, move_direction):
         if move_direction.y < 0:
-            self.last_direction = "up"
+            self.facing = "up"
         elif move_direction.y > 0:
-            self.last_direction = "down"
+            self.facing = "down"
         elif move_direction.x < 0:
-            self.last_direction = "left"
+            self.facing = "left"
         elif move_direction.x > 0:
-            self.last_direction = "right"
+            self.facing = "right"
 
     def update_movement(self, dt, walls):
         self.velocity = steer(
@@ -174,7 +174,7 @@ class Player:
 
         advance_roll(self.roll, dt)
 
-    def handle_animation_state(self):
+    def update_animation(self):
         if is_rolling(self.roll):
             action = "roll"
         elif self.walking:
@@ -182,5 +182,5 @@ class Player:
         else:
             action = "idle"
 
-        animation_name = f"player_{action}_{self.last_direction}"
+        animation_name = f"player_{action}_{self.facing}"
         set_animation(self.animation, animation_name)

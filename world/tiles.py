@@ -3,7 +3,7 @@ import pygame
 from globals import BLUE
 from systems import debug
 from systems.camera import camera
-from systems.hitbox import draw_hitbox
+from systems.masks import draw_hitbox
 
 
 class WallTile(pygame.sprite.Sprite):

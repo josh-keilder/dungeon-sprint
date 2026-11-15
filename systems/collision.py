@@ -1,4 +1,4 @@
-from systems.hitbox import sprites_overlap
+from systems.masks import sprites_overlap
 
 # Broad phase: only enemies this close get the pixel-perfect mask check
 CONTACT_CHECK_RANGE = 100  # pixels

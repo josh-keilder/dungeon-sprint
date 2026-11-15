@@ -58,7 +58,7 @@ class Run:
         self.floor_index = 0
         self.load_floor(FLOOR_ORDER[self.floor_index])
 
-        self.show_inventory = False
+        self.inventory_open = False
         self.inventory_ui = InventoryUI(self.player.inventory)
 
         self.interact_target = None
@@ -119,18 +119,18 @@ class Run:
             interact.interact(self.player, self.floor)
 
         if self.player.intent["inventory"]:
-            if self.show_inventory:
+            if self.inventory_open:
                 if self.inventory_ui.return_held_item(self.player.inventory):
-                    self.show_inventory = False
+                    self.inventory_open = False
             else:
-                self.show_inventory = True
+                self.inventory_open = True
 
-        if self.show_inventory and self.player.intent["mouse_left_click"] is not None:
+        if self.inventory_open and self.player.intent["mouse_left_click"] is not None:
             self.inventory_ui.handle_click(
                 self.player.intent["mouse_left_click"], self.player.inventory
             )
 
-        if self.show_inventory and INVENTORY_PAUSES_GAME:
+        if self.inventory_open and INVENTORY_PAUSES_GAME:
             return
 
         self.player.update(dt, self.floor.solid_tiles)
@@ -191,7 +191,7 @@ class Run:
             self.interact_prompt,
         )
 
-        if self.show_inventory:
+        if self.inventory_open:
             self.inventory_ui.draw(screen, self.player.inventory)
 
         self.floor_transition.draw(screen)

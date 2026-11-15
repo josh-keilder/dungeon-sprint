@@ -10,12 +10,12 @@ from systems.camera import camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
 from systems.health import is_dead
-from systems.hitbox import draw_highlight
 from systems.loot import roll_loot
+from systems.masks import draw_highlight
 from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
 from world.map_loader import load_floor_data
-from world.objects import WorldItem
+from world.objects import GroundItem
 
 # Loot scatters a little around where it came from
 LOOT_SCATTER_X = 10  # world pixels
@@ -53,10 +53,10 @@ class Floor:
 
         # Placed items (keys), from the map's Items layer
         for item_id, center in floor_data["placed_items"]:
-            WorldItem(
+            GroundItem(
                 groups=self.ground_items,
                 pos=center,
-                item_data=self.item_database[item_id],
+                item=self.item_database[item_id],
                 quantity=1,
             )
 
@@ -67,7 +67,7 @@ class Floor:
         self.padlock_images = {
             key: load_image(path) for key, path in PADLOCK_IMAGE_PATHS.items()
         }
-        self.refresh_walls()
+        self.refresh_solid_tiles()
         self.refresh_padlocks()
 
     def update(self, dt, player):
@@ -160,7 +160,7 @@ class Floor:
                 broke_any = True
 
         if broke_any:
-            self.refresh_walls()
+            self.refresh_solid_tiles()
 
     def update_crates(self, dt):
         for crate in self.crates.sprites():
@@ -175,10 +175,10 @@ class Floor:
             if door.door_id == door_id:
                 door.kill()
 
-        self.refresh_walls()
+        self.refresh_solid_tiles()
         self.refresh_padlocks()
 
-    def refresh_walls(self):
+    def refresh_solid_tiles(self):
         solid_crates = [crate for crate in self.crates if not crate.breaking]
         self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles) + solid_crates
 
@@ -195,13 +195,13 @@ class Floor:
 
     def spawn_loot(self, drops, center):
         for item_id, quantity in drops:
-            item_data = self.item_database[item_id]
+            item = self.item_database[item_id]
             offset_x = random.randint(-LOOT_SCATTER_X, LOOT_SCATTER_X)
             offset_y = random.randint(-LOOT_SCATTER_Y, LOOT_SCATTER_Y)
 
-            WorldItem(
+            GroundItem(
                 groups=self.ground_items,
                 pos=(center[0] + offset_x, center[1] + offset_y),
-                item_data=item_data,
+                item=item,
                 quantity=quantity,
             )

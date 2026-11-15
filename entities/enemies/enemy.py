@@ -7,7 +7,7 @@ from systems.assets import load_animations
 from systems.blink import is_blink_hidden
 from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_velocity
 from systems.health import new_health
-from systems.hitbox import draw_hitbox
+from systems.masks import draw_hitbox
 from systems.movement import decay_velocity, move_and_collide
 from systems.timer import advance_timer, new_timer
 from ui_components.health_bar import draw_health_bar

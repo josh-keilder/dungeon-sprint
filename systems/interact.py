@@ -34,9 +34,9 @@ def find_target(player, floor):
         if reach_box.colliderect(chest.rect):
             return ("chest", chest)
 
-    for item in floor.ground_items:
-        if reach_box.colliderect(item.rect):
-            return ("item", item)
+    for ground_item in floor.ground_items:
+        if reach_box.colliderect(ground_item.rect):
+            return ("item", ground_item)
 
     if floor.exit_rect is not None and reach_box.colliderect(floor.exit_rect):
         return ("exit", floor.exit_rect)
@@ -63,7 +63,7 @@ def describe_target(player, found):
     if kind == "exit":
         return ("Press F to climb down", True)
 
-    return (f"Press F to pick up {target.item_data.name}", True)
+    return (f"Press F to pick up {target.item.name}", True)
 
 
 def open_chest(chest, floor):
@@ -77,11 +77,11 @@ def unlock_door(floor, door, inventory):
     remove_item(inventory, door.key)
 
 
-def pick_up_item(item, inventory):
-    leftover = add_item(inventory, item.item_data.clone())
+def pick_up_item(ground_item, inventory):
+    leftover = add_item(inventory, ground_item.item.clone())
     if leftover == 0:
-        item.kill()
+        ground_item.kill()
         return True
 
-    item.item_data.quantity = leftover
+    ground_item.item.quantity = leftover
     return False

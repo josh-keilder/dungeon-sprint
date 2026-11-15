@@ -2,7 +2,7 @@ import pygame
 
 from globals import PALETTE_STEEL
 from systems import sound
-from ui_components.create_outline import draw_outline, make_outline
+from ui_components.button_outline import draw_outline, make_outline
 
 
 class Button:

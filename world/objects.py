@@ -13,15 +13,13 @@ CRATE_IMPACT_SPEED = 20  # impact frames per second
 
 
 # World sprites: things placed on a floor
-class WorldItem(pygame.sprite.Sprite):
-    def __init__(self, groups, pos, item_data, quantity):
+class GroundItem(pygame.sprite.Sprite):
+    def __init__(self, groups, pos, item, quantity):
         super().__init__(groups)
-        self.item_data = item_data.clone()
-        self.item_data.quantity = quantity
-        self.animation = new_animation(
-            item_data.animations, "idle", item_data.animation_speed
-        )
-        self.image = item_data.image
+        self.item = item.clone()
+        self.item.quantity = quantity
+        self.animation = new_animation(item.animations, "idle", item.animation_speed)
+        self.image = item.image
         self.rect = self.image.get_rect(center=pos)
 
     def update(self, dt):

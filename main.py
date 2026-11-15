@@ -8,7 +8,7 @@ from globals import (
     SCREEN_WIDTH,
 )
 from states.menus.main_menu import MainMenu
-from states.menus.options import Options
+from states.menus.options import OptionsMenu
 from states.menus.run_end import RunEndScreen
 from states.run import Run
 from states.state_manager import GameStateManager
@@ -56,7 +56,7 @@ class Game:
         # Screens, and the manager that switches between them
         self.game_state_manager = GameStateManager("main_menu")
         self.main_menu = MainMenu(self.game_state_manager)
-        self.options_menu = Options(self.game_state_manager)
+        self.options_menu = OptionsMenu(self.game_state_manager)
         self.run_state = Run(self.game_state_manager)
         self.game_over_screen = RunEndScreen(
             self.game_state_manager, "You Died!", RED, GAME_OVER_MUSIC
