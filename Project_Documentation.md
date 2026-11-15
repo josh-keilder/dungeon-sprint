@@ -338,6 +338,7 @@ The strips so far:
 - **`gold_key`** → `Assets/Items/gold_key_strip.png` (the pack's `keys_1`, 4 frames, a spinning gold key).
 - **`silver_key`** → `Assets/Items/silver_key_strip.png` (the pack's `keys_2`, 4 frames, a spinning silver key).
 - **`crate`** → `Assets/Objects/crate_strip.png` (the pack's `box_2`, a plain wooden box, 4 frames of squash and stretch: normal, tall, wide, flattened). The steel-banded `box_1` was skipped because it looks like the chest.
+- **`torch`**, **`side_torch`**, **`candlestick_1`**, **`candlestick_2`** → `Assets/Objects/<name>_strip.png` (the pack's `torch` folder, 4 frames each): the animated versions of the tileset's still light tiles 91, 92, 94 and 96, swapped in by the map loader (section 6, `map_loader.py`). The torch frames line up exactly with the still tiles; the candlestick frames sit 1 pixel further left, too small to notice.
 
 **`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
 
@@ -751,16 +752,29 @@ Everything that makes up a floor: how a map file is read, the tile sprites, and 
 
 - **`map_loader.py`**: reads the TMX file with pytmx.
   - `load_floor_data(map_path)` returns one dict with everything the run needs.
-  - `build_map` draws the floor into a single surface and creates the tile and chest sprites.
+  - `build_map` draws the floor into a single surface and creates the tile and chest sprites. Its `elif` chain follows the map's layer order (Floor, Walls, decor, doors, then object groups); only the **first** matching branch of an `if`/`elif` chain runs, so a layer name must appear in it once.
+  - **Decor** (`build_decor(tmx_data, layer, decor_tiles, lights)`, for `Wall_Decor` and `Floor_Decor`). Each tile's Tiled GID is looked up in `ANIMATED_DECOR_GIDS` (`{91: "torch", 92: "side_torch", 94: "candlestick_1", 96: "candlestick_2"}`). Anything else (banners, rings, webs, rubble, bones, the ladder) becomes a still `DecorTile`, as before. A light GID becomes an `AnimatedDecor` with that animation's frames from `decor_texture_data`, mirrored with `pygame.transform.flip` if the tile was flipped (new surfaces per torch, so the shared cache is never changed), starting on a random frame (`random.randrange`) so neighbouring torches don't flicker in sync, and its tile center is added to `lights` as `(name, center)` (`floor_data["lights"]`, section 8). The map keeps the still tiles, so Tiled and `preview_map` show the decor with no special code; the swap only happens on load.
+  - **pytmx renumbers tiles.** Each combination of a Tiled GID and its flip flags gets its own *internal* gid, which is what `layer.iter_data()` yields as `(x, y, gid)`. `tiled_gid_and_flip(tmx_data, gid)` translates back with two lookups:
+
+    ```
+    tmx_data.tiledgidmap[internal]  → the Tiled GID                (92 for both side torches)
+    tmx_data.gidmap[tiled_gid]      → [(internal, flags), …]        one entry per flip variant
+
+    floor 1:  internal 37 → 92, flags all off            left-wall side torch
+              internal 38 → 92, flipped_horizontally     right-wall side torch
+    ```
+
+    `flipped` is true when the entry with this internal gid has `flags.flipped_horizontally` set. `tmx_data.get_tile_image_by_gid(gid)` gives a still tile's image, already flipped by pytmx.
   - `assign_door_properties(tmx_data, door_tiles)` reads the `Doors` object group: for each door object it builds a `pygame.Rect` from its position and size, and gives every door tile inside it the object's `door_id` and `key` (pytmx reads an object's `<properties>` into the dict `map_object.properties`). `load_floor_data` calls it right after `build_map`. Maps no longer have a logic layer.
   - `build_map` also turns the `Crates` object group into `Crate` sprites (`floor_data["crates"]`), placed by each object's x and y like chests.
   - `find_player_spawn` and `find_enemy_spawns` read spawn objects.
   - `find_exit` returns a `pygame.Rect` for the object named `Exit`, or `None` if there isn't one.
   - `find_placed_items` returns `(item_id, center)` pairs for the objects in the `Items` object group, stored as `floor_data["placed_items"]`. Each object is named by its item id. It loops over `tmx_data.objectgroups` to find the group by name, so a map with no `Items` group just has no placed items (`get_layer_by_name` would crash instead). The center is worked out as `(x + width / 2, y + height / 2)`, which works for both kinds of object: Level One's 10×8 rectangles drawn in Tiled, and the converter's 0-sized points, whose center is just their x and y.
-- **`tiles.py`**: `WallTile`, `DecorTile` and `Door` sprites. Each draws itself offset by the camera. Doors carry a `door_id` and a `key` (the item id that opens them, `silver_key` or `gold_key`), both set by `assign_door_properties`.
+- **`tiles.py`**: `WallTile`, `DecorTile`, `AnimatedDecor` and `Door` sprites. `AnimatedDecor(groups, frames, pos, start_index)` is a looping decor tile: its animation dict holds the one strip under the name `"loop"`, starts at `start_index`, and plays at `DECOR_ANIMATION_SPEED` (6 fps; at the default 10, a 4-frame flame loops 2.5 times a second and looks frantic). `update(dt)` advances it. Each draws itself offset by the camera. Doors carry a `door_id` and a `key` (the item id that opens them, `silver_key` or `gold_key`), both set by `assign_door_properties`.
+- **`decor_texture_data.py`**: `decor_texture_data`, the four light strips (`torch`, `side_torch`, `candlestick_1`, `candlestick_2`), 16×16 frames, 4 each, from `Assets/Objects/<name>_strip.png`.
 - **`floor.py`**: `Floor(map_path, item_database)`, everything on one map. `Run.load_floor` builds a new one for each floor, so its state starts clean by construction.
-  - **What it holds**: the map data from `load_floor_data` (`map_surface`, `decor_tiles`, `wall_tiles`, `door_tiles`, `chests`, `crates`, `exit_rect`, `player_spawn`); `ground_items`, starting with the placed items from the map's `Items` layer (each a `GroundItem` of quantity 1, looked up in the item database, so an unknown id is a `KeyError` at load time, the right moment to find a typo); an empty `particles` list; the `enemies`; `exit_requested` (`False`); and the derived `solid_tiles` and `padlocks`.
-  - **`update(dt, player)`** runs the floor's frame, after the player has moved: if the player is rolling, `break_touched_crates(player)`; every enemy moves (`enemy.update`); `resolve_enemy_contacts(player)` resolves touches between the player and living enemies (roll hits, touch damage, the `roll_hit` sound) and calls `start_dying()` on an enemy at 0 HP; `resolve_enemy_strikes(player)` checks every living enemy's swing; `separate_enemies(self.enemies, player, self.solid_tiles)` pushes overlapping bodies apart; `remove_dead_enemies()` rolls the `loot_table` of each enemy whose death animation has finished, spawns the drops at its body's center and removes it (looping over `list(self.enemies)`, a copy, so removing is safe); then the ground items animate, `update_crates` finishes breaking crates, and `update_particles` moves the debris.
+  - **What it holds**: the map data from `load_floor_data` (`map_surface`, `decor_tiles`, `wall_tiles`, `door_tiles`, `chests`, `crates`, `exit_rect`, `player_spawn`, `lights`); `ground_items`, starting with the placed items from the map's `Items` layer (each a `GroundItem` of quantity 1, looked up in the item database, so an unknown id is a `KeyError` at load time, the right moment to find a typo); an empty `particles` list; the `enemies`; `exit_requested` (`False`); and the derived `solid_tiles` and `padlocks`.
+  - **`update(dt, player)`** runs the floor's frame, after the player has moved: if the player is rolling, `break_touched_crates(player)`; every enemy moves (`enemy.update`); `resolve_enemy_contacts(player)` resolves touches between the player and living enemies (roll hits, touch damage, the `roll_hit` sound) and calls `start_dying()` on an enemy at 0 HP; `resolve_enemy_strikes(player)` checks every living enemy's swing; `separate_enemies(self.enemies, player, self.solid_tiles)` pushes overlapping bodies apart; `remove_dead_enemies()` rolls the `loot_table` of each enemy whose death animation has finished, spawns the drops at its body's center and removes it (looping over `list(self.enemies)`, a copy, so removing is safe); then the decor animates (`decor_tiles.update(dt)`: `Group.update` calls `update(dt)` on every sprite, and a `DecorTile` inherits `Sprite.update`, which accepts any arguments and does nothing, so still and animated decor share one group with no checks), the ground items animate, `update_crates` finishes breaking crates, and `update_particles` moves the debris.
   - **`player_walls(player)`** is what blocks the player this frame, passed by the run to `player.update`: while the player is rolling only `solid_tiles`, otherwise `solid_tiles` plus every solid enemy (`is_solid()`) that **isn't already overlapping** the player (section 7, step 5).
   - **`draw(surface, player, highlight=None)`** draws the world in order: the map surface, walls, then decor (on top of them, since torches, banners and rings sit on wall tiles), then doors, a padlock on each locked door group, crates, ground items and chests, the interaction outline (`highlight` is `None` or a `(sprites, color)` pair from the run; nothing is drawn for an empty list), the player and enemies sorted by `rect.y` so whoever is lower is drawn in front, then the particles on top. Off-camera sprites are skipped with `is_on_screen`.
   - **`highlighted_sprites(target)`** says what to outline for an interaction target: every door tile with the target door's `door_id` (unlocking works on the whole group, so the outline does too), the exit's ladder (the decor tiles inside `exit_rect`, since the exit has no sprite of its own), or just the chest or item. The run chooses the color; the floor knows its doors and ladder.
@@ -1120,6 +1134,8 @@ The pause menu and the end-of-run screens call `run.draw(screen)` to show the fr
 
 ## 8. Data formats
 
+**`lights`** (`floor_data["lights"]`, kept as `floor.lights`): a list of `(name, center)` pairs, one per animated light tile, for the lighting step. `name` is the animation name (`"torch"`, `"side_torch"`, `"candlestick_1"`, `"candlestick_2"`), so different kinds can get different light radii; `center` is the tile's center in world pixels. Floor 1 has 21: 11 torches, 6 side torches and 4 candlesticks.
+
 **Player `base_stats`** (`player.py`). These are the values before equipment:
 
 | Stat | Value | Used for |
@@ -1281,7 +1297,7 @@ Missing keys fall back to the defaults in `systems/settings.py`. A corrupted fil
 | --- | --- | --- |
 | `Floor` | Tile layer | Drawn once into `map_surface` |
 | `Walls` | Tile layer | One `WallTile` per tile. These block movement. |
-| `Wall_Decor`, `Floor_Decor` | Tile layers | `DecorTile`s, drawn but not solid |
+| `Wall_Decor`, `Floor_Decor` | Tile layers | `DecorTile`s, drawn but not solid; light tiles (91, 92, 94, 96) become `AnimatedDecor` and lights |
 | `Door_Tiles` | Tile layer | One `Door` per tile. These block movement until unlocked. |
 | `Chests` | Object layer | One `Chest` per object named `chest` (any capitalization) |
 | `Crates` | Object layer | One `Crate` per object |

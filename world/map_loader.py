@@ -1,9 +1,21 @@
+import random
+
 import pygame
 from pytmx.util_pygame import load_pygame
 
 from constants import TILE_SIZE
+from systems.assets import load_animations
+from world.decor_texture_data import decor_texture_data
 from world.objects import Chest, Crate
-from world.tiles import DecorTile, Door, WallTile
+from world.tiles import AnimatedDecor, DecorTile, Door, WallTile
+
+# Tileset GIDs swapped for an animated version on load; all of them are light sources
+ANIMATED_DECOR_GIDS = {
+    91: "torch",
+    92: "side_torch",
+    94: "candlestick_1",
+    96: "candlestick_2",
+}
 
 
 def load_floor_data(map_path):
@@ -30,6 +42,7 @@ def build_map(tmx_data):
     door_tiles = pygame.sprite.Group()
     chests = pygame.sprite.Group()
     crates = pygame.sprite.Group()
+    lights = []
 
     for layer in tmx_data.visible_layers:
         if layer.name == "Floor":
@@ -45,12 +58,7 @@ def build_map(tmx_data):
                 )
 
         elif layer.name in ["Wall_Decor", "Floor_Decor"]:
-            for x, y, tile_image in layer.tiles():
-                DecorTile(
-                    groups=decor_tiles,
-                    image=tile_image,
-                    pos=(x * TILE_SIZE, y * TILE_SIZE),
-                )
+            build_decor(tmx_data, layer, decor_tiles, lights)
 
         elif layer.name == "Door_Tiles":
             for x, y, tile_image in layer.tiles():
@@ -76,7 +84,49 @@ def build_map(tmx_data):
         "door_tiles": door_tiles,
         "chests": chests,
         "crates": crates,
+        "lights": lights,
     }
+
+
+def build_decor(tmx_data, layer, decor_tiles, lights):
+    decor_animations = load_animations(decor_texture_data)
+
+    for x, y, gid in layer.iter_data():
+        if gid == 0:
+            continue
+
+        pos = (x * TILE_SIZE, y * TILE_SIZE)
+        tiled_gid, flipped = tiled_gid_and_flip(tmx_data, gid)
+        name = ANIMATED_DECOR_GIDS.get(tiled_gid)
+
+        if name is None:
+            DecorTile(
+                groups=decor_tiles,
+                image=tmx_data.get_tile_image_by_gid(gid),
+                pos=pos,
+            )
+            continue
+
+        frames = decor_animations[name]
+        if flipped:
+            frames = [pygame.transform.flip(frame, True, False) for frame in frames]
+
+        AnimatedDecor(
+            groups=decor_tiles,
+            frames=frames,
+            pos=pos,
+            start_index=random.randrange(len(frames)),
+        )
+        lights.append((name, (pos[0] + TILE_SIZE / 2, pos[1] + TILE_SIZE / 2)))
+
+
+def tiled_gid_and_flip(tmx_data, gid):
+    tiled_gid = tmx_data.tiledgidmap[gid]
+    flipped = any(
+        internal_gid == gid and flags.flipped_horizontally
+        for internal_gid, flags in tmx_data.gidmap[tiled_gid]
+    )
+    return tiled_gid, flipped
 
 
 def find_player_spawn(tmx_data):

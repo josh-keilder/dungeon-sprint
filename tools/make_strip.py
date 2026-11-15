@@ -6,6 +6,7 @@ import pygame
 PACK_FOLDER = "Assets/Dungeon Asset Pack"
 KEYS_FOLDER = f"{PACK_FOLDER}/items and trap_animation/keys"
 CRATE_FOLDER = f"{PACK_FOLDER}/items and trap_animation/box_2"
+TORCH_FOLDER = f"{PACK_FOLDER}/items and trap_animation/torch"
 
 # Strips to build: name -> the frame files in order, and where the strip is saved
 STRIPS = {
@@ -20,6 +21,26 @@ STRIPS = {
     "crate": {
         "frames": [f"{CRATE_FOLDER}/box_2_{number}.png" for number in range(1, 5)],
         "path": "Assets/Objects/crate_strip.png",
+    },
+    "torch": {
+        "frames": [f"{TORCH_FOLDER}/torch_{number}.png" for number in range(1, 5)],
+        "path": "Assets/Objects/torch_strip.png",
+    },
+    "side_torch": {
+        "frames": [f"{TORCH_FOLDER}/side_torch_{number}.png" for number in range(1, 5)],
+        "path": "Assets/Objects/side_torch_strip.png",
+    },
+    "candlestick_1": {
+        "frames": [
+            f"{TORCH_FOLDER}/candlestick_1_{number}.png" for number in range(1, 5)
+        ],
+        "path": "Assets/Objects/candlestick_1_strip.png",
+    },
+    "candlestick_2": {
+        "frames": [
+            f"{TORCH_FOLDER}/candlestick_2_{number}.png" for number in range(1, 5)
+        ],
+        "path": "Assets/Objects/candlestick_2_strip.png",
     },
 }
 

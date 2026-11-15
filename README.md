@@ -96,7 +96,7 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
 	```
 
-- **Strip maker** (`tools/make_strip.py`): joins animation frames from the original asset pack into one-row strips in `Assets/` (the keys so far). Needs the pack folder locally; it's git-ignored.
+- **Strip maker** (`tools/make_strip.py`): joins animation frames from the original asset pack into one-row strips in `Assets/` (keys, the crate, torches and candlesticks). Needs the pack folder locally; it's git-ignored.
 
 	```bash
 	venv/Scripts/python -m tools.make_strip
@@ -124,5 +124,5 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 116
-- **Total Lines of Code:** 7959
+- **Total Files:** 117
+- **Total Lines of Code:** 8080

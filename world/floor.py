@@ -46,6 +46,7 @@ class Floor:
         self.crates = floor_data["crates"]
         self.exit_rect = floor_data["exit_rect"]
         self.player_spawn = floor_data["player_spawn"]
+        self.lights = floor_data["lights"]
 
         # Things that appear and change during play
         self.ground_items = pygame.sprite.Group()
@@ -82,6 +83,7 @@ class Floor:
         separate_enemies(self.enemies, player, self.solid_tiles)
         self.remove_dead_enemies()
 
+        self.decor_tiles.update(dt)
         self.ground_items.update(dt)
         self.update_crates(dt)
         update_particles(self.particles, dt)
