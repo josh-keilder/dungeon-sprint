@@ -7,10 +7,10 @@ from globals import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
-from states.map.level import Level
 from states.menus.main_menu import MainMenu
 from states.menus.options import Options
 from states.menus.run_end import RunEndScreen
+from states.run import Run
 from states.state_manager import GameStateManager
 from systems import settings, sound
 from systems.assets import load_image
@@ -57,19 +57,19 @@ class Game:
         self.game_state_manager = GameStateManager("main_menu")
         self.main_menu = MainMenu(self.game_state_manager)
         self.options_menu = Options(self.game_state_manager)
-        self.level = Level(self.game_state_manager)
+        self.run_state = Run(self.game_state_manager)
         self.game_over_screen = RunEndScreen(
             self.game_state_manager, "You Died!", RED, GAME_OVER_MUSIC
         )
-        self.level_complete_screen = RunEndScreen(
+        self.run_complete_screen = RunEndScreen(
             self.game_state_manager, "You Escaped!", GREEN, None
         )
 
-        self.game_state_manager.add_state("level", self.level)
+        self.game_state_manager.add_state("run", self.run_state)
         self.game_state_manager.add_state("options", self.options_menu)
         self.game_state_manager.add_state("main_menu", self.main_menu)
         self.game_state_manager.add_state("game_over", self.game_over_screen)
-        self.game_state_manager.add_state("level_complete", self.level_complete_screen)
+        self.game_state_manager.add_state("run_complete", self.run_complete_screen)
 
         self.game_state_manager.get_state().enter()
 

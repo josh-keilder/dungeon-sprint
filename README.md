@@ -82,14 +82,14 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 	venv/Scripts/python -m tools.make_sprite
 	```
 
-- **Map preview** (`tools/preview_map.py`): renders maps to PNGs in `map_previews/` (git-ignored), with the player spawn, enemy spawns, exit and door groups marked. With no arguments it previews every map in `LEVEL_ORDER`; pass map paths to preview only those.
+- **Map preview** (`tools/preview_map.py`): renders maps to PNGs in `map_previews/` (git-ignored), with the player spawn, enemy spawns, exit and door groups marked. With no arguments it previews every map in `FLOOR_ORDER`; pass map paths to preview only those.
 
 	```bash
 	venv/Scripts/python -m tools.preview_map
 	venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 	```
 
-- **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a level sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls. A second argument sets a different output path. The legend is in `Project_Documentation.md`, section 3.
+- **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a floor sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls. A second argument sets a different output path. The legend is in `Project_Documentation.md`, section 3.
 
 	```bash
 	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt

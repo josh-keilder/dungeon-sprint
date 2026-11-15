@@ -87,9 +87,9 @@ MENU_BACKGROUND_COLOR = PALETTE_VOID  # Main Menu and Options fill
 FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"
 BUTTON_FONT_SIZE = 32  # every menu's buttons
 PANEL_FRAME_PATH = "Assets/UI/panel_frame.png"  # 9-slice frame for HUD and inventory
-OVERLAY_ALPHA = 160  # 0-255; how dark menus drawn over the level make it
+OVERLAY_ALPHA = 160  # 0-255; how dark menus drawn over the game make it
 
 # The run: floor maps in play order
-LEVEL_ORDER = [
+FLOOR_ORDER = [
     "Assets/Maps/easy_floor_1.tmx",
 ]

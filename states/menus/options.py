@@ -186,7 +186,7 @@ class Options:
             sound.set_sfx_volume(self.sfx_slider_value / 100.0)
             settings.set_setting("sfx_volume", self.sfx_slider_value / 100.0)
 
-        # Back button or ESC, only when we came from the level
+        # Back button or ESC, only when we came from the run
         if self.can_go_back():
             self.back_button.update()
             if self.back_button.is_clicked() or intent["pause"]:
@@ -195,7 +195,7 @@ class Options:
 
     def draw(self, screen):
         if self.can_go_back():
-            self.game_state_manager.states["level"].draw(screen)
+            self.game_state_manager.states["run"].draw(screen)
             screen.blit(self.overlay, (0, 0))
         else:
             screen.fill(MENU_BACKGROUND_COLOR)
@@ -217,4 +217,4 @@ class Options:
             self.back_button.draw(screen)
 
     def can_go_back(self):
-        return self.game_state_manager.get_previous_state() == "level"
+        return self.game_state_manager.get_previous_state() == "run"

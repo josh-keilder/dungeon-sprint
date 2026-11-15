@@ -83,8 +83,8 @@ class RunEndScreen:
         self.divider_rect = pygame.Rect(0, 0, 0, 0)
 
     def enter(self):
-        level = self.game_state_manager.states["level"]
-        self.render_splits(level.splits, level.run_time, level.dying)
+        run = self.game_state_manager.states["run"]
+        self.render_splits(run.splits, run.run_time, run.dying)
 
         if self.music is not None:
             sound.stop_music()
@@ -100,10 +100,10 @@ class RunEndScreen:
 
         if self.restart_button.is_clicked():
             start_new_run(self.game_state_manager)
-            self.game_state_manager.set_state("level")
+            self.game_state_manager.set_state("run")
 
     def draw(self, screen):
-        self.game_state_manager.states["level"].draw(screen)
+        self.game_state_manager.states["run"].draw(screen)
         screen.blit(self.overlay, (0, 0))
         screen.blit(self.title_image, self.title_pos)
         for image, pos in self.split_rows:

@@ -2,8 +2,8 @@ import pygame
 
 from entities.player.load_player import load_player
 from globals import (
+    FLOOR_ORDER,
     GAME_SCALE,
-    LEVEL_ORDER,
     MENU_BACKGROUND_COLOR,
     PALETTE_CANDLE,
     PALETTE_STEEL,
@@ -32,7 +32,7 @@ DEATH_FADE_DURATION = 1.5  # seconds; must be no longer than DEATH_DELAY
 INVENTORY_PAUSES_GAME = False
 
 
-class Level:
+class Run:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
@@ -54,9 +54,9 @@ class Level:
         # HUD setup
         self.hud = HUD(self.item_database)
 
-        # Which entry of LEVEL_ORDER is being played, and its map
-        self.level_index = 0
-        self.load_floor(LEVEL_ORDER[self.level_index])
+        # Which entry of FLOOR_ORDER is being played, and its map
+        self.floor_index = 0
+        self.load_floor(FLOOR_ORDER[self.floor_index])
 
         self.show_inventory = False
         self.inventory_ui = InventoryUI(self.player.inventory)
@@ -154,19 +154,19 @@ class Level:
         if self.floor.exit_requested:
             self.floor.exit_requested = False
             self.splits.append(self.run_time)
-            if self.level_index + 1 < len(LEVEL_ORDER):
+            if self.floor_index + 1 < len(FLOOR_ORDER):
                 self.floor_transition.start()
             else:
-                self.game_state_manager.set_state("level_complete")
+                self.game_state_manager.set_state("run_complete")
             return
 
         center_camera(self.player.rect.center)
 
     def update_transition(self, dt):
         if self.floor_transition.update(dt):
-            self.level_index += 1
-            self.load_floor(LEVEL_ORDER[self.level_index])
-            self.floor_transition.set_floor_number(self.level_index + 1)
+            self.floor_index += 1
+            self.load_floor(FLOOR_ORDER[self.floor_index])
+            self.floor_transition.set_floor_number(self.floor_index + 1)
 
     def draw(self, screen):
         self.world_surface.fill(MENU_BACKGROUND_COLOR)
@@ -187,7 +187,7 @@ class Level:
             screen,
             self.player,
             self.run_time,
-            self.level_index + 1,
+            self.floor_index + 1,
             self.interact_prompt,
         )
 

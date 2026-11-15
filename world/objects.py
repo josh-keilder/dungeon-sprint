@@ -50,7 +50,7 @@ class Crate(pygame.sprite.Sprite):
         self.image = self.frames[0]
         self.rect = self.image.get_frect(topleft=pos)
 
-        # Breaking: solid -> breaking (impact frames) -> done_breaking (the level acts)
+        # Breaking: solid -> breaking (impact frames) -> done_breaking (the floor acts)
         self.breaking = False
         self.done_breaking = False
         self.break_time = 0.0

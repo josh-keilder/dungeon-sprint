@@ -14,7 +14,7 @@ from systems.hitbox import draw_highlight
 from systems.loot import roll_loot
 from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
-from world.map_loader import load_level_data
+from world.map_loader import load_floor_data
 from world.objects import WorldItem
 
 # Loot scatters a little around where it came from
@@ -36,15 +36,15 @@ class Floor:
         self.item_database = item_database
 
         # Map data
-        level_data = load_level_data(map_path)
-        self.map_surface = level_data["map_surface"]
-        self.decor_tiles = level_data["decor_tiles"]
-        self.wall_tiles = level_data["wall_tiles"]
-        self.door_tiles = level_data["door_tiles"]
-        self.chests = level_data["chests"]
-        self.crates = level_data["crates"]
-        self.exit_rect = level_data["exit_rect"]
-        self.player_spawn = level_data["player_spawn"]
+        floor_data = load_floor_data(map_path)
+        self.map_surface = floor_data["map_surface"]
+        self.decor_tiles = floor_data["decor_tiles"]
+        self.wall_tiles = floor_data["wall_tiles"]
+        self.door_tiles = floor_data["door_tiles"]
+        self.chests = floor_data["chests"]
+        self.crates = floor_data["crates"]
+        self.exit_rect = floor_data["exit_rect"]
+        self.player_spawn = floor_data["player_spawn"]
 
         # Things that appear and change during play
         self.ground_items = pygame.sprite.Group()
@@ -52,7 +52,7 @@ class Floor:
         self.exit_requested = False
 
         # Placed items (keys), from the map's Items layer
-        for item_id, center in level_data["placed_items"]:
+        for item_id, center in floor_data["placed_items"]:
             WorldItem(
                 groups=self.ground_items,
                 pos=center,
@@ -61,7 +61,7 @@ class Floor:
             )
 
         # Enemies
-        self.enemies = load_enemies(level_data["enemy_spawns"])
+        self.enemies = load_enemies(floor_data["enemy_spawns"])
 
         # Padlocks and solid tiles, rebuilt whenever the doors or crates change
         self.padlock_images = {

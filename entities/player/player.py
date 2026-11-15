@@ -30,7 +30,7 @@ class Player:
         self.velocity = pygame.Vector2()
         self.speed = 0.0  # pixels per second, measured each frame
 
-        # What the player asked for this frame, set by the level from input
+        # What the player asked for this frame, set by the run from input
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
 
         # Base values before equipment bonuses
@@ -58,7 +58,7 @@ class Player:
         self.image = animations["player_idle_down"][0]
         self.rect = self.image.get_frect()
         self.rect.center = pos
-        self.alpha = 255  # lowered by the level during the death fade
+        self.alpha = 255  # lowered by the run during the death fade
 
         # Health, inventory, and stats
         self.health = new_health(self.base_stats["health"])

@@ -6,18 +6,18 @@ from world.objects import Chest, Crate
 from world.tiles import DecorTile, Door, WallTile
 
 
-def load_level_data(map_path):
+def load_floor_data(map_path):
     tmx_data = load_pygame(map_path)
 
-    level_data = build_map(tmx_data)
-    assign_door_properties(tmx_data, level_data["door_tiles"])
+    floor_data = build_map(tmx_data)
+    assign_door_properties(tmx_data, floor_data["door_tiles"])
 
-    level_data["player_spawn"] = find_player_spawn(tmx_data)
-    level_data["enemy_spawns"] = find_enemy_spawns(tmx_data)
-    level_data["exit_rect"] = find_exit(tmx_data)
-    level_data["placed_items"] = find_placed_items(tmx_data)
+    floor_data["player_spawn"] = find_player_spawn(tmx_data)
+    floor_data["enemy_spawns"] = find_enemy_spawns(tmx_data)
+    floor_data["exit_rect"] = find_exit(tmx_data)
+    floor_data["placed_items"] = find_placed_items(tmx_data)
 
-    return level_data
+    return floor_data
 
 
 def build_map(tmx_data):

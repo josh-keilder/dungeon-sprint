@@ -65,7 +65,7 @@ class MainMenu:
 
         # Navigation
         if self.start_button.is_clicked():
-            self.game_state_manager.set_state("level")
+            self.game_state_manager.set_state("run")
 
         elif self.options_button.is_clicked():
             self.game_state_manager.set_state("options")

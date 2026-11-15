@@ -4,8 +4,8 @@ import sys
 import pygame
 
 from globals import (
+    FLOOR_ORDER,
     FONT_PATH,
-    LEVEL_ORDER,
     PALETTE_AZURE,
     PALETTE_BLOOD,
     PALETTE_GOLD,
@@ -14,7 +14,7 @@ from globals import (
     TILE_SIZE,
 )
 from items.item_database import initialize_item_database
-from world.map_loader import load_level_data
+from world.map_loader import load_floor_data
 
 # Output image
 PREVIEW_SCALE = 2
@@ -34,38 +34,38 @@ def draw_label(surface, font, text, pos):
 
 
 def preview_map(map_path, font, item_database):
-    level_data = load_level_data(map_path)
-    preview = level_data["map_surface"].copy()
+    floor_data = load_floor_data(map_path)
+    preview = floor_data["map_surface"].copy()
 
     for group_name in ("decor_tiles", "wall_tiles", "door_tiles", "chests", "crates"):
-        for sprite in level_data[group_name]:
+        for sprite in floor_data[group_name]:
             preview.blit(sprite.image, sprite.rect.topleft)
 
-    for item_id, center in level_data["placed_items"]:
+    for item_id, center in floor_data["placed_items"]:
         item_image = item_database[item_id].image
         preview.blit(item_image, item_image.get_rect(center=center))
 
     labeled_door_ids = set()
-    for door in level_data["door_tiles"]:
+    for door in floor_data["door_tiles"]:
         if door.door_id is None or door.door_id in labeled_door_ids:
             continue
         labeled_door_ids.add(door.door_id)
         draw_label(preview, font, door.door_id, door.rect.topleft)
 
-    for enemy_type, positions in level_data["enemy_spawns"].items():
+    for enemy_type, positions in floor_data["enemy_spawns"].items():
         for pos in positions:
             marker = pygame.Rect(pos, (TILE_SIZE, TILE_SIZE))
             pygame.draw.rect(preview, PALETTE_BLOOD, marker, 1)
             draw_label(preview, font, enemy_type[:3], (pos[0] + 2, pos[1] + 2))
 
-    player_spawn = level_data["player_spawn"]
+    player_spawn = floor_data["player_spawn"]
     pygame.draw.circle(preview, PALETTE_VOID, player_spawn, SPAWN_MARKER_RADIUS + 1)
     pygame.draw.circle(preview, PALETTE_AZURE, player_spawn, SPAWN_MARKER_RADIUS)
 
-    if level_data["exit_rect"] is not None:
-        pygame.draw.rect(preview, PALETTE_GOLD, level_data["exit_rect"], 1)
+    if floor_data["exit_rect"] is not None:
+        pygame.draw.rect(preview, PALETTE_GOLD, floor_data["exit_rect"], 1)
 
-    wall_rects = [wall.rect for wall in level_data["wall_tiles"]]
+    wall_rects = [wall.rect for wall in floor_data["wall_tiles"]]
     bounds = wall_rects[0].unionall(wall_rects[1:])
     bounds = bounds.inflate(2 * PREVIEW_MARGIN, 2 * PREVIEW_MARGIN)
     bounds = bounds.clip(preview.get_rect())
@@ -81,7 +81,7 @@ def main():
 
     item_database = initialize_item_database()
 
-    map_paths = sys.argv[1:] or list(dict.fromkeys(LEVEL_ORDER))
+    map_paths = sys.argv[1:] or list(dict.fromkeys(FLOOR_ORDER))
 
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
     for map_path in map_paths:

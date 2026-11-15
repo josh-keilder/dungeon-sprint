@@ -1,7 +1,7 @@
-from states.map.level import Level
+from states.run import Run
 
 
 def start_new_run(game_state_manager):
-    new_level = Level(game_state_manager)
+    new_run = Run(game_state_manager)
 
-    game_state_manager.add_state("level", new_level)
+    game_state_manager.add_state("run", new_run)
