@@ -4,9 +4,14 @@ import pygame
 
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
+from systems import sound
 from systems.assets import load_image
+from systems.collision import find_player_contacts
+from systems.combat import resolve_contact
+from systems.health import is_dead
 from systems.loot import roll_loot
-from systems.particles import CRATE_DEBRIS, emit_burst
+from systems.particles import CRATE_DEBRIS, emit_burst, update_particles
+from systems.roll import is_rolling
 from world.map_loader import load_level_data
 from world.objects import WorldItem
 
@@ -63,13 +68,28 @@ class Floor:
         self.refresh_walls()
         self.refresh_padlocks()
 
-    def unlock_door(self, door_id):
-        for door in self.door_tiles.sprites():
-            if door.door_id == door_id:
-                door.kill()
+    def update(self, dt, player):
+        if is_rolling(player.roll):
+            self.break_touched_crates(player)
 
-        self.refresh_walls()
-        self.refresh_padlocks()
+        for enemy in self.enemies:
+            enemy.update(dt, self.solid_tiles, player.pos)
+        self.resolve_enemy_contacts(player)
+
+        self.ground_items.update(dt)
+        self.update_crates(dt)
+        update_particles(self.particles, dt)
+
+    def resolve_enemy_contacts(self, player):
+        for enemy in find_player_contacts(player, self.enemies):
+            enemy_hit = resolve_contact(player, enemy)
+            if enemy_hit:
+                sound.play_sfx("roll_hit")
+
+            if is_dead(enemy.health):
+                drops = roll_loot(enemy.loot_table)
+                self.spawn_loot(drops, enemy.rect.center)
+                self.enemies.remove(enemy)
 
     def break_touched_crates(self, player):
         touch_box = player.rect.inflate(CRATE_TOUCH_MARGIN, CRATE_TOUCH_MARGIN)
@@ -92,6 +112,14 @@ class Floor:
             if crate.done_breaking:
                 emit_burst(self.particles, crate.rect.center, CRATE_DEBRIS)
                 crate.kill()
+
+    def unlock_door(self, door_id):
+        for door in self.door_tiles.sprites():
+            if door.door_id == door_id:
+                door.kill()
+
+        self.refresh_walls()
+        self.refresh_padlocks()
 
     def refresh_walls(self):
         solid_crates = [crate for crate in self.crates if not crate.breaking]

@@ -16,14 +16,10 @@ from globals import (
 from items.item_database import initialize_item_database
 from systems import debug, interact, sound
 from systems.camera import camera, center_camera, is_on_screen
-from systems.collision import find_player_contacts
-from systems.combat import resolve_contact
 from systems.health import is_dead
 from systems.hitbox import draw_highlight
 from systems.input import read_input
-from systems.loot import roll_loot
-from systems.particles import draw_particles, update_particles
-from systems.roll import is_rolling
+from systems.particles import draw_particles
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.hud import HUD
 from ui_components.inventory_ui import InventoryUI
@@ -149,9 +145,7 @@ class Level:
             return
 
         self.player.update(dt, self.floor.solid_tiles)
-
-        if is_rolling(self.player.roll):
-            self.floor.break_touched_crates(self.player)
+        self.floor.update(dt, self.player)
 
         # What F would act on now; drives the outline and the HUD prompt
         self.interact_target = interact.find_target(self.player, self.floor)
@@ -160,21 +154,6 @@ class Level:
             self.interact_prompt = interact.describe_target(
                 self.player, self.interact_target
             )
-
-        for enemy in self.floor.enemies:
-            enemy.update(dt, self.floor.solid_tiles, self.player.pos)
-
-        contacts = find_player_contacts(self.player, self.floor.enemies)
-
-        for enemy in contacts:
-            enemy_hit = resolve_contact(self.player, enemy)
-            if enemy_hit:
-                sound.play_sfx("roll_hit")
-
-            if is_dead(enemy.health):
-                drops = roll_loot(enemy.loot_table)
-                self.floor.spawn_loot(drops, enemy.rect.center)
-                self.floor.enemies.remove(enemy)
 
         if is_dead(self.player.health) and not self.dying:
             self.dying = True
@@ -193,9 +172,6 @@ class Level:
                 self.game_state_manager.set_state("level_complete")
             return
 
-        self.floor.ground_items.update(dt)
-        self.floor.update_crates(dt)
-        update_particles(self.floor.particles, dt)
         center_camera(self.player.rect.center)
 
     def update_transition(self, dt):
