@@ -1,8 +1,5 @@
-import random
-
 import pygame
 
-from entities.enemies.load_enemies import load_enemies
 from entities.player.load_player import load_player
 from globals import (
     GAME_SCALE,
@@ -17,9 +14,7 @@ from globals import (
     WORLD_WIDTH,
 )
 from items.item_database import initialize_item_database
-from items.loot_table_data import CRATE_LOOT
 from systems import debug, interact, sound
-from systems.assets import load_image
 from systems.camera import camera, center_camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
@@ -27,21 +22,14 @@ from systems.health import is_dead
 from systems.hitbox import draw_highlight
 from systems.input import read_input
 from systems.loot import roll_loot
-from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
+from systems.particles import draw_particles, update_particles
 from systems.roll import is_rolling
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.hud import HUD
 from ui_components.inventory_ui import InventoryUI
 from ui_components.text_label import TextLabel
 from ui_components.text_layout import centered_text_x, centered_text_y
-from world.map_loader import load_level_data
-from world.objects import WorldItem
-
-LOOT_SCATTER_X = 10
-LOOT_SCATTER_Y = 5
-
-# how close (in pixels) a rolling player must be to break a crate
-CRATE_TOUCH_MARGIN = 2
+from world.floor import Floor
 
 LEVEL_MUSIC = "level_music"
 
@@ -53,11 +41,6 @@ FLOOR_CARD_DURATION = 1.0
 MAX_TRANSITION_DT = 1 / 30
 
 INVENTORY_PAUSES_GAME = False
-
-PADLOCK_IMAGE_PATHS = {
-    "silver_key": "Assets/Objects/padlock_silver.png",
-    "gold_key": "Assets/Objects/padlock_gold.png",
-}
 
 
 class Level:
@@ -82,11 +65,6 @@ class Level:
         # HUD setup
         self.hud = HUD(self.item_database)
 
-        # Padlock art, by the key that opens the door
-        self.padlock_images = {
-            key: load_image(path) for key, path in PADLOCK_IMAGE_PATHS.items()
-        }
-
         # Which entry of LEVEL_ORDER is being played, and its map
         self.level_index = 0
         self.load_floor(LEVEL_ORDER[self.level_index])
@@ -108,44 +86,13 @@ class Level:
         self.floor_label = TextLabel("", font_size=48)
 
     def load_floor(self, map_path):
-        # Ground items, spawned during play; left-behind items don't carry over
-        self.ground_items = pygame.sprite.Group()
-
-        self.particles = []
-
-        level_data = load_level_data(map_path)
-        self.map_surface = level_data["map_surface"]
-        self.decor_tiles = level_data["decor_tiles"]
-        self.wall_tiles = level_data["wall_tiles"]
-        self.door_tiles = level_data["door_tiles"]
-        self.chests = level_data["chests"]
-        self.crates = level_data["crates"]
-        self.exit_rect = level_data["exit_rect"]
-
-        # Placed items (keys), from the map's Items layer
-        for item_id, center in level_data["placed_items"]:
-            WorldItem(
-                groups=self.ground_items,
-                pos=center,
-                item_data=self.item_database[item_id],
-                quantity=1,
-            )
-
-        # Enemy Spawning
-        self.enemies = load_enemies(level_data["enemy_spawns"])
-
-        # Everything that blocks movement: walls and locked doors
-        self.solid_tiles = []
-        self.refresh_walls()
-        self.refresh_padlocks()
+        self.floor = Floor(map_path, self.item_database)
 
         # Move the same player (health, inventory, gear) to this floor's spawn
-        self.player.rect.center = level_data["player_spawn"]
+        self.player.rect.center = self.floor.player_spawn
         self.player.pos.xy = self.player.rect.topleft
         self.player.velocity.update(0, 0)
         center_camera(self.player.rect.center)
-
-        self.exit_requested = False
 
         self.interact_target = None
         self.interact_prompt = None
@@ -184,7 +131,7 @@ class Level:
             debug.toggle_hitboxes()
 
         if self.player.intent["interact"]:
-            interact.interact(self.player, self)
+            interact.interact(self.player, self.floor)
 
         if self.player.intent["inventory"]:
             if self.show_inventory:
@@ -201,23 +148,23 @@ class Level:
         if self.show_inventory and INVENTORY_PAUSES_GAME:
             return
 
-        self.player.update(dt, self.solid_tiles)
+        self.player.update(dt, self.floor.solid_tiles)
 
         if is_rolling(self.player.roll):
-            self.break_touched_crates()
+            self.floor.break_touched_crates(self.player)
 
         # What F would act on now; drives the outline and the HUD prompt
-        self.interact_target = interact.find_target(self.player, self)
+        self.interact_target = interact.find_target(self.player, self.floor)
         self.interact_prompt = None
         if self.interact_target is not None:
             self.interact_prompt = interact.describe_target(
                 self.player, self.interact_target
             )
 
-        for enemy in self.enemies:
-            enemy.update(dt, self.solid_tiles, self.player.pos)
+        for enemy in self.floor.enemies:
+            enemy.update(dt, self.floor.solid_tiles, self.player.pos)
 
-        contacts = find_player_contacts(self.player, self.enemies)
+        contacts = find_player_contacts(self.player, self.floor.enemies)
 
         for enemy in contacts:
             enemy_hit = resolve_contact(self.player, enemy)
@@ -226,8 +173,8 @@ class Level:
 
             if is_dead(enemy.health):
                 drops = roll_loot(enemy.loot_table)
-                self.spawn_loot(drops, enemy.rect.center)
-                self.enemies.remove(enemy)
+                self.floor.spawn_loot(drops, enemy.rect.center)
+                self.floor.enemies.remove(enemy)
 
         if is_dead(self.player.health) and not self.dying:
             self.dying = True
@@ -236,8 +183,8 @@ class Level:
             sound.play_sfx("death")
             return
 
-        if self.exit_requested:
-            self.exit_requested = False
+        if self.floor.exit_requested:
+            self.floor.exit_requested = False
             self.splits.append(self.run_time)
             if self.level_index + 1 < len(LEVEL_ORDER):
                 self.transition_phase = "fade_out"
@@ -246,9 +193,9 @@ class Level:
                 self.game_state_manager.set_state("level_complete")
             return
 
-        self.ground_items.update(dt)
-        self.update_crates(dt)
-        update_particles(self.particles, dt)
+        self.floor.ground_items.update(dt)
+        self.floor.update_crates(dt)
+        update_particles(self.floor.particles, dt)
         center_camera(self.player.rect.center)
 
     def update_transition(self, dt):
@@ -272,17 +219,21 @@ class Level:
         self.world_surface.fill(MENU_BACKGROUND_COLOR)
 
         # Floor
-        self.world_surface.blit(self.map_surface, (-camera.x, -camera.y))
+        self.world_surface.blit(self.floor.map_surface, (-camera.x, -camera.y))
 
         # Static tiles: decor, walls, doors
-        for group in [self.decor_tiles, self.wall_tiles, self.door_tiles]:
+        for group in [
+            self.floor.decor_tiles,
+            self.floor.wall_tiles,
+            self.floor.door_tiles,
+        ]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.world_surface)
 
         # Padlocks on locked doors, in the color of the key they need
-        for key, center in self.padlocks:
-            image = self.padlock_images.get(key)
+        for key, center in self.floor.padlocks:
+            image = self.floor.padlock_images.get(key)
             if image is None:
                 continue
             padlock_rect = image.get_rect(
@@ -291,7 +242,7 @@ class Level:
             self.world_surface.blit(image, padlock_rect)
 
         # Ground items and chests
-        for group in [self.crates, self.ground_items, self.chests]:
+        for group in [self.floor.crates, self.floor.ground_items, self.floor.chests]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(self.world_surface, camera)
@@ -307,7 +258,7 @@ class Level:
                 )
 
         # Actors, sorted by y so lower ones draw on top
-        actors = [self.player] + self.enemies
+        actors = [self.player] + self.floor.enemies
         actors = sorted(actors, key=lambda actor: actor.rect.y)
 
         for actor in actors:
@@ -315,7 +266,7 @@ class Level:
                 actor.draw(self.world_surface, camera)
 
         # Particles, on top of the world
-        draw_particles(self.world_surface, self.particles, camera)
+        draw_particles(self.world_surface, self.floor.particles, camera)
 
         scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
         screen.blit(scaled_world, (0, 0))
@@ -342,12 +293,14 @@ class Level:
         kind, target = self.interact_target
 
         if kind == "door":
-            return [door for door in self.door_tiles if door.door_id == target.door_id]
+            return [
+                door for door in self.floor.door_tiles if door.door_id == target.door_id
+            ]
         if kind == "exit":
             return [
                 tile
-                for tile in self.decor_tiles
-                if tile.rect.colliderect(self.exit_rect)
+                for tile in self.floor.decor_tiles
+                if tile.rect.colliderect(self.floor.exit_rect)
             ]
 
         return [target]
@@ -368,61 +321,3 @@ class Level:
         if self.transition_phase == "fade_in":
             return round(255 * fade_left)
         return 255
-
-    def unlock_door(self, door_id):
-        for door in self.door_tiles.sprites():
-            if door.door_id == door_id:
-                door.kill()
-
-        self.refresh_walls()
-        self.refresh_padlocks()
-
-    def break_touched_crates(self):
-        touch_box = self.player.rect.inflate(CRATE_TOUCH_MARGIN, CRATE_TOUCH_MARGIN)
-        broke_any = False
-
-        for crate in self.crates:
-            if not crate.breaking and touch_box.colliderect(crate.rect):
-                crate.start_breaking()
-                drops = roll_loot(CRATE_LOOT)
-                self.spawn_loot(drops, crate.rect.center)
-                broke_any = True
-
-        if broke_any:
-            self.refresh_walls()
-
-    def update_crates(self, dt):
-        for crate in self.crates.sprites():
-            crate.update(dt)
-
-            if crate.done_breaking:
-                emit_burst(self.particles, crate.rect.center, CRATE_DEBRIS)
-                crate.kill()
-
-    def refresh_walls(self):
-        solid_crates = [crate for crate in self.crates if not crate.breaking]
-        self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles) + solid_crates
-
-    def refresh_padlocks(self):
-        doors_by_id = {}
-        for door in self.door_tiles:
-            doors_by_id.setdefault(door.door_id, []).append(door)
-
-        self.padlocks = []
-        for doors in doors_by_id.values():
-            rects = [door.rect for door in doors]
-            door_area = rects[0].unionall(rects[1:])
-            self.padlocks.append((doors[0].key, door_area.center))
-
-    def spawn_loot(self, drops, center):
-        for item_id, quantity in drops:
-            item_data = self.item_database[item_id]
-            offset_x = random.randint(-LOOT_SCATTER_X, LOOT_SCATTER_X)
-            offset_y = random.randint(-LOOT_SCATTER_Y, LOOT_SCATTER_Y)
-
-            WorldItem(
-                groups=self.ground_items,
-                pos=(center[0] + offset_x, center[1] + offset_y),
-                item_data=item_data,
-                quantity=quantity,
-            )

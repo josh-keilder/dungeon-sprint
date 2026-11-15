@@ -6,8 +6,8 @@ from systems.loot import roll_loot
 REACH = 15  # pixels added to the player's rect (split over both sides)
 
 
-def interact(player, level):
-    found = find_target(player, level)
+def interact(player, floor):
+    found = find_target(player, floor)
 
     if found is None:
         return
@@ -18,30 +18,30 @@ def interact(player, level):
 
     kind, target = found
     if kind == "chest":
-        open_chest(target, level)
+        open_chest(target, floor)
     elif kind == "door":
-        unlock_door(level, target, player.inventory)
+        unlock_door(floor, target, player.inventory)
     elif kind == "item":
         pick_up_item(target, player.inventory)
     elif kind == "exit":
-        level.exit_requested = True
+        floor.exit_requested = True
 
 
-def find_target(player, level):
+def find_target(player, floor):
     reach_box = player.rect.inflate(REACH, REACH)
 
-    for chest in level.chests:
+    for chest in floor.chests:
         if reach_box.colliderect(chest.rect):
             return ("chest", chest)
 
-    for item in level.ground_items:
+    for item in floor.ground_items:
         if reach_box.colliderect(item.rect):
             return ("item", item)
 
-    if level.exit_rect is not None and reach_box.colliderect(level.exit_rect):
-        return ("exit", level.exit_rect)
+    if floor.exit_rect is not None and reach_box.colliderect(floor.exit_rect):
+        return ("exit", floor.exit_rect)
 
-    for door in level.door_tiles:
+    for door in floor.door_tiles:
         if reach_box.colliderect(door.rect):
             return ("door", door)
 
@@ -66,14 +66,14 @@ def describe_target(player, found):
     return (f"Press F to pick up {target.item_data.name}", True)
 
 
-def open_chest(chest, level):
+def open_chest(chest, floor):
     drops = roll_loot(CHEST_LOOT)
-    level.spawn_loot(drops, chest.rect.center)
+    floor.spawn_loot(drops, chest.rect.center)
     chest.kill()
 
 
-def unlock_door(level, door, inventory):
-    level.unlock_door(door.door_id)
+def unlock_door(floor, door, inventory):
+    floor.unlock_door(door.door_id)
     remove_item(inventory, door.key)
 
 
