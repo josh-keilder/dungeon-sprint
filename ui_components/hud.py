@@ -18,6 +18,11 @@ from systems.inventory import count_item
 from systems.timer import time_left
 from ui_components.panel import make_panel
 from ui_components.text_label import TextLabel
+from ui_components.text_layout import (
+    bottom_right_text_pos,
+    centered_text_x,
+    centered_text_y,
+)
 from ui_components.time_format import format_run_time
 
 # Shared by every HUD part
@@ -64,14 +69,6 @@ def segment_hp_for(max_health):
             return step
 
     return HEALTH_SEGMENT_STEPS[-1]
-
-
-def centered_text_y(text_surface, center_y):
-    text_bounds = text_surface.get_bounding_rect()
-    text_y = center_y - text_bounds.centery
-    text_y = text_y // GAME_SCALE * GAME_SCALE
-
-    return text_y
 
 
 class HUD:
@@ -244,11 +241,11 @@ class HUD:
 
         self.floor_label.update_text(f"F{floor_number}")
         text_surface = self.floor_label.text_surface
-        text_bounds = text_surface.get_bounding_rect()
         panel_center_x = self.floor_panel_x + FLOOR_PANEL_SIZE[0] // 2
-        text_x = (panel_center_x - text_bounds.centerx) // GAME_SCALE * GAME_SCALE
-        text_y = centered_text_y(text_surface, HUD_MARGIN + FLOOR_PANEL_SIZE[1] // 2)
-        self.floor_label.pos = (text_x, text_y)
+        self.floor_label.pos = (
+            centered_text_x(text_surface, panel_center_x),
+            centered_text_y(text_surface, HUD_MARGIN + FLOOR_PANEL_SIZE[1] // 2),
+        )
         self.floor_label.draw(screen)
 
     def draw_quick_slots(self, screen, player):
@@ -299,13 +296,11 @@ class HUD:
 
         count_label.update_text(f"x{count}")
 
-        count_bounds = count_label.text_surface.get_bounding_rect()
-
+        # One art pixel inside the slot's bottom-right corner
         slot_right = slot_pos[0] + QUICK_SLOT_SIZE[0]
         slot_bottom = slot_pos[1] + QUICK_SLOT_SIZE[1]
-        count_label.pos = (
-            slot_right - count_bounds.right - GAME_SCALE,
-            slot_bottom - count_bounds.bottom - GAME_SCALE,
+        count_label.pos = bottom_right_text_pos(
+            count_label.text_surface, slot_right - GAME_SCALE, slot_bottom - GAME_SCALE
         )
 
         count_label.draw(screen)
@@ -318,7 +313,8 @@ class HUD:
         label = self.prompt_label if available else self.prompt_blocked_label
 
         label.update_text(text)
-        text_bounds = label.text_surface.get_bounding_rect()
-        text_x = (SCREEN_WIDTH // 2 - text_bounds.centerx) // GAME_SCALE * GAME_SCALE
-        label.pos = (text_x, centered_text_y(label.text_surface, PROMPT_CENTER_Y))
+        label.pos = (
+            centered_text_x(label.text_surface, SCREEN_WIDTH // 2),
+            centered_text_y(label.text_surface, PROMPT_CENTER_Y),
+        )
         label.draw(screen)

@@ -2,10 +2,7 @@ import pygame
 
 from globals import (
     FRAME_RATE,
-    GAME_SCALE,
     GREEN,
-    PALETTE_STEEL,
-    PALETTE_VOID,
     RED,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
@@ -19,15 +16,12 @@ from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window
 from ui_components.cursor import Cursor
-from ui_components.text_label import TextLabel
+from ui_components.fps_counter import FpsCounter
 
+# Cursor art
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 
-FPS_MARGIN = 12
-FPS_CENTER_Y = 21
-FPS_REFRESH_INTERVAL = 0.5
-
-
+# Music for the death screen (the finish screen keeps the level music)
 GAME_OVER_MUSIC = "game_over"
 
 
@@ -56,9 +50,8 @@ class Game:
         sound.set_sfx_volume(sfx_volume)
         sound.set_music_volume(music_volume)
 
-        # FPS counter
-        self.fps_timer = 0.0
-        self.fps_text = TextLabel("", color=PALETTE_STEEL, outline_color=PALETTE_VOID)
+        # FPS counter, shown when the setting is on
+        self.fps_counter = FpsCounter()
 
         # Screens, and the manager that switches between them
         self.game_state_manager = GameStateManager("main_menu")
@@ -96,22 +89,14 @@ class Game:
         self.game_state_manager.get_state().update(self.dt)
         self.cursor.update()
 
-        self.fps_timer += self.dt
-        if self.fps_timer >= FPS_REFRESH_INTERVAL:
-            self.fps_timer -= FPS_REFRESH_INTERVAL
-            self.fps_text.update_text(f"FPS: {int(self.clock.get_fps())}")
-            fps_bounds = self.fps_text.text_surface.get_bounding_rect()
-            self.fps_text.pos = (
-                SCREEN_WIDTH - FPS_MARGIN - fps_bounds.right,
-                (FPS_CENTER_Y - fps_bounds.centery) // GAME_SCALE * GAME_SCALE,
-            )
+        self.fps_counter.update(self.dt, self.clock.get_fps())
 
     def draw(self):
         screen = pygame.display.get_surface()
         self.game_state_manager.get_state().draw(screen)
 
         if settings.get_setting("fps_enabled"):
-            self.fps_text.draw(screen)
+            self.fps_counter.draw(screen)
 
         self.cursor.draw(screen)
 

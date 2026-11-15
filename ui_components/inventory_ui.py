@@ -17,6 +17,7 @@ from systems.assets import load_image
 from systems.inventory import add_item, can_equip
 from ui_components.panel import make_panel
 from ui_components.text_label import TextLabel
+from ui_components.text_layout import bottom_right_text_pos
 
 # Window layout
 INVENTORY_FONT_SIZE = 24
@@ -211,10 +212,10 @@ class InventoryUI:
 
         if item.quantity > 1:
             self.count_label.update_text(str(item.quantity))
-            count_bounds = self.count_label.text_surface.get_bounding_rect()
-            self.count_label.pos = (
-                rect.right - count_bounds.right - GAME_SCALE,
-                rect.bottom - count_bounds.bottom - GAME_SCALE,
+            self.count_label.pos = bottom_right_text_pos(
+                self.count_label.text_surface,
+                rect.right - GAME_SCALE,
+                rect.bottom - GAME_SCALE,
             )
             self.count_label.draw(screen)
 

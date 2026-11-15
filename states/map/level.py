@@ -32,9 +32,10 @@ from systems.loot import roll_loot
 from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
-from ui_components.hud import HUD, centered_text_y
+from ui_components.hud import HUD
 from ui_components.inventory_ui import InventoryUI
 from ui_components.text_label import TextLabel
+from ui_components.text_layout import centered_text_x, centered_text_y
 
 LOOT_SCATTER_X = 10
 LOOT_SCATTER_Y = 5
@@ -354,10 +355,10 @@ class Level:
     def show_floor_card(self):
         self.floor_label.update_text(f"Floor {self.level_index + 1}")
         text_surface = self.floor_label.text_surface
-        text_bounds = text_surface.get_bounding_rect()
-        text_x = (SCREEN_WIDTH // 2 - text_bounds.centerx) // GAME_SCALE * GAME_SCALE
-        text_y = centered_text_y(text_surface, SCREEN_HEIGHT // 2)
-        self.floor_label.pos = (text_x, text_y)
+        self.floor_label.pos = (
+            centered_text_x(text_surface, SCREEN_WIDTH // 2),
+            centered_text_y(text_surface, SCREEN_HEIGHT // 2),
+        )
 
     def transition_alpha(self):
         fade_left = time_left(self.transition_timer) / FADE_DURATION

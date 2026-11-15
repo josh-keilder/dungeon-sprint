@@ -295,12 +295,7 @@ The strips so far:
 3. `create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)` opens the window. It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display.
 4. The system mouse is hidden and a `Cursor` is built from `Assets/Cursors/01.png` at half scale.
 5. Sound: all sound effects and music are loaded and the saved volumes are applied. No music starts here.
-6. The FPS label and its timer are created. It's an outlined `TextLabel` in the default Silkscreen at 24, with no panel, because it's a debug readout rather than part of the game. Each time its text refreshes, it's positioned by its visible ink: right-aligned `FPS_MARGIN` (12) from the screen's right edge, so a wider number grows to the left, and vertically centered on `FPS_CENTER_Y` (21), snapped to the grid:
-
-   ```
-   x = SCREEN_WIDTH − FPS_MARGIN − ink right
-   y = (FPS_CENTER_Y − ink center y) // GAME_SCALE × GAME_SCALE
-   ```
+6. The FPS counter (`FpsCounter`, see `ui_components/fps_counter.py`) is created. `Game.update` calls `fps_counter.update(dt, clock.get_fps())` every frame, and `Game.draw` draws it when the `fps_enabled` setting is on, so `Game` holds no FPS details itself.
 7. A `GameStateManager` starting on `"main_menu"` is created, then the states are built and registered: `MainMenu` as `"main_menu"`, `Options` as `"options"`, `Level` as `"level"`, and `RunEndScreen` twice, as `"game_over"` ("You Died!", red, `GAME_OVER_MUSIC`) and `"level_complete"` ("You Escaped!", green, no music of its own).
 8. `self.game_state_manager.get_state().enter()` runs the first screen's `enter()`, which starts the menu music. The first state is set directly in `GameStateManager.__init__`, not through `set_state`, so its `enter()` has to be called by hand. It must come after the `add_state` calls, because `get_state()` looks the state up in the dict.
 
@@ -576,6 +571,22 @@ Some systems hold module-level state that is shared by everyone who imports them
 
     `TOOLTIP_PADDING` (18) is the 12 px frame border plus 6 px of room, and `TOOLTIP_LINE_HEIGHT` (27) is the visible text height (15) plus spacing. The size is rounded **up** so the text always fits. Subtracting the ink top (the empty space Silkscreen leaves above its letters, about 10 px) puts each line's visible top exactly at the padding.
   - **The held item** is drawn centered on the mouse, using the icon's own size.
+- **`text_layout.py`**: shared helpers for placing text by its **visible ink** (`get_bounding_rect()`) rather than by its surface. A rendered surface is taller than its letters, because fonts reserve space above and below them (for Silkscreen at 24 the surface is 31 px tall but the digits only run from y 10 to 25), so lining up surfaces would leave text visibly off-center.
+
+  ```
+  snap_to_grid(value)                  = value // GAME_SCALE × GAME_SCALE
+  centered_text_x(surface, center_x)   = snap(center_x − ink center x)
+  centered_text_y(surface, center_y)   = snap(center_y − ink center y)
+  bottom_right_text_pos(surface, right, bottom) = (right − ink right, bottom − ink bottom)
+  ```
+
+  Used by the HUD (the floor panel, the prompt, the quick-slot counts), the inventory (stack counts), the floor card in `level.py`, and the FPS counter. Each used to compute the ink rect and snap it by hand; one helper per kind of placement keeps the formula in one place.
+- **`fps_counter.py`**: `FpsCounter`, the debug FPS readout: an outlined `TextLabel` in the default Silkscreen at 24, with no panel, because it's a debug readout rather than part of the game. `update(dt, fps)` refreshes the text every `FPS_REFRESH_INTERVAL` (0.5 s), since a number changing every frame is unreadable, and re-positions it by its ink: right-aligned `FPS_MARGIN` (12) from the screen's right edge, so a wider number grows to the left, and vertically centered on `FPS_CENTER_Y` (21). `draw(screen)` draws the label.
+
+  ```
+  x = SCREEN_WIDTH − FPS_MARGIN − ink right
+  y = centered_text_y(label, FPS_CENTER_Y)
+  ```
 - **`time_format.py`**: run times as text, shared by the HUD timer and `RunEndScreen`.
   - `to_centiseconds(seconds)` turns seconds into a whole number of hundredths, truncating (rounding down) the way speedrun timers do, so a time is never shown before it's reached and 59.996 can't round up to `00:60.00`. Floats can't store most decimals exactly: `0.29` is really `0.28999999…`, so `0.29 * 100` is `28.999…` and a plain `int()` would give 28. Adding `FLOAT_NUDGE` (`1e-6`, a millionth of a centisecond) before truncating fixes values that are only a hair under a whole hundredth because of float noise, without changing real times.
   - `format_run_time(seconds)` turns seconds into `mm:ss.hh` text, e.g. 73.456 becomes `01:13.45`. All of its arithmetic is on the integer centiseconds, so nothing is lost to float noise:
@@ -638,7 +649,7 @@ Some systems hold module-level state that is shared by everyone who imports them
 - **`hud.py`**: `HUD`, the in-game heads-up display. `Level` creates one and calls `hud.draw(screen, player, run_time, floor_number, prompt)` once per frame, passing `level_index + 1` as the floor number and `interact_prompt` as the prompt; `draw` calls `draw_health`, `draw_timer`, `draw_floor`, `draw_quick_slots` and `draw_prompt`, so Level never changes when the HUD gains parts. The HUD is given plain values rather than the `Level` itself, so it doesn't need to know about `LEVEL_ORDER` or `level_index`, only the number to show. The font and the panels are created once in `__init__`.
   - **Pixel-grid rules.** The HUD uses Silkscreen only at 24 (its 8 px grid × 3) or 48, so font pixels are the same 3×3 blocks as the world and the frames. Every size and position is a multiple of 3, and anything calculated is snapped with `value // GAME_SCALE * GAME_SCALE`.
   - **Health** (`draw_health`): a `HEALTH_PANEL_SIZE` (312×54) panel at `HUD_MARGIN` (12), with a `HEALTH_BAR_SIZE` (186×24) bar at `HEALTH_BAR_OFFSET` (18, 15). The empty bar is `PALETTE_SHADOW`, the fill `PALETTE_BLOOD`, and the `current/max` text `PALETTE_STEEL`, `HEALTH_TEXT_GAP` (9) to the right of the bar. Gaps in `PALETTE_VOID` split the bar into segments, drawn after the fill so they cut through both parts. `segment_hp_for(max_health)` picks the segment size so there are at most `HEALTH_MAX_SEGMENTS` (5) blocks, each a round number of HP: 25 max gives 5-HP blocks, 35 gives 10, 100 gives 20.
-  - **Centering text** (`centered_text_y(text_surface, center_y)`): a rendered text surface is taller than its letters, because fonts reserve space above and below them (for Silkscreen at 24 the surface is 31 px tall but the digits only run from y 10 to 25). So text is centered by its visible pixels: `get_bounding_rect()` measures the ink, and its center is lined up with the target center.
+  - **Centering text**: the HUD places its text with the shared ink-based helpers in `text_layout.py` (`centered_text_x`, `centered_text_y`, `bottom_right_text_pos`), since a text surface is taller than its letters.
   - **Timer** (`draw_timer`): a `TIMER_PANEL_SIZE` (162×54) panel centered at the top, showing `format_run_time(run_time)`. Centered text normally shifts sideways as the digits change, because a `1` is narrower than an `8` and the total width keeps changing. So the timer gives every digit a fixed-width cell, as wide as the widest digit, and centers each glyph in its cell; `:` and `.` keep their own width, since they never move. The total width is then the same for every time, so nothing re-centers. The 12 characters it needs are rendered once into `timer_glyphs` (a dict comprehension), and `timer_cell_width(character)` gives each one's cell.
 
     ```
@@ -660,7 +671,7 @@ Some systems hold module-level state that is shared by everyone who imports them
 
     ```
     floor_panel_x = timer_panel_x + TIMER_PANEL_SIZE width + FLOOR_PANEL_GAP      (558 + 162 + 12 = 732)
-    text_x        = (floor_panel_x + panel width // 2 − ink center x), snapped to the grid
+    text_x        = centered_text_x(text, floor_panel_x + panel width // 2)
     text_y        = centered_text_y(text, HUD_MARGIN + panel height // 2)
     ```
 
