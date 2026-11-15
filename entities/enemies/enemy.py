@@ -44,8 +44,8 @@ class Enemy:
         self.invulnerability = new_timer()
 
         # AI state
-        self.flee_timer = 0.0
-        self.return_timer = 0.0
+        self.flee_timer = new_timer()
+        self.return_timer = new_timer()
         self.idle_direction = random_idle_direction()
 
         # Knockback from roll hits, decayed each frame
@@ -69,7 +69,7 @@ class Enemy:
         if not blink_hidden:
             screen.blit(self.image, draw_pos)
 
-        if self.health["current"] < self.health["max_health"]:
+        if self.health["current"] < self.health["maximum"]:
             bar_x = self.rect.centerx - ENEMY_HEALTH_BAR_WIDTH // 2
             bar_y = self.rect.top - ENEMY_HEALTH_BAR_GAP
 

@@ -461,7 +461,7 @@ All states are built once at startup and kept alive, so leaving and returning to
 | `enemy_ai.py` | Enemy behaviours and line of sight | `fly_velocity`, `wander_chase_velocity`, `trigger_flee`, `has_line_of_sight`, `random_idle_direction` |
 | `collision.py` | Finds enemies touching the player | `find_player_contacts` |
 | `combat.py` | What happens on contact. `resolve_contact` returns whether the enemy was hit. | `resolve_contact` |
-| `timer.py` | Countdown timers: a `{"timer"}` dict counted down by `dt` | `new_timer`, `start_timer`, `advance_timer`, `is_running`, `time_left` |
+| `timer.py` | Countdown timers: a `{"time_left"}` dict counted down by `dt` | `new_timer`, `start_timer`, `advance_timer`, `is_running`, `time_left` |
 | `health.py` | Health dict rules | `new_health`, `take_damage`, `heal`, `is_dead`, `set_max_health` |
 | `stats.py` | Base stats plus equipment bonuses | `compute_stats` |
 | `inventory.py` | Inventory dict rules | `new_inventory`, `add_item`, `remove_item`, `has_item`, `count_item`, `can_equip` |
@@ -895,7 +895,7 @@ size on screen        = ceil(start size × (1 − age ÷ lifetime)), at least 1
   - It's rebuilt each frame for at most a couple of 16-pixel sprites, which is cheap.
 
 **4. The floor's frame: enemies.** Right after the player moves, `Run.update` calls `floor.update(dt, player)` (`world/floor.py`), which runs steps 4 and 5 and then finishes the floor's frame: crate breaking first if the player is rolling, then the enemies, then contacts, then the ground items, breaking crates and particles. Each enemy gets the solid tiles and the player's position:
-- **`fly`** (Skull): ignores walls. While `flee_timer` is running it moves away from the player, while `return_timer` is running it moves toward the player, within `CHASE_RANGE` (200) it chases, and otherwise it drifts slowly in a random diagonal that occasionally changes.
+- **`fly`** (Skull): ignores walls. While its `flee_timer` is running it moves away from the player, then while its `return_timer` is running it moves toward the player (both are timers from `new_timer()`, started by `trigger_flee` after a contact), within `CHASE_RANGE` (200) it chases, and otherwise it drifts slowly in a random diagonal that occasionally changes.
 - **`wander_chase`** (Skeleton): collides with walls. If it has line of sight to the player (no wall rect crosses the line between them), it chases. Otherwise it wanders at half speed.
 - **Knockback**, after the behaviour's movement: `update_knockback` moves the enemy by `knockback_velocity * dt` with `move_and_collide`, sets the shove to 0 on any axis that hits a wall (so the enemy doesn't keep pressing into it), then fades it with `decay_velocity` at the enemy's `knockback_decay_rate`. Walls block knockback for every enemy, including flying Skulls that otherwise pass through walls. The AI keeps running during a shove, and since a hit also starts the flee, both push the enemy away.
 
@@ -1033,7 +1033,7 @@ Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 
 
 **`roll` dict** (player): `{"direction", "active_timer", "cooldown_timer"}`. `direction` is the move direction copied when the roll started. `active_timer` holds the seconds left in the current roll, and `cooldown_timer` the seconds before the next roll can start. Both are timers from `new_timer()`. There is no separate "active" flag: `is_rolling(roll)` is true while `active_timer` is running, and all code asks it that way.
 
-**Timers** (`systems/timer.py`). Every countdown in the game is a `{"timer": seconds_left}` dict made with `new_timer()`. `start_timer(timer, duration)` sets it, `advance_timer(timer, dt)` subtracts `dt` each frame, and `is_running(timer)` is true while it is `> 0`. `time_left(timer)` returns the seconds left, never below 0, for code that needs the number itself, such as the roll ease-out and the player's blink. The value keeps counting below 0, which is harmless because every check goes through `is_running` or `time_left`. Only `timer.py` reads the `"timer"` key directly. The roll's `active_timer` and `cooldown_timer` are timers too. The one exception is animation, which is a different kind of timer that counts *up* to advance frames.
+**Timers** (`systems/timer.py`). Every countdown in the game is a `{"time_left": seconds}` dict made with `new_timer()`, including the enemies' flee and return countdowns. `start_timer(timer, duration)` sets it, `advance_timer(timer, dt)` subtracts `dt` each frame, and `is_running(timer)` is true while it is `> 0`. `time_left(timer)` returns the seconds left, never below 0, for code that needs the number itself, such as the roll ease-out and the player's blink. The value keeps counting below 0, which is harmless because every check goes through `is_running` or `time_left`. Only `timer.py` reads the `"time_left"` key directly, so the key could change again without touching anything else (it was renamed from `"timer"`, since a timer with a "timer" key read oddly and `time_left()` already returns it). The roll's `active_timer` and `cooldown_timer` are timers too. The one exception is animation, which is a different kind of timer that counts *up* to advance frames.
 
 **`invulnerability` dict** (player and enemies): a timer holding the seconds of invulnerability left. The player's window is `PLAYER_INVULNERABILITY_DURATION` (1.0 s, `systems/combat.py`), and each enemy's is its own `invulnerability_duration` from `ENEMY_TYPES`. The player's `BLINK_INTERVAL` is 0.1 s (`player.py`), and `ROLL_DAMAGE_PER_SPEED` is 0.15 (`systems/combat.py`), so an enemy with 100 health dies after about 3 rolls.
 
@@ -1049,7 +1049,7 @@ Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 
     "attack_damage": 5,        # damage dealt to the player on contact
     "behavior": "fly",         # "fly" or "wander_chase"
     "speed": 50,
-    "texture_data": skull_enemy_texture_data,
+    "texture_data": skull_texture_data,
     "start_animation": "skull_idle",
     "knockback_multiplier": 1.2,   # how easily it is shoved by a roll hit
     "knockback_decay_rate": 10,    # how fast the shove fades (higher is shorter)
@@ -1087,6 +1087,8 @@ hidden      = timer is running  and  blink_phase is odd
 - For every `*_right` animation it adds a mirrored `*_left` (`add_flipped_left`), unless a `*_left` already exists.
 
 Results are cached by the set of animation names plus `crop_size`. Two texture dicts with identical names would share one cache entry, so give each animation a unique name. Images are cached by path in `load_image`.
+
+**Health dict** (`systems/health.py`). `{"current": hp, "maximum": hp}`, made with `new_health(maximum)`, which starts full. `take_damage` and `heal` keep `current` between 0 and `maximum`; `set_max_health(health, new_max)` changes `maximum` and clamps `current` (used when gear changes the player's health stat). An enemy's health comes from its type's `"max_health"` stat in `ENEMY_TYPES`: that key names the stat, while the dict itself uses `"current"` and `"maximum"`.
 
 **Animation dict** (`systems/animation.py`). `{"frames", "current", "index", "timer", "speed"}`. `speed` is frames per second: 10 by default, and 4 for item animations. `set_animation` only restarts when the name actually changes and exists.
 

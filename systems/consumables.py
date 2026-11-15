@@ -11,7 +11,7 @@ def use_small_health_potion(health, inventory, heal_cooldown):
     if is_running(heal_cooldown):
         return False
 
-    at_full_health = health["current"] >= health["max_health"]
+    at_full_health = health["current"] >= health["maximum"]
     has_small_health_potion = has_item(inventory, "small_health_potion")
 
     if at_full_health or not has_small_health_potion:

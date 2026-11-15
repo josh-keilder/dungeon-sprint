@@ -80,7 +80,7 @@ class Player:
             self.base_stats, self.inventory["equipment"].values()
         )
 
-        if self.health["max_health"] != self.stats["health"]:
+        if self.health["maximum"] != self.stats["health"]:
             set_max_health(self.health, self.stats["health"])
 
         # Actions requested this frame

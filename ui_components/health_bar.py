@@ -20,7 +20,7 @@ def draw_health_bar(screen, health, x, y, width, height):
 
     pygame.draw.rect(screen, PALETTE_SHADOW, (x, y, width, height))
 
-    fill_width = int(width * health["current"] / health["max_health"])
+    fill_width = int(width * health["current"] / health["maximum"])
 
     if health["current"] > 0:
         fill_width = max(1, fill_width)

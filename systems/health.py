@@ -1,5 +1,5 @@
 def new_health(max_health):
-    return {"current": max_health, "max_health": max_health}
+    return {"current": max_health, "maximum": max_health}
 
 
 def take_damage(health, amount):
@@ -7,7 +7,7 @@ def take_damage(health, amount):
 
 
 def heal(health, amount):
-    health["current"] = min(health["max_health"], health["current"] + amount)
+    health["current"] = min(health["maximum"], health["current"] + amount)
 
 
 def is_dead(health):
@@ -15,5 +15,5 @@ def is_dead(health):
 
 
 def set_max_health(health, new_max):
-    health["max_health"] = new_max
+    health["maximum"] = new_max
     health["current"] = min(health["current"], new_max)

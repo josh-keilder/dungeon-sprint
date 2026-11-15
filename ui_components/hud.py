@@ -178,16 +178,16 @@ class HUD:
 
         pygame.draw.rect(screen, PALETTE_SHADOW, bar_rect)
 
-        health_ratio = health["current"] / health["max_health"]
+        health_ratio = health["current"] / health["maximum"]
         fill_width = int(bar_rect.width * health_ratio) // GAME_SCALE * GAME_SCALE
         pygame.draw.rect(
             screen, PALETTE_BLOOD, (bar_rect.x, bar_rect.y, fill_width, bar_rect.height)
         )
 
-        segment_hp = segment_hp_for(health["max_health"])
-        for gap_hp in range(segment_hp, health["max_health"], segment_hp):
+        segment_hp = segment_hp_for(health["maximum"])
+        for gap_hp in range(segment_hp, health["maximum"], segment_hp):
             gap_offset = (
-                int(bar_rect.width * gap_hp / health["max_health"])
+                int(bar_rect.width * gap_hp / health["maximum"])
                 // GAME_SCALE
                 * GAME_SCALE
             )
@@ -204,7 +204,7 @@ class HUD:
             )
 
         health_text = self.font.render(
-            f"{health['current']}/{health['max_health']}", False, PALETTE_STEEL
+            f"{health['current']}/{health['maximum']}", False, PALETTE_STEEL
         )
         text_y = centered_text_y(health_text, bar_rect.centery)
         screen.blit(health_text, (bar_rect.right + HEALTH_TEXT_GAP, text_y))

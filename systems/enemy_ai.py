@@ -2,6 +2,8 @@ import random
 
 import pygame
 
+from systems.timer import advance_timer, is_running, start_timer
+
 # Line of sight: only walls near the sight line are checked
 SIGHT_SEARCH_MARGIN = 64  # pixels
 
@@ -23,18 +25,18 @@ def random_idle_direction():
 
 
 def trigger_flee(enemy):
-    enemy.flee_timer = FLEE_TIME
-    enemy.return_timer = RETURN_TIME
+    start_timer(enemy.flee_timer, FLEE_TIME)
+    start_timer(enemy.return_timer, RETURN_TIME)
 
 
 def fly_velocity(enemy, target_pos, dt):
     distance = enemy.pos.distance_to(target_pos)
 
-    if enemy.flee_timer > 0:
-        enemy.flee_timer -= dt
+    if is_running(enemy.flee_timer):
+        advance_timer(enemy.flee_timer, dt)
         velocity = (enemy.pos - target_pos).normalize() * enemy.speed
-    elif enemy.return_timer > 0:
-        enemy.return_timer -= dt
+    elif is_running(enemy.return_timer):
+        advance_timer(enemy.return_timer, dt)
         velocity = (target_pos - enemy.pos).normalize() * enemy.speed
     elif distance < CHASE_RANGE:
         velocity = (target_pos - enemy.pos).normalize() * enemy.speed
