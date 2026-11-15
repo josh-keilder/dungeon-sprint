@@ -15,11 +15,9 @@ from globals import (
 )
 from items.item_database import initialize_item_database
 from systems import debug, interact, sound
-from systems.camera import camera, center_camera, is_on_screen
+from systems.camera import center_camera
 from systems.health import is_dead
-from systems.hitbox import draw_highlight
 from systems.input import read_input
-from systems.particles import draw_particles
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.hud import HUD
 from ui_components.inventory_ui import InventoryUI
@@ -194,55 +192,14 @@ class Level:
     def draw(self, screen):
         self.world_surface.fill(MENU_BACKGROUND_COLOR)
 
-        # Floor
-        self.world_surface.blit(self.floor.map_surface, (-camera.x, -camera.y))
-
-        # Static tiles: decor, walls, doors
-        for group in [
-            self.floor.decor_tiles,
-            self.floor.wall_tiles,
-            self.floor.door_tiles,
-        ]:
-            for sprite in group:
-                if is_on_screen(sprite.rect):
-                    sprite.draw(self.world_surface)
-
-        # Padlocks on locked doors, in the color of the key they need
-        for key, center in self.floor.padlocks:
-            image = self.floor.padlock_images.get(key)
-            if image is None:
-                continue
-            padlock_rect = image.get_rect(
-                center=(center[0] - camera.x, center[1] - camera.y)
-            )
-            self.world_surface.blit(image, padlock_rect)
-
-        # Ground items and chests
-        for group in [self.floor.crates, self.floor.ground_items, self.floor.chests]:
-            for sprite in group:
-                if is_on_screen(sprite.rect):
-                    sprite.draw(self.world_surface, camera)
-
         # Outline what F would act on: candle if it will work, steel if not
+        highlight = None
         if self.interact_target is not None:
             _, available = self.interact_prompt
-            outline_color = PALETTE_CANDLE if available else PALETTE_STEEL
-            highlight_sprites = self.interact_highlight()
-            if highlight_sprites:
-                draw_highlight(
-                    self.world_surface, highlight_sprites, camera, outline_color
-                )
+            color = PALETTE_CANDLE if available else PALETTE_STEEL
+            highlight = (self.floor.highlighted_sprites(self.interact_target), color)
 
-        # Actors, sorted by y so lower ones draw on top
-        actors = [self.player] + self.floor.enemies
-        actors = sorted(actors, key=lambda actor: actor.rect.y)
-
-        for actor in actors:
-            if is_on_screen(actor.rect):
-                actor.draw(self.world_surface, camera)
-
-        # Particles, on top of the world
-        draw_particles(self.world_surface, self.floor.particles, camera)
+        self.floor.draw(self.world_surface, self.player, highlight)
 
         scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
         screen.blit(scaled_world, (0, 0))
@@ -264,22 +221,6 @@ class Level:
 
             if self.transition_phase == "card":
                 self.floor_label.draw(screen)
-
-    def interact_highlight(self):
-        kind, target = self.interact_target
-
-        if kind == "door":
-            return [
-                door for door in self.floor.door_tiles if door.door_id == target.door_id
-            ]
-        if kind == "exit":
-            return [
-                tile
-                for tile in self.floor.decor_tiles
-                if tile.rect.colliderect(self.floor.exit_rect)
-            ]
-
-        return [target]
 
     def show_floor_card(self):
         self.floor_label.update_text(f"Floor {self.level_index + 1}")

@@ -6,11 +6,13 @@ from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
 from systems import sound
 from systems.assets import load_image
+from systems.camera import camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact
 from systems.health import is_dead
+from systems.hitbox import draw_highlight
 from systems.loot import roll_loot
-from systems.particles import CRATE_DEBRIS, emit_burst, update_particles
+from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
 from world.map_loader import load_level_data
 from world.objects import WorldItem
@@ -79,6 +81,61 @@ class Floor:
         self.ground_items.update(dt)
         self.update_crates(dt)
         update_particles(self.particles, dt)
+
+    def draw(self, surface, player, highlight=None):
+        # Floor
+        surface.blit(self.map_surface, (-camera.x, -camera.y))
+
+        # Static tiles: decor, walls, doors
+        for group in [self.decor_tiles, self.wall_tiles, self.door_tiles]:
+            for sprite in group:
+                if is_on_screen(sprite.rect):
+                    sprite.draw(surface)
+
+        # Padlocks on locked doors, in the color of the key they need
+        for key, center in self.padlocks:
+            image = self.padlock_images.get(key)
+            if image is None:
+                continue
+            padlock_rect = image.get_rect(
+                center=(center[0] - camera.x, center[1] - camera.y)
+            )
+            surface.blit(image, padlock_rect)
+
+        # Crates, ground items and chests
+        for group in [self.crates, self.ground_items, self.chests]:
+            for sprite in group:
+                if is_on_screen(sprite.rect):
+                    sprite.draw(surface, camera)
+
+        # Outline what F would act on
+        if highlight is not None:
+            sprites, color = highlight
+            if sprites:
+                draw_highlight(surface, sprites, camera, color)
+
+        # Actors, sorted by y so lower ones draw on top
+        actors = sorted([player] + self.enemies, key=lambda actor: actor.rect.y)
+        for actor in actors:
+            if is_on_screen(actor.rect):
+                actor.draw(surface, camera)
+
+        # Particles, on top of the world
+        draw_particles(surface, self.particles, camera)
+
+    def highlighted_sprites(self, target):
+        kind, sprite = target
+
+        if kind == "door":
+            return [door for door in self.door_tiles if door.door_id == sprite.door_id]
+        if kind == "exit":
+            return [
+                tile
+                for tile in self.decor_tiles
+                if tile.rect.colliderect(self.exit_rect)
+            ]
+
+        return [sprite]
 
     def resolve_enemy_contacts(self, player):
         for enemy in find_player_contacts(player, self.enemies):
