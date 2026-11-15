@@ -89,7 +89,7 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 	venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 	```
 
-- **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a floor sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls. A second argument sets a different output path. The legend is in `Project_Documentation.md`, section 3.
+- **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a floor sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls and automatic decor (torches, banners, wall rings, side torches, webs, rubble, bones, and candlesticks in treasure rooms). A second argument sets a different output path. The legend is in `Project_Documentation.md`, section 3.
 
 	```bash
 	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
@@ -125,4 +125,4 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 
 ## Project Statistics
 - **Total Files:** 116
-- **Total Lines of Code:** 7766
+- **Total Lines of Code:** 7959

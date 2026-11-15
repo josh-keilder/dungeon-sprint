@@ -54,7 +54,7 @@ These are the rules the project was built around. New code should follow them.
       then the other methods top-down, in the order they're called
   ```
 
-  Function modules (`systems/`, the tools) put their public functions first, in the order a caller uses them, then the helpers those call. Long modules split their functions with section comments (`ascii_to_tmx.py`: reading, solvability, tile layers, objects, writing, grid helpers, entry point). Magic numbers become named constants with their unit (`INVENTORY_SLOT_COUNT`, `CURSOR_OFFSET`, the slider's `KNOB_WIDTH`), so every value has a name and lives in one place.
+  Function modules (`systems/`, the tools) put their public functions first, in the order a caller uses them, then the helpers those call. Long modules split their functions with section comments (`ascii_to_tmx.py`: reading, solvability, tile layers, decor, objects, writing, grid helpers, entry point). Magic numbers become named constants with their unit (`INVENTORY_SLOT_COUNT`, `CURSOR_OFFSET`, the slider's `KNOB_WIDTH`), so every value has a name and lives in one place.
 - Imports are named (never `import *`), unused imports are removed, and they are grouped as standard library, then third-party, then project, alphabetical within each group.
 - Formatting is done by Black with its default 88-character line length.
 
@@ -150,7 +150,7 @@ venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignore` because the images are generated.
 
 - **It reuses the game's loader.** `preview_map(map_path, font)` calls `load_floor_data` from `map_loader.py`, the same function `Run` uses, so the preview always matches the game, and if map loading changes the preview follows; the tool only draws what it's given. The loader calls `.convert()` and `load_image`, which need a display, so `main()` first opens a hidden 1×1 window with `pygame.display.set_mode((1, 1), pygame.HIDDEN)`.
-- **Drawing.** It draws on a `.copy()` of the map surface, so the loader's surface is never touched, then the decor, walls, doors, chests and crates in the game's order, each blitted at its `rect.topleft` with no camera (the whole map is the "screen"), then the placed items (keys) with their real images, centered on their positions. `main` builds the item database once with `initialize_item_database()` and passes it to `preview_map(map_path, font, item_database)`, so the images are the game's own. Then the markers:
+- **Drawing.** It draws on a `.copy()` of the map surface, so the loader's surface is never touched, then the walls, decor, doors, chests and crates in the game's order (decor after walls, since torches, banners and rings sit on wall tiles), each blitted at its `rect.topleft` with no camera (the whole map is the "screen"), then the placed items (keys) with their real images, centered on their positions. `main` builds the item database once with `initialize_item_database()` and passes it to `preview_map(map_path, font, item_database)`, so the images are the game's own. Then the markers:
   - **Door groups:** one `door_id` label per group. A door can be several tiles wide, so a `set` of already-labeled ids skips the rest; a set is a collection with fast "have I seen this?" checks.
   - **Enemy spawns:** a 1-pixel `PALETTE_BLOOD` box at each spawn, labeled with the first three letters of the type (`enemy_type[:3]`, a slice), so `Skull` and `Skeleton` show as `SKU` and `SKE`.
   - **Player spawn:** a `PALETTE_AZURE` dot with a `PALETTE_VOID` ring (a bigger circle drawn first). The two spawn kinds use different reference points, matching the game: the player spawn is the player's center, an enemy spawn is the enemy's top-left.
@@ -169,7 +169,7 @@ Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignor
 - **Arguments.** `sys.argv` is the list of words typed after the command (`sys.argv[0]` is the script), so `sys.argv[1:]` is the map paths, if any; when it's empty, the `or` falls back to `FLOOR_ORDER`. `dict.fromkeys(FLOOR_ORDER)` removes duplicates while keeping the order, because dict keys are unique, so a map listed twice is drawn once. `os.path.basename` and `os.path.splitext` turn `Assets/Maps/Dungeon_Level_One.tmx` into `Dungeon_Level_One` for the file name.
 - A map with no walls would crash at `wall_rects[0]` (an `IndexError`), since the crop is based on the walls. Every real map has walls, so this only matters for a half-made map.
 
-**`tools/ascii_to_tmx.py`.** Turns a floor sketched as text into a Tiled map that the game, the preview tool and Tiled all load. The file reads top to bottom like the pipeline: the legend and GID constants, then section comments for reading and checking, solvability, tile layers, objects, writing the TMX, grid helpers, and the entry point. The text sources live in `Assets/Maps/Source/`, and the map is written next to the tilesets in `Assets/Maps/`, named after the source file, unless a second argument gives the output path:
+**`tools/ascii_to_tmx.py`.** Turns a floor sketched as text into a Tiled map that the game, the preview tool and Tiled all load. The file reads top to bottom like the pipeline: the legend and GID constants, then section comments for reading and checking, solvability, tile layers, decor, objects, writing the TMX, grid helpers, and the entry point. The text sources live in `Assets/Maps/Source/`, and the map is written next to the tilesets in `Assets/Maps/`, named after the source file, unless a second argument gives the output path:
 
 ```bash
 venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
@@ -229,7 +229,59 @@ The **grid** is the shared format: hand-written and generated levels go through 
   Walls and the void get `VOID_GID` on the Floor layer, as in the hand-made map.
 - **Door tiles** (`door_gid`). A door is 2 tiles, and its partner (the same letter next to it) decides the half: partner below → top half (47), above → bottom half (57), right → left half (67), left → right half (68). Both colors use the same wooden door art; the color is data on the door (see the `Doors` objects below).
 - **Door groups** (`find_door_groups(grid)`). `same_character_area(grid, start)` is a flood fill that only spreads into the **same character**, so from any door tile it finds its whole door. `find_door_groups` walks the door tiles in reading order (top to bottom, left to right) and returns `(key item id, set of cells)` pairs, for example `("gold_key", {(20, 4), (21, 4)})`. `seen |= cells` (union into) marks the group's cells so its second tile isn't counted again. A group that isn't exactly 2 tiles is a `ValueError` ("doors are 2 tiles"), where before a 3-tile door would silently have drawn the wrong pieces. Reading order keeps the numbering stable, so reconverting gives an identical file.
-- **Layers** (`build_tile_layers(grid, rng)`) are 2D lists of GIDs (0 for empty), one per `TILE_LAYER_NAMES` entry, in the names and order `map_loader` expects. Each is built with `[[0] * width for _ in range(height)]`, which makes separate rows; `[[0] * width] * height` would list one row `height` times, so writing to one row would change them all. `Wall_Decor` and `Floor_Decor` are left empty.
+- **Layers** (`build_tile_layers(grid, rng)`) are 2D lists of GIDs (0 for empty), one per `TILE_LAYER_NAMES` entry, in the names and order `map_loader` expects. Each is built with `[[0] * width for _ in range(height)]`, which makes separate rows; `[[0] * width] * height` would list one row `height` times, so writing to one row would change them all. `Wall_Decor` and `Floor_Decor` only get the ladder here; `add_decor` fills them next (below).
+- **Decor** (`add_decor(grid, layers, rng)`, called in `main` right after `build_tile_layers`). Decor is placed by rules, so floors need no extra legend characters. It runs **after** the walls, with the same seeded `rng`, so adding decor didn't change any existing wall tile, and a map converts the same way every time. Everything goes into the `Wall_Decor` and `Floor_Decor` layers, which the loader already turns into `DecorTile`s, so the game, the preview and Tiled all show it with no extra code. The rules, in the order they run (an earlier step claims a tile first):
+
+  ```
+  TOP WALLS   (a wall tile with floor below it)                         → Wall_Decor
+    torch       evenly spaced per run of top wall, 1 per TORCH_SPACING (7),
+                none on runs < TORCH_MIN_RUN (4), never above a door      TORCH_GID 91
+    banner      between two neighbouring torches, BANNER_CHANCE (50%)     BANNER_GID 75
+    wall ring   any other top-wall tile, WALL_RING_CHANCE (8%),
+                never beside other decor or above a door                 WALL_RING_GIDS 76/77
+  SIDE WALLS  (wall with floor beside it, none above or below)          → Wall_Decor
+    side torch  on the FLOOR tile beside the wall, 1 per SIDE_TORCH_SPACING (8),
+                runs ≥ SIDE_TORCH_MIN_RUN (6); mirrored on right walls    SIDE_TORCH_GID 92
+  TREASURE    (floor only reachable through a gold door)                → Floor_Decor
+    candlestick every corner                                              CANDLESTICK_GIDS 94/96
+  FLOOR       ('.' tiles with no decor yet, not treasure)               → Floor_Decor
+    big web     top-left corner (wall up + left), WEB_CHANCE (30%)        BIG_WEB_GID 65
+    small web   top-right corner (wall up + right), 30%                   SMALL_WEB_GID 66
+    rubble      any other tile beside a wall, RUBBLE_CHANCE (2.5%)        RUBBLE_GIDS 50/60
+    bones       open floor (no wall beside it), BONES_CHANCE (1.5%)       BONE_GIDS 69/78
+  ```
+
+  Where each piece sits comes from how the hand-made Level One placed it: the side torch's art leans on the left edge of its tile, so it stands on the floor tile right of a left wall; the webs fill the corner their art points into.
+  - **Runs.** `top_wall_runs(grid)` walks each row and collects unbroken stretches of "wall with floor below"; an opening in the wall ends a run, so torches are spaced per stretch of wall, not across a passage. `side_wall_runs(grid, side)` is the same walk turned on its side (columns, top to bottom), with `is_side_wall(grid, x, y, side)` as the test; `side` is both the direction from the wall to its floor (`+1` floor to the right, `-1` to the left) and where the torch goes (`x + side`). Its "not open above or below" checks keep corners out of the runs.
+  - **Even spacing** (`evenly_spaced(run, spacing, min_length)`). The run is cut into `count` equal slices and a torch goes in the **middle** of each, so every torch stays away from the run's ends, and so from openings:
+
+    ```
+    count    = max(1, len(run) // spacing)
+    position = int((index + 0.5) × len(run) / count)      for index in 0 … count − 1
+
+    run of 22, spacing 7 → count 3, slice ≈ 7.33 → tiles 3, 11, 18
+    ·  ·  ·  T  ·  ·  ·  ·  ·  ·  ·  T  ·  ·  ·  ·  ·  ·  T  ·  ·  ·
+    ```
+
+    `zip(torches, torches[1:])` pairs each torch with the next (`[a, b, c]` → `(a, b), (b, c)`): the gaps where banners can go. `above_door(grid, cell)` is true when a door tile is below the cell or diagonally below it; `has_decor_beside(decor, x, y)` checks the tiles to the left and right.
+  - **Mirroring** (`FLIP_HORIZONTAL`, `0x80000000`). TMX marks a mirrored tile by setting the top bit of its GID, and `|` (bitwise OR) turns that bit on without touching the GID's own bits. pytmx reads the flag and returns an already-flipped image, so the loader needed no change:
+
+    ```
+    92                = 0b0000…0000 0101 1100
+    92 | 0x80000000   = 0b1000…0000 0101 1100     same tile, "draw it flipped horizontally"
+    ```
+
+  - **Treasure** (`treasure_cells(grid)`). Worked out once in `add_decor` and passed to every step. It reuses the solvability flood fill: what the player can reach with **every** door open, minus what they can reach with only the **silver** doors open (`key_id == PLACED_ITEMS[SILVER_KEY]`). The set includes the gold door's tiles and the corridor behind it. Treasure areas get **only** candlesticks: top-wall decor drops wall tiles whose floor below is treasure (filtering the run **before** spacing, so a partly-treasure run is spaced over what's left), side torches skip a treasure floor tile, and clutter skips treasure tiles. So a treasure room is lit only by its candles and reads as special. `door_index(door_groups)` builds the `cell → door group index` lookup used by both this and `can_finish`.
+
+    ```
+    reach with EVERY door open     ████████████████████
+    reach with only SILVER open    ██████████████
+    treasure = first − second                    ██████      (set difference)
+    ```
+
+  - **Corners** (`is_corner(grid, x, y)`): a wall above **or** below, **and** a wall left **or** right. That's all four corners of a room, but no tile of a 2-wide corridor, whose ends touch a door or open floor. The candles loop over `sorted(treasure)`: `rng.choice` is called in loop order, and a set's order is an implementation detail, so sorting keeps the picks clearly stable.
+  - **Clutter** (`add_floor_clutter`, `clutter_gid(walls, rng)`). `walls` is the set of directions (`UP`, `RIGHT`, `DOWN`, `LEFT`, unpacked from `DIRECTIONS`) with a `WALL` next to the tile; doors aren't walls. `{UP, LEFT} <= walls` is the subset check, "are both of these in `walls`?". Each tile uses **one** roll compared to its own chance, like a loot table, and uses it up even when nothing is placed, so results stay reproducible. Only `.` tiles get clutter, so it never lands under a chest, key, spawn, crate or the ladder.
+  - **All values are first-pass**, to tune by playing.
 - **Objects** (`build_objects(grid)`) are `(name, x, y, width, height)` tuples in pixels, with the names `map_loader` looks for, using the game's reference points: `Player` at the tile's center (the game sets `rect.center` to it); `Enemy_<type>` and `chest` at the tile's top-left; and one `Exit` rect covering every `X` cell, from the smallest x and y to the largest (`+ 1` to include the last cell). Placed items (`PLACED_ITEMS`: `s` → `silver_key`, `g` → `gold_key`) are point objects named by their item id, at the tile's center, because `GroundItem` places itself by `rect.center`. Chests go in a `Chests` object group, crates (`crate`, 16×16, placed by their top-left like chests) in `Crates`, placed items in `Items`, doors in `Doors`, and everything else in `Entity_Spawns`. The exit's and the doors' rects come from `cells_rect(cells)`, the bounding rect of a set of cells in pixels (shared, so the formula lives in one place).
 
   **Doors are objects** with **properties**: one `door` object per group, covering its two tiles, numbered `door_1`, `door_2` … (`enumerate(..., start=1)`), carrying which key opens it:
@@ -272,7 +324,7 @@ The **grid** is the shared format: hand-written and generated levels go through 
 - **Two typos from building it, worth remembering** because both were valid Python that ran and quietly did the wrong thing: `{WALL < FLOOR, ...}` (a comparison, `False`, instead of two set items) and `cell_at(grid, x + dx, y=dx)` (a keyword argument setting `y` to `dx`). The cure is checking real output, not just that the code runs.
 - **Doors can guard optional loot.** A door doesn't have to block the way to the exit: on Easy floor 1 the gold door locks a treasure room with a chest, so the gold key and the chest are a route choice, while the silver door is on the main path. The solvability check only proves the **exit** can be reached, so it can't tell a required door from an optional one; that's a design decision, checked by playing.
 - **Enemies are never optional.** The exit stays shut until every enemy on the floor is defeated (see "What `interact` does"), so an enemy placed in a side room makes that room part of the required route. Keep optional rooms empty, or accept that they aren't optional. The solvability check doesn't know this either.
-- **Limits:** doors exactly 2 tiles, walls at least 2 thick, no decor, and only keys as placed items. Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
+- **Limits:** doors exactly 2 tiles, walls at least 2 thick, only keys as placed items, and decor only by the rules above (no hand-placed decor). Converting overwrites the `.tmx`, so hand edits made in Tiled are lost on the next conversion.
 
 **`tools/make_strip.py`.** Joins animation frames into one horizontal strip. The pack stores each animation as one file per frame (`keys_2_1.png` … `keys_2_4.png`), while the game's texture data expects one strip that `slice_frames` cuts into equal cells. The pack folder is git-ignored, so the game must never load from it: the tool **reads from the pack** and **writes into `Assets/`**, and only its output is committed. Running it needs the pack on your machine.
 
@@ -710,7 +762,7 @@ Everything that makes up a floor: how a map file is read, the tile sprites, and 
   - **What it holds**: the map data from `load_floor_data` (`map_surface`, `decor_tiles`, `wall_tiles`, `door_tiles`, `chests`, `crates`, `exit_rect`, `player_spawn`); `ground_items`, starting with the placed items from the map's `Items` layer (each a `GroundItem` of quantity 1, looked up in the item database, so an unknown id is a `KeyError` at load time, the right moment to find a typo); an empty `particles` list; the `enemies`; `exit_requested` (`False`); and the derived `solid_tiles` and `padlocks`.
   - **`update(dt, player)`** runs the floor's frame, after the player has moved: if the player is rolling, `break_touched_crates(player)`; every enemy moves (`enemy.update`); `resolve_enemy_contacts(player)` resolves touches between the player and living enemies (roll hits, touch damage, the `roll_hit` sound) and calls `start_dying()` on an enemy at 0 HP; `resolve_enemy_strikes(player)` checks every living enemy's swing; `separate_enemies(self.enemies, player, self.solid_tiles)` pushes overlapping bodies apart; `remove_dead_enemies()` rolls the `loot_table` of each enemy whose death animation has finished, spawns the drops at its body's center and removes it (looping over `list(self.enemies)`, a copy, so removing is safe); then the ground items animate, `update_crates` finishes breaking crates, and `update_particles` moves the debris.
   - **`player_walls(player)`** is what blocks the player this frame, passed by the run to `player.update`: while the player is rolling only `solid_tiles`, otherwise `solid_tiles` plus every solid enemy (`is_solid()`) that **isn't already overlapping** the player (section 7, step 5).
-  - **`draw(surface, player, highlight=None)`** draws the world in order: the map surface, decor, walls and doors, a padlock on each locked door group, crates, ground items and chests, the interaction outline (`highlight` is `None` or a `(sprites, color)` pair from the run; nothing is drawn for an empty list), the player and enemies sorted by `rect.y` so whoever is lower is drawn in front, then the particles on top. Off-camera sprites are skipped with `is_on_screen`.
+  - **`draw(surface, player, highlight=None)`** draws the world in order: the map surface, walls, then decor (on top of them, since torches, banners and rings sit on wall tiles), then doors, a padlock on each locked door group, crates, ground items and chests, the interaction outline (`highlight` is `None` or a `(sprites, color)` pair from the run; nothing is drawn for an empty list), the player and enemies sorted by `rect.y` so whoever is lower is drawn in front, then the particles on top. Off-camera sprites are skipped with `is_on_screen`.
   - **`highlighted_sprites(target)`** says what to outline for an interaction target: every door tile with the target door's `door_id` (unlocking works on the whole group, so the outline does too), the exit's ladder (the decor tiles inside `exit_rect`, since the exit has no sprite of its own), or just the chest or item. The run chooses the color; the floor knows its doors and ladder.
   - Helpers:
     - `unlock_door(door_id)` removes every door tile with that id.
@@ -1050,7 +1102,7 @@ find_target(player, floor) ──▶ ("chest", …) / ("item", …) / ("exit", e
 **Drawing order** (`Run.draw`, then `Floor.draw`). Steps 1 to 5 draw onto `world_surface`, at `position - camera`, and anything outside the camera (`is_on_screen`) is skipped. Every world-drawing call already takes the surface to draw on as a parameter, so tiles, items and actors don't know or care that it's a small canvas. `Run.draw` does step 1, picks the interaction outline's color, and calls `floor.draw(world_surface, player, highlight)` for steps 2 to 5; then it does steps 6 to 9 itself:
 1. Fill `world_surface` with `MENU_BACKGROUND_COLOR`, clearing last frame (the map doesn't cover the whole view, so old frames would otherwise smear around the edges).
 2. The pre-rendered floor surface.
-3. Decor, walls, then doors, then a padlock centered on each locked door group, in the color of the key it needs (`padlock_images[key]`). `padlock_images.get(key)` returns `None` for a door with no key (only the old hand-made Level One has those), and that door is skipped instead of crashing.
+3. Walls, then decor (on top of the walls it hangs on), then doors, then a padlock centered on each locked door group, in the color of the key it needs (`padlock_images[key]`). `padlock_images.get(key)` returns `None` for a door with no key (only the old hand-made Level One has those), and that door is skipped instead of crashing.
 4. Crates, ground items and chests (crates first, so loot dropped by a breaking crate is drawn on top of it), then the interaction outline around `highlighted_sprites` (candle or steel, from the `highlight` pair the run passed in), drawn after them so it isn't covered and before the actors so the player stays in front.
 5. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too. Then the particles, on top of the world.
 6. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
@@ -1302,7 +1354,8 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door. T
 - If the inventory is open when the player touches an exit, it stays open underneath the floor transition (harmless; clicks are ignored until play resumes).
 - Easy has 1 of its 5 floors so far, so a run currently ends at floor 1's exit, and the floor transition and split rows only show once floor 2 exists.
 - The old hand-made `Dungeon_Level_One.tmx` still uses a `Logic_Layer`, which the loader no longer reads, so its doors load without ids. `Logic_Tile.tsx`, `Logic_Tiles.tsx` and their PNGs are only kept for it, and can go with it.
-- The ASCII converter needs doors exactly 2 tiles long and walls at least 2 thick. It writes no decor, places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
+- The ASCII converter needs doors exactly 2 tiles long and walls at least 2 thick. Decor is automatic and first-pass (its values will need tuning), it places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
+- There are no rules for room sizes yet. They'll be needed before more floors: hand-made floors and Hard's generated ones should follow the same size rules, so floors feel consistent.
 - The old hand-made `Dungeon_Level_One.tmx` has no ladder tile, so its exit is invisible in-game now that the yellow outline is gone. It's only kept as Tiled reference.
 
 **HUD:**

@@ -31,6 +31,7 @@ KNOWN_CHARACTERS = (
 
 # Neighbors: up, right, down, left
 DIRECTIONS = ((0, -1), (1, 0), (0, 1), (-1, 0))
+UP, RIGHT, DOWN, LEFT = DIRECTIONS
 
 # Tile GIDs in Dungeon.tsx (firstgid 1), learned from Level One
 # The floor is one 4x3 slab picture, repeated: pick the piece by position
@@ -49,6 +50,29 @@ INNER_CORNER_EAST_GID = 54  # open floor above and to the right
 OUTER_CORNER_GIDS = {"se": 1, "sw": 6, "ne": 41, "nw": 46}  # only a diagonal is open
 DOOR_GIDS = {"top": 47, "bottom": 57, "left": 67, "right": 68}
 LADDER_GID = 40  # the exit: a ladder down into a hole
+
+# Decor GIDs
+TORCH_GID = 91  # front-facing wall torch, on a top wall: a light source
+BANNER_GID = 75
+WALL_RING_GIDS = (76, 77)
+SIDE_TORCH_GID = 92  # leans on the wall to its left: a light source
+FLIP_HORIZONTAL = 0x80000000  # TMX flag bit on a GID: draw the tile mirrored
+BIG_WEB_GID = 65  # fills a top-left corner
+SMALL_WEB_GID = 66  # sits in a top-right corner
+RUBBLE_GIDS = (50, 60)
+BONE_GIDS = (69, 78)
+CANDLESTICK_GIDS = (94, 96)  # lit, standing on the floor: light sources
+
+# Decor rules
+TORCH_SPACING = 7  # about one torch per this many tiles of top wall
+TORCH_MIN_RUN = 4  # shorter top walls get no torch
+BANNER_CHANCE = 0.5  # per gap between two torches
+WALL_RING_CHANCE = 0.08  # per remaining top-wall tile
+SIDE_TORCH_SPACING = 8  # about one side torch per this many tiles of side wall
+SIDE_TORCH_MIN_RUN = 6  # shorter side walls get no torch
+WEB_CHANCE = 0.3  # per top corner
+RUBBLE_CHANCE = 0.025  # per floor tile against a wall
+BONES_CHANCE = 0.015  # per open floor tile
 
 # Output: the tile layers in the names and order map_loader expects
 TILE_LAYER_NAMES = (
@@ -111,9 +135,7 @@ def validate_grid(grid):
 
 # Solvability: can the exit be reached, opening doors with matching keys?
 def can_finish(grid, start, door_groups, opened=frozenset()):
-    door_at = {
-        cell: index for index, (_, cells) in enumerate(door_groups) for cell in cells
-    }
+    door_at = door_index(door_groups)
     reachable = flood_fill(grid, start, door_at, opened)
 
     if any(grid[y][x] == EXIT for x, y in reachable):
@@ -203,6 +225,12 @@ def same_character_area(grid, start):
     return area
 
 
+def door_index(door_groups):
+    return {
+        cell: index for index, (_, cells) in enumerate(door_groups) for cell in cells
+    }
+
+
 # Tile layers
 def build_tile_layers(grid, rng):
     width = len(grid[0])
@@ -277,6 +305,170 @@ def door_gid(grid, x, y):
         return DOOR_GIDS["right"]
 
     raise ValueError(f"door at ({x}, {y}) needs a second tile next to it")
+
+
+# Decor
+def add_decor(grid, layers, rng):
+    treasure = treasure_cells(grid)
+    add_top_wall_decor(grid, layers["Wall_Decor"], treasure, rng)
+    add_side_torches(grid, layers["Wall_Decor"], treasure)
+    add_treasure_candles(grid, layers["Floor_Decor"], treasure, rng)
+    add_floor_clutter(grid, layers, treasure, rng)
+
+
+def add_top_wall_decor(grid, wall_decor, treasure, rng):
+    for run in top_wall_runs(grid):
+        run = [(x, y) for x, y in run if (x, y + 1) not in treasure]
+        torches = evenly_spaced(run, TORCH_SPACING, TORCH_MIN_RUN)
+        torches = [cell for cell in torches if not above_door(grid, cell)]
+        for x, y in torches:
+            wall_decor[y][x] = TORCH_GID
+
+        for left, right in zip(torches, torches[1:]):
+            if rng.random() < BANNER_CHANCE:
+                x = (left[0] + right[0]) // 2
+                wall_decor[left[1]][x] = BANNER_GID
+
+        for x, y in run:
+            if wall_decor[y][x] or has_decor_beside(wall_decor, x, y):
+                continue
+            if above_door(grid, (x, y)):
+                continue
+            if rng.random() < WALL_RING_CHANCE:
+                wall_decor[y][x] = rng.choice(WALL_RING_GIDS)
+
+
+def top_wall_runs(grid):
+    runs = []
+    for y, row in enumerate(grid):
+        run = []
+        for x, character in enumerate(row):
+            if character == WALL and is_open(cell_at(grid, x, y + 1)):
+                run.append((x, y))
+            elif run:
+                runs.append(run)
+                run = []
+        if run:
+            runs.append(run)
+
+    return runs
+
+
+def add_side_torches(grid, wall_decor, treasure):
+    for side, gid in ((1, SIDE_TORCH_GID), (-1, SIDE_TORCH_GID | FLIP_HORIZONTAL)):
+        for run in side_wall_runs(grid, side):
+            for x, y in evenly_spaced(run, SIDE_TORCH_SPACING, SIDE_TORCH_MIN_RUN):
+                floor_x = x + side
+                if (floor_x, y) in treasure:
+                    continue
+                if grid[y][floor_x] in DOOR_KEYS or wall_decor[y][floor_x]:
+                    continue
+                wall_decor[y][floor_x] = gid
+
+
+def side_wall_runs(grid, side):
+    runs = []
+    for x in range(len(grid[0])):
+        run = []
+        for y in range(len(grid)):
+            if is_side_wall(grid, x, y, side):
+                run.append((x, y))
+            elif run:
+                runs.append(run)
+                run = []
+        if run:
+            runs.append(run)
+
+    return runs
+
+
+def is_side_wall(grid, x, y, side):
+    return (
+        grid[y][x] == WALL
+        and is_open(cell_at(grid, x + side, y))
+        and not is_open(cell_at(grid, x, y - 1))
+        and not is_open(cell_at(grid, x, y + 1))
+    )
+
+
+def add_treasure_candles(grid, floor_decor, treasure, rng):
+    for x, y in sorted(treasure):
+        if grid[y][x] == FLOOR and is_corner(grid, x, y):
+            floor_decor[y][x] = rng.choice(CANDLESTICK_GIDS)
+
+
+def treasure_cells(grid):
+    start = find_cells(grid, {PLAYER})[0]
+    door_groups = find_door_groups(grid)
+    door_at = door_index(door_groups)
+
+    every_door = set(range(len(door_groups)))
+    silver_doors = {
+        index
+        for index, (key_id, _) in enumerate(door_groups)
+        if key_id == PLACED_ITEMS[SILVER_KEY]
+    }
+    return flood_fill(grid, start, door_at, every_door) - flood_fill(
+        grid, start, door_at, silver_doors
+    )
+
+
+def is_corner(grid, x, y):
+    def wall_at(direction):
+        return cell_at(grid, x + direction[0], y + direction[1]) == WALL
+
+    return (wall_at(UP) or wall_at(DOWN)) and (wall_at(LEFT) or wall_at(RIGHT))
+
+
+def add_floor_clutter(grid, layers, treasure, rng):
+    wall_decor = layers["Wall_Decor"]
+    floor_decor = layers["Floor_Decor"]
+
+    for y, row in enumerate(grid):
+        for x, character in enumerate(row):
+            if character != FLOOR or wall_decor[y][x] or floor_decor[y][x]:
+                continue
+            if (x, y) in treasure:
+                continue
+
+            walls = {
+                direction
+                for direction in DIRECTIONS
+                if cell_at(grid, x + direction[0], y + direction[1]) == WALL
+            }
+            gid = clutter_gid(walls, rng)
+            if gid is not None:
+                floor_decor[y][x] = gid
+
+
+def clutter_gid(walls, rng):
+    roll = rng.random()
+
+    if {UP, LEFT} <= walls:
+        return BIG_WEB_GID if roll < WEB_CHANCE else None
+    if {UP, RIGHT} <= walls:
+        return SMALL_WEB_GID if roll < WEB_CHANCE else None
+    if walls:
+        return rng.choice(RUBBLE_GIDS) if roll < RUBBLE_CHANCE else None
+
+    return rng.choice(BONE_GIDS) if roll < BONES_CHANCE else None
+
+
+def evenly_spaced(run, spacing, min_length):
+    if len(run) < min_length:
+        return []
+
+    count = max(1, len(run) // spacing)
+    return [run[int((index + 0.5) * len(run) / count)] for index in range(count)]
+
+
+def above_door(grid, cell):
+    x, y = cell
+    return any(cell_at(grid, x + dx, y + 1) in DOOR_KEYS for dx in (-1, 0, 1))
+
+
+def has_decor_beside(decor, x, y):
+    return decor[y][x - 1] != 0 or decor[y][x + 1] != 0
 
 
 # Objects
@@ -437,6 +629,7 @@ def main():
     map_name = os.path.splitext(os.path.basename(path))[0]
     rng = random.Random(map_name)
     layers = build_tile_layers(grid, rng)
+    add_decor(grid, layers, rng)
     objects = build_objects(grid)
 
     if len(sys.argv) > 2:

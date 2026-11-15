@@ -90,8 +90,8 @@ class Floor:
         # Floor
         surface.blit(self.map_surface, (-camera.x, -camera.y))
 
-        # Static tiles: decor, walls, doors
-        for group in [self.decor_tiles, self.wall_tiles, self.door_tiles]:
+        # Static tiles: walls, decor on top of them, then doors
+        for group in [self.wall_tiles, self.decor_tiles, self.door_tiles]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(surface)
