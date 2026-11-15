@@ -2,7 +2,6 @@ import pygame
 
 from constants import (
     FLOOR_ORDER,
-    GAME_SCALE,
     MENU_BACKGROUND_COLOR,
     PALETTE_CANDLE,
     PALETTE_STEEL,
@@ -15,6 +14,7 @@ from systems import debug, interact, sound
 from systems.camera import center_camera
 from systems.health import is_dead
 from systems.input import read_input
+from systems.renderer import submit_world
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.floor_transition import FloorTransition
 from ui_components.hud import HUD
@@ -180,8 +180,7 @@ class Run:
 
         self.floor.draw(self.world_surface, self.player, highlight)
 
-        scaled_world = pygame.transform.scale_by(self.world_surface, GAME_SCALE)
-        screen.blit(scaled_world, (0, 0))
+        submit_world(self.world_surface)
 
         self.hud.draw(
             screen,

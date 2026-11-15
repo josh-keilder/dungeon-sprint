@@ -2,6 +2,7 @@ import pygame
 
 from constants import PALETTE_STEEL
 from systems import sound
+from systems.display import get_mouse_pos
 from ui_components.button_outline import draw_outline, make_outline
 
 
@@ -22,7 +23,7 @@ class Button:
         self.clicked_this_frame = False
 
     def update(self):
-        mouse_pos = pygame.mouse.get_pos()
+        mouse_pos = get_mouse_pos()
 
         if self.rect.collidepoint(mouse_pos):
             if not self.hovered:

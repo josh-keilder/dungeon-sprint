@@ -1,5 +1,7 @@
 import pygame
 
+from systems.display import get_mouse_pos
+
 
 def read_input():
     keys_held = pygame.key.get_pressed()
@@ -21,7 +23,7 @@ def read_input():
     left_button_just_pressed = pygame.mouse.get_just_pressed()[0]
     left_click_pos = None
     if left_button_just_pressed:
-        left_click_pos = pygame.mouse.get_pos()
+        left_click_pos = get_mouse_pos()
 
     return {
         "move": move_direction,

@@ -14,6 +14,7 @@ from constants import (
     SCREEN_WIDTH,
 )
 from systems.assets import load_image
+from systems.display import get_mouse_pos
 from systems.inventory import add_item, can_equip
 from ui_components.panel import make_panel
 from ui_components.text_label import TextLabel
@@ -132,7 +133,7 @@ class InventoryUI:
             self.draw_slot(screen, rect, inventory["equipment"][slot_name])
 
         if self.held_item:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
+            mouse_x, mouse_y = get_mouse_pos()
             icon = self.get_icon(self.held_item)
             if icon:
                 screen.blit(
@@ -141,7 +142,7 @@ class InventoryUI:
                 )
 
         if not self.held_item:
-            mouse_pos = pygame.mouse.get_pos()
+            mouse_pos = get_mouse_pos()
             slot_index = self.get_slot_at_mouse(mouse_pos)
             equipment_name = self.get_equipment_slot_at_mouse(mouse_pos)
 

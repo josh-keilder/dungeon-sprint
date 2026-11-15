@@ -63,27 +63,27 @@ These are the rules the project was built around. New code should follow them.
 **Setup (Windows, from the project folder):**
 
 ```bash
-python -m venv venv
+python -m venv .venv
 ```
 
 ```bash
-venv/Scripts/python -m pip install -r requirements.txt
+.venv/Scripts/python -m pip install -r requirements.txt
 ```
 
-`requirements.txt` pins `pygame-ce==2.5.7` and `PyTMX==3.32`. Note that this is pygame-ce (community edition), not plain pygame. Features like `get_just_pressed` and `FRect` only exist in pygame-ce.
+The project uses **one** virtual environment, `.venv` (the one VS Code picks up; Python 3.14). Every command in this document and the README runs through `.venv/Scripts/python`. `requirements.txt` pins the direct dependencies: `pygame-ce==2.5.8`, `PyTMX==3.32`, `moderngl==5.13.0` and its `glcontext==3.1.0` (the OpenGL renderer, section 4), plus the formatters `black==26.10.1` and `isort==9.0.2`. Note that this is pygame-ce (community edition), not plain pygame. Features like `get_just_pressed` and `FRect` only exist in pygame-ce. To update later: `.venv/Scripts/python -m pip list --outdated`, upgrade what's listed, then update the pins and check that `black --check` and `isort --check-only` still pass (a new formatter version can change its style). Save `requirements.txt` as UTF-8: `pip freeze > requirements.txt` in Windows PowerShell 5.1 writes UTF-16, which pip reads badly.
 
 **Run the game:**
 
 ```bash
-venv/Scripts/python main.py
+.venv/Scripts/python main.py
 ```
 
 Always run from the project root. Asset paths such as `Assets/Maps/Dungeon_Level_One.tmx` and the settings file `settings.json` are relative to the current folder.
 
-**Formatting with Black.** Black is not in `requirements.txt`. Install it into the venv once with `venv/Scripts/python -m pip install black`, then:
+**Formatting with Black** (installed by `requirements.txt`):
 
 ```bash
-venv/Scripts/python -m black .
+.venv/Scripts/python -m black .
 ```
 
 Use `--check` to see whether anything needs formatting without changing files.
@@ -103,7 +103,7 @@ from constants import TILE_SIZE
 ```
 
 ```bash
-venv/Scripts/python -m isort .
+.venv/Scripts/python -m isort .
 ```
 
 As with Black, `--check` only reports.
@@ -115,7 +115,7 @@ As with Black, `--check` only reports.
 **`tools/make_sprite.py`.** Generates the game's own pixel art from text. Run it from the project root after editing any sprite; it regenerates every sprite, and an unchanged sprite comes out byte-identical:
 
 ```bash
-venv/Scripts/python -m tools.make_sprite
+.venv/Scripts/python -m tools.make_sprite
 ```
 
 Each sprite is an entry in `SPRITES`, keyed by name, holding three things:
@@ -143,8 +143,8 @@ The sprites:
 **`tools/preview_map.py`.** Renders a `.tmx` map to one PNG, the way the game sees it, with markers on top, so a floor can be checked without playing it. With no arguments it previews every map in `FLOOR_ORDER`; pass map paths to preview only those:
 
 ```bash
-venv/Scripts/python -m tools.preview_map
-venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
+.venv/Scripts/python -m tools.preview_map
+.venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 ```
 
 Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignore` because the images are generated.
@@ -172,8 +172,8 @@ Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignor
 **`tools/ascii_to_tmx.py`.** Turns a floor sketched as text into a Tiled map that the game, the preview tool and Tiled all load. The file reads top to bottom like the pipeline: the legend and GID constants, then section comments for reading and checking, solvability, tile layers, decor, objects, writing the TMX, grid helpers, and the entry point. The text sources live in `Assets/Maps/Source/`, and the map is written next to the tilesets in `Assets/Maps/`, named after the source file, unless a second argument gives the output path:
 
 ```bash
-venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
-venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
+.venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
+.venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
 ```
 
 The legend:
@@ -329,7 +329,7 @@ The **grid** is the shared format: hand-written and generated levels go through 
 **`tools/make_strip.py`.** Joins animation frames into one horizontal strip. The pack stores each animation as one file per frame (`keys_2_1.png` … `keys_2_4.png`), while the game's texture data expects one strip that `slice_frames` cuts into equal cells. The pack folder is git-ignored, so the game must never load from it: the tool **reads from the pack** and **writes into `Assets/`**, and only its output is committed. Running it needs the pack on your machine.
 
 ```bash
-venv/Scripts/python -m tools.make_strip
+.venv/Scripts/python -m tools.make_strip
 ```
 
 It's built like `make_sprite`: `STRIPS` maps a name to `{"frames": [frame paths, in order], "path": output path}`, and `make_strip(name, strip)` handles any entry. The frame lists are list comprehensions over `range(1, 5)`, matching the pack's numbering. Every frame must be the same size, since `slice_frames` cuts equal cells, so it checks each frame against the first, using `zip(paths, frames)` to walk the two lists side by side and name the bad file in the `ValueError`. It then blits frame `index` at `index × frame width` on a transparent (`SRCALPHA`) surface and saves it. `PACK_FOLDER` and the per-folder constants (`KEYS_FOLDER`) keep the long pack paths in one place.
@@ -348,7 +348,7 @@ The strips so far:
 
 1. `pygame.init()`.
 2. `settings.load_settings()` reads `settings.json`. It must run before the window is created, because the window needs the fullscreen setting.
-3. `create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)` opens the window. It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display.
+3. `create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)` opens an **OpenGL** window (`pygame.OPENGL | pygame.DOUBLEBUF`; in fullscreen, `FULLSCREEN` at the desktop's own resolution, `(0, 0)`). It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display. Right after it, `Renderer()` creates the OpenGL context (it needs the window), and `ui_surface` is made: a transparent 1280×720 `SRCALPHA` surface that every frame is drawn on.
 4. The system mouse is hidden and a `Cursor` is built from `Assets/Cursors/01.png` at half scale.
 5. Sound: all sound effects and music are loaded and the saved volumes are applied. No music starts here.
 6. The FPS counter (`FpsCounter`, see `ui_components/fps_counter.py`) is created. `Game.update` calls `fps_counter.update(dt, clock.get_fps())` every frame, and `Game.draw` draws it when the `fps_enabled` setting is on, so `Game` holds no FPS details itself.
@@ -364,19 +364,62 @@ The strips so far:
 - Every 0.5 seconds (`FPS_REFRESH_INTERVAL`), refreshes the FPS text. The timer subtracts the interval instead of resetting to zero, so the leftover time carries over.
 
 **`draw()`:**
-- Gets the screen with `pygame.display.get_surface()` and passes it to the current state's `draw(screen)`.
+- Clears `ui_surface` to fully transparent and passes it to the current state's `draw(screen)`. States never touch the window: in an OpenGL window, the display surface can't be drawn on with pygame, so `screen` is always this offscreen surface.
 - Draws the FPS label if `fps_enabled` is on, then the cursor (last, so it is on top of everything).
-- Calls `pygame.display.update()`.
+- `renderer.present(ui_surface)` puts the frame in the window (below), then `pygame.display.flip()` shows it: an OpenGL window draws into a back buffer and swaps it to the front. (`pygame.display.update()` is for software windows and can't be used with `OPENGL`.)
 
 After `run()` returns, `pygame.quit()` closes everything.
 
-The window uses `pygame.SCALED`. The game always draws to a 1280x720 surface and pygame scales it to fit the real window or monitor, so all screen coordinates in the code are in that 1280x720 space.
-
-Inside that, the run is drawn in two layers. The world is drawn at its true pixel size on a small canvas and scaled up by `GAME_SCALE` (3), so every art pixel becomes a crisp 3×3 block. The HUD is drawn afterwards at full resolution, so text stays sharp and the inventory's mouse positions stay in screen pixels:
+**The renderer** (`systems/renderer.py`, ModernGL). The game always draws in a 1280×720 space, and all screen coordinates in the code are in it. Getting that onto the real window is the renderer's job (it used to be `pygame.SCALED`, which can't be combined with OpenGL). A frame is two **layers**, each a **texture** (an image on the GPU) drawn on a **quad** (a rectangle):
 
 ```
-1. the WORLD  →  drawn on a WORLD_WIDTH × WORLD_HEIGHT surface  →  scaled × GAME_SCALE  →  onto the screen
-2. the HUD    →  drawn straight onto the screen afterwards, at full resolution
+Run.draw ── submit_world(world_surface) ─────▶ world layer: 427×240 texture, scaled ×3 by the GPU   (only if submitted)
+every state, FPS, cursor ── ui_surface ──────▶ UI layer:    1280×720 texture with alpha, on top
+```
+
+- **`submit_world(world_surface)`** is a module-level function: `Run` doesn't hold the renderer, so it hands its world over through the module, like `sound.play_sfx`. `present` uses the surface once and clears the slot (`_world_surface = None`), so a menu frame with no run behind it shows only its UI. The pause menu and end screens call `run.draw`, which submits the world, and their dim overlay is drawn on the UI layer, so it darkens the world underneath.
+- **A quad** is 4 corners drawn as a `TRIANGLE_STRIP` (corners 1-2-3 make one triangle, 2-3-4 the other). Each corner gives its position on screen and the point of the texture it shows. The **vertex shader** runs once per corner and passes `uv` on; the **fragment shader** runs once per pixel and reads the texture's color at that `uv`, interpolated between the corners:
+
+  ```
+  screen (OpenGL)          texture (uv)
+  (-1, 1)───(1, 1)         (0,0)─────(1,0)        u: left → right
+     │  ╲      │             │         │          v: top → bottom: the first row uploaded is row 0,
+  (-1,-1)───(1,-1)         (0,1)─────(1,1)            and pygame's first row is the top
+  ```
+
+  `make_quad(uv_right, uv_bottom)` builds one from a flat `array("f", ...)` of 4 corners × (x, y, u, v), marked `# fmt: skip` so Black keeps it as 4 rows; `"2f 2f"` tells the GPU each corner is two floats for `in_position`, then two for `in_uv`.
+- **`WORLD_UV_RIGHT`.** The world is `WORLD_WIDTH` × `GAME_SCALE` = 427 × 3 = 1281 pixels wide, one more than the screen. The CPU version simply cut the last column off; the world quad shows the texture only up to `SCREEN_WIDTH / (WORLD_WIDTH × GAME_SCALE)` = 1280 / 1281 of its width, so one world pixel stays exactly 3 screen pixels. (`WORLD_UV_BOTTOM` is 720 / 720 = 1.)
+- **Textures** use `NEAREST` filtering, so scaled pixels stay crisp blocks instead of blurring. The UI layer is blended with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, the normal "transparent over opaque" rule.
+- **Uploading.** Each frame both surfaces are copied to their textures (`texture.write`). The world uses `pygame.image.tobytes(surface, "RGBA")`, which converts its pixels into bytes in a known order. For the UI that conversion was the slowest part of the frame, so it's skipped: the UI surface's masks are `R = 0xFF0000, G = 0xFF00, B = 0xFF, A = 0xFF000000`, which on a little-endian PC means each pixel's bytes sit in memory as **B, G, R, A**. `surface.get_view("1")` exposes that memory with no copy, and `ui_texture.swizzle = "BGRA"` tells the texture which byte is which channel, so the GPU reorders them for free. The world keeps `tobytes`: its surface has no alpha, so its fourth byte is padding, and reading that as alpha could make the world see-through; at 427×240 the conversion only costs 0.25 ms.
+
+  ```
+  measured per frame (frame budget at 240 fps: 4.17 ms)
+  tobytes(ui_surface, "RGBA") + write   2.18 ms     ← before
+  get_view("1") + write, BGRA swizzle   0.45 ms     ← now
+  old CPU path: scale_by(world, 3)      1.02 ms     ← gone, the GPU scales
+  ```
+
+- **`present(ui_surface)`** clears the whole window to black, sets the **viewport** (the part of the window OpenGL draws into) to the letterboxed game area, then draws the world layer (if submitted) and the UI layer.
+
+**Letterboxing and the mouse** (`systems/display.py`). `letterbox(window_size)` fits the 1280×720 game into any window at the largest scale that fits, centered, with black bars on the sides that don't fill:
+
+```
+scale = min(window_width / 1280, window_height / 720)
+left  = (window_width  − 1280 × scale) / 2
+top   = (window_height −  720 × scale) / 2
+
+window 1280×720  → scale 1.0, no bars           (the normal window)
+window 1920×1080 → scale 1.5, no bars
+window 1920×1200 → scale 1.5, top = (1200 − 1080) / 2 = 60 px bars above and below
+```
+
+OpenGL counts the viewport's y from the **bottom** of the window, but the bars are equal, so `top` works from either end. `get_mouse_pos()` reverses the same math, from window pixels back to game pixels: `((x − left) / scale, (y − top) / scale)`. Every place that reads the mouse uses it (buttons, sliders, the cursor, the inventory, and `read_input`'s click position), so the mouse lines up in fullscreen too. In a 1280×720 window it returns exactly what `pygame.mouse.get_pos()` does. It's named `get_mouse_pos`, not `mouse_pos`, because many functions have a local variable called `mouse_pos`, and `mouse_pos = mouse_pos()` would make Python treat the name as local for the whole function, so the call would fail with `UnboundLocalError`.
+
+Inside that, the world is drawn at its true pixel size on a small canvas and scaled up by `GAME_SCALE` (3) on the GPU, so every art pixel becomes a crisp 3×3 block. The HUD is drawn on the UI layer at full resolution, so text stays sharp and the inventory's mouse positions stay in screen pixels:
+
+```
+1. the WORLD  →  drawn on a WORLD_WIDTH × WORLD_HEIGHT surface  →  submit_world  →  GPU scales × GAME_SCALE
+2. the HUD    →  drawn on ui_surface at full resolution          →  UI layer, on top
 ```
 
 ## 5. State flow
@@ -535,7 +578,8 @@ All states are built once at startup and kept alive, so leaving and returning to
 | `masks.py` | Pixel-perfect masks and outlines. `images_overlap(first_image, first_pos, second_image, second_pos)` takes images and positions rather than sprites, since an enemy's art isn't at its `rect` | `get_mask`, `images_overlap`, `draw_hitbox`, `draw_highlight`, `grow_mask` |
 | `particles.py` | Short-lived visual effects | `emit_burst`, `update_particles`, `draw_particles`, presets such as `CRATE_DEBRIS` |
 | `camera.py` | The shared camera rect, the size of the world canvas (`WORLD_WIDTH` × `WORLD_HEIGHT`), not the screen, so a bigger `GAME_SCALE` means fewer tiles in view | `camera`, `center_camera`, `is_on_screen` |
-| `display.py` | Creating the window | `create_window` |
+| `display.py` | Creating the OpenGL window, letterboxing it, and mapping the mouse into game coordinates | `create_window`, `letterbox`, `get_mouse_pos` |
+| `renderer.py` | Puts each frame in the window with ModernGL: the world layer (GPU-scaled) and the UI layer (section 4) | `Renderer` (`present`), `submit_world` |
 | `debug.py` | Debug flags | `show_hitboxes`, `toggle_hitboxes` |
 | `sound.py` | Loading and playing audio. `play_music(name, loops=-1)` loops forever by default and remembers the track in `_current_music_name`. Asking for the track that is already playing does nothing, so it doesn't restart. `stop_music` clears the remembered name. | `load_sfx`, `load_music`, `play_sfx`, `play_music`, `stop_music`, `set_sfx_volume`, `set_music_volume` |
 | `settings.py` | Reading and saving `settings.json` | `load_settings`, `save_settings`, `get_setting`, `set_setting` |
@@ -1119,12 +1163,12 @@ find_target(player, floor) ──▶ ("chest", …) / ("item", …) / ("exit", e
 3. Walls, then decor (on top of the walls it hangs on), then doors, then a padlock centered on each locked door group, in the color of the key it needs (`padlock_images[key]`). `padlock_images.get(key)` returns `None` for a door with no key (only the old hand-made Level One has those), and that door is skipped instead of crashing.
 4. Crates, ground items and chests (crates first, so loot dropped by a breaking crate is drawn on top of it), then the interaction outline around `highlighted_sprites` (candle or steel, from the `highlight` pair the run passed in), drawn after them so it isn't covered and before the actors so the player stays in front.
 5. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too. Then the particles, on top of the world.
-6. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
+6. Hand the world to the renderer: `submit_world(world_surface)`. The GPU scales it ×3 with nearest-neighbor filtering, so pixels stay crisp, and draws it under the UI layer (section 4).
 7. The HUD, `self.hud.draw(screen, player, run_time, floor_index + 1, interact_prompt)`: the health panel (top left), the run timer (top center), the floor number (right of the timer), the quick slots (bottom left) and the interaction prompt (bottom center), on the screen at full resolution. It comes after step 6, so it lands on top of the world.
 8. The inventory overlay, if open.
 9. `floor_transition.draw(screen)`: during a floor transition, the black overlay at `overlay_alpha()` over everything including the HUD, then the floor card text during `"card"`.
 
-The pause menu and the end-of-run screens call `run.draw(screen)` to show the frozen run behind them, so they get the scaled view automatically.
+The pause menu and the end-of-run screens call `run.draw(screen)` to show the frozen run behind them, so the world is submitted and shown under their overlay automatically.
 
 **Inventory screen** (`InventoryUI`):
 - A centered window with 4 equipment slots (`head`, `chest`, `boots`, `ability`) on the left and a 5 × 4 grid of the 20 inventory slots on the right, over the dimmed world (layout and formulas in section 6).
@@ -1317,8 +1361,8 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door. T
 
 **A new floor.**
 1. Sketch it in `Assets/Maps/Source/<name>.txt` with the converter's legend (section 3): walls at least 2 thick, doors 2 tiles in a corridor through a wall, one key of the matching color per door group (`s` for an `S` door on the main path, `g` for a `G` treasure door), one `@`, one `X`, and crates (`B`) anywhere they should block the way or hide a little loot.
-2. Convert it: `venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports. If it says the exit can't be reached, check that every door's key can be reached before that door.
-3. Preview it: `venv/Scripts/python -m tools.preview_map Assets/Maps/<name>.tmx`, then check `map_previews/<name>.png`.
+2. Convert it: `.venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/<name>.txt`, which writes `Assets/Maps/<name>.tmx`. Fix any `ValueError` it reports. If it says the exit can't be reached, check that every door's key can be reached before that door.
+3. Preview it: `.venv/Scripts/python -m tools.preview_map Assets/Maps/<name>.tmx`, then check `map_previews/<name>.png`.
 4. Add its path to `FLOOR_ORDER` in `constants.py`, where the order is the play order.
 5. Optionally polish it in Tiled, but reconverting overwrites hand edits, so make changes in the text source where possible.
 

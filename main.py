@@ -15,6 +15,7 @@ from states.state_manager import GameStateManager
 from systems import settings, sound
 from systems.assets import load_image
 from systems.display import create_window
+from systems.renderer import Renderer
 from ui_components.cursor import Cursor
 from ui_components.fps_counter import FpsCounter
 
@@ -34,6 +35,12 @@ class Game:
         create_window(
             SCREEN_WIDTH, SCREEN_HEIGHT, settings.get_setting("full_screen_enabled")
         )
+
+        # Every frame is drawn on ui_surface (transparent), then the renderer puts the
+        # world (if a run submitted one) and this surface into the window
+        self.renderer = Renderer()
+        self.ui_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -92,15 +99,16 @@ class Game:
         self.fps_counter.update(self.dt, self.clock.get_fps())
 
     def draw(self):
-        screen = pygame.display.get_surface()
-        self.game_state_manager.get_state().draw(screen)
+        self.ui_surface.fill((0, 0, 0, 0))
+        self.game_state_manager.get_state().draw(self.ui_surface)
 
         if settings.get_setting("fps_enabled"):
-            self.fps_counter.draw(screen)
+            self.fps_counter.draw(self.ui_surface)
 
-        self.cursor.draw(screen)
+        self.cursor.draw(self.ui_surface)
 
-        pygame.display.update()
+        self.renderer.present(self.ui_surface)
+        pygame.display.flip()
 
 
 if __name__ == "__main__":

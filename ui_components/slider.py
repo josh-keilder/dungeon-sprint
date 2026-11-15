@@ -2,6 +2,7 @@ import pygame
 
 from constants import PALETTE_SHADOW, PALETTE_TORCH
 from systems import sound
+from systems.display import get_mouse_pos
 
 # Knob shape, in pixels
 KNOB_WIDTH = 20
@@ -53,7 +54,7 @@ class Slider:
         self.hovered = False
 
     def update(self):
-        mouse_pos = pygame.mouse.get_pos()
+        mouse_pos = get_mouse_pos()
         mouse_held = pygame.mouse.get_pressed()[0]
 
         # Hover detection

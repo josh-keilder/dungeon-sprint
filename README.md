@@ -40,6 +40,7 @@ The game currently includes:
 - Python
 - pygame-ce (Pygame Community Edition)
 - pytmx
+- ModernGL (OpenGL rendering)
 
 ## Project Structure
 
@@ -49,7 +50,7 @@ The game currently includes:
 - `items/` - Item data: item classes, item database, sprite data, and loot tables
 - `states/` - Screens: the game state manager, the gameplay state, and the main, options and end-of-run menus
 - `world/` - Everything that makes up a floor: map loading, tiles, and the objects placed on it (ground items, chests, crates)
-- `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, sound, settings, and more
+- `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, rendering, sound, settings, and more
 - `ui_components/` - Buttons, sliders, text labels and text layout, health bars, HUD, inventory screen, FPS counter, cursor
 - `tools/` - Developer scripts: sprite generator, strip maker, map preview, ASCII → TMX map converter, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
 - `hooks/` - Git pre-commit hook
@@ -59,17 +60,22 @@ For a full explanation of how the code works, see [Project_Documentation.md](Pro
 
 ## Running Locally
 
-1. Create and activate a Python virtual environment.
+1. Create the project's virtual environment, `.venv`:
+
+	```bash
+	python -m venv .venv
+	```
+
 2. Install dependencies with:
 
 	```bash
-	pip install -r requirements.txt
+	.venv/Scripts/python -m pip install -r requirements.txt
 	```
 
 3. Launch the game:
 
 	```bash
-	python main.py
+	.venv/Scripts/python main.py
 	```
 
 ## Developer Tools
@@ -79,33 +85,33 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 - **Sprite generator** (`tools/make_sprite.py`): regenerates every sprite drawn as text in its `SPRITES` dict (the UI panel frame, the speed boots) and saves them as PNGs in `Assets/`.
 
 	```bash
-	venv/Scripts/python -m tools.make_sprite
+	.venv/Scripts/python -m tools.make_sprite
 	```
 
 - **Map preview** (`tools/preview_map.py`): renders maps to PNGs in `map_previews/` (git-ignored), with the player spawn, enemy spawns, exit and door groups marked. With no arguments it previews every map in `FLOOR_ORDER`; pass map paths to preview only those.
 
 	```bash
-	venv/Scripts/python -m tools.preview_map
-	venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
+	.venv/Scripts/python -m tools.preview_map
+	.venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 	```
 
 - **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a floor sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls and automatic decor (torches, banners, wall rings, side torches, webs, rubble, bones, and candlesticks in treasure rooms). A second argument sets a different output path. The legend is in `Project_Documentation.md`, section 3.
 
 	```bash
-	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
-	venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
+	.venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
+	.venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt Assets/Maps/other_name.tmx
 	```
 
 - **Strip maker** (`tools/make_strip.py`): joins animation frames from the original asset pack into one-row strips in `Assets/` (keys, the crate, torches and candlesticks). Needs the pack folder locally; it's git-ignored.
 
 	```bash
-	venv/Scripts/python -m tools.make_strip
+	.venv/Scripts/python -m tools.make_strip
 	```
 
 - **Line counter** (`tools/line_counter.py`): updates the Project Statistics section of this README. The pre-commit hook runs it automatically; enable the hook once per clone with `git config core.hooksPath hooks`.
 
 	```bash
-	venv/Scripts/python tools/line_counter.py
+	.venv/Scripts/python tools/line_counter.py
 	```
 
 ## Development Notes
@@ -124,5 +130,5 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 117
-- **Total Lines of Code:** 8080
+- **Total Files:** 118
+- **Total Lines of Code:** 8218
