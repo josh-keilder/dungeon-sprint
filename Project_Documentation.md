@@ -407,28 +407,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   `world_surface` (`WORLD_WIDTH` × `WORLD_HEIGHT`) is the canvas the world is drawn on before it's scaled to the screen; `draw` fills it, hands it to `floor.draw`, then scales it up and draws the HUD, the inventory and the transition overlay on the screen.
   - `run_time` (starts at 0.0) holds the seconds spent in this run, across all floors, and is drawn by the HUD's timer panel.
   - `splits` (starts empty, run-wide like `run_time`) holds the `run_time` at the moment each exit was touched, one entry per finished floor, the last floor included. That's the speedrun meaning of a split: the clock reading at each checkpoint. Only these raw readings are stored; each floor's own time is worked out from them on the end screen (`floor_times`). Because the floor transition pauses the run timer, no transition time ends up in any floor's time.
-  - **The floor transition.** Moving to the next floor fades the screen to black, shows a "Floor 2" card, and fades back in. It runs inside `Level` rather than as its own game state, because it's part of playing a run and needs the world drawn underneath. `transition_phase` is `None` while playing, or the name of the current phase, and one `transition_timer` is restarted for each phase:
-
-    ```
-    exit touched ─▶ "fade_out" ─▶ "card" ─▶ "fade_in" ─▶ None (playing)
-                     0.4 s        1.0 s      0.4 s
-                     overlay      load_floor overlay
-                     0 → 255      at start   255 → 0
-    ```
-
-    - `update_transition(dt)` advances the timer and, when it runs out, does what happens at the **end** of the current phase: the end of `"fade_out"` raises `level_index`, calls `load_floor` and `show_floor_card`, and starts the card; the end of `"card"` starts `"fade_in"`; the end of `"fade_in"` sets the phase back to `None`. The new floor loads while the screen is fully black, so the swap is never seen. `FADE_DURATION` (0.4) and `FLOOR_CARD_DURATION` (1.0) set the lengths.
-    - Loading a floor takes real time, so the frame after `load_floor` gets a large `dt`. The transition advances its timer by `min(dt, MAX_TRANSITION_DT)` (1/30 s), so a slow load can't skip the card; however long the load took, it counts as one short frame.
-    - `show_floor_card()` sets `floor_label` (a `TextLabel` at Silkscreen 48) to `Floor {level_index + 1}` (players count from 1, the list from 0) and centers it on the screen by its visible ink, snapped to the 3 px grid, the same way as the FPS label.
-    - `transition_alpha()` says how dark the overlay is: `fade_left` goes from 1.0 to 0.0 as a fade runs, and the card is fully black.
-
-      ```
-      fade_left = time_left(transition_timer) ÷ FADE_DURATION     (1.0 → 0.0)
-      fade_out:  alpha = round(255 × (1 − fade_left))             (0 → 255, darkening)
-      fade_in:   alpha = round(255 × fade_left)                   (255 → 0, clearing)
-      card:      alpha = 255
-      ```
-
-    - `fade_overlay` is a screen-sized surface filled with `PALETTE_VOID`. It's drawn last, over the HUD too, so the whole screen fades together, with the card text on top during `"card"`.
+  - **The floor transition** belongs to `floor_transition`, a `FloorTransition` (see `ui_components/floor_transition.py`). At the exit, the level calls `floor_transition.start()`. While `floor_transition.is_active()`, `update` only calls `update_transition(dt)`, which advances it and, on the one frame its `update` returns `True` (the screen has just gone fully black), raises `level_index`, calls `load_floor` for the next map and `floor_transition.set_floor_number(level_index + 1)` (players count from 1, the list from 0). `draw` ends with `floor_transition.draw(screen)`, over everything including the HUD.
   - `dying` (starts `False`) is the flag that says the death sequence has started, and `death_timer` (made with `new_timer()`) holds the seconds left before the game-over screen. `DEATH_DELAY` (3.0 s) is the whole freeze, and `DEATH_FADE_DURATION` (1.5 s) is how long the player's body takes to fade out. The fade must be no longer than the delay.
 - **`menus/main_menu.py`**: `MainMenu(game_state_manager)`, the title screen (section 5).
   - `draw` fills the screen with `MENU_BACKGROUND_COLOR`, then draws the "DUNGEON SPRINT" title (`TITLE_FONT_SIZE` 96, at `TITLE_Y` 50, centered with `(SCREEN_WIDTH - width) // 2`) and the buttons.
@@ -548,6 +527,31 @@ Some systems hold module-level state that is shared by everyone who imports them
 
     `TOOLTIP_PADDING` (18) is the 12 px frame border plus 6 px of room, and `TOOLTIP_LINE_HEIGHT` (27) is the visible text height (15) plus spacing. The size is rounded **up** so the text always fits. Subtracting the ink top (the empty space Silkscreen leaves above its letters, about 10 px) puts each line's visible top exactly at the padding.
   - **The held item** is drawn centered on the mouse, using the icon's own size.
+- **`floor_transition.py`**: `FloorTransition`, the fade between floors: fade to black, a "Floor 2" card, fade back in. It runs inside the gameplay state rather than as its own game state, because it's part of playing a run and needs the world drawn underneath. It knows nothing about floors or `LEVEL_ORDER`: its owner starts it, asks whether it's running, and reacts to one signal. `phase` is `None` while playing, or the name of the current phase, and one `timer` is restarted for each phase:
+
+  ```
+  start() ─▶ "fade_out" ─▶ "card" ─▶ "fade_in" ─▶ None (playing)
+              0.4 s        1.0 s      0.4 s
+              overlay      the owner  overlay
+              0 → 255      loads the  255 → 0
+                           next floor
+  ```
+
+  - `start()` begins `"fade_out"`; `is_active()` is true while `phase` isn't `None`.
+  - `update(dt)` advances the timer and, when it runs out, does what happens at the **end** of the current phase: the end of `"fade_out"` starts the card and **returns `True`**, the only frame it does; the end of `"card"` starts `"fade_in"`; the end of `"fade_in"` sets the phase back to `None`. Returning `True` once is how it tells its owner "the screen is black, load the next floor now" without knowing what a floor is, the same idea as a button's `is_clicked()`. The new floor loads while the screen is fully black, so the swap is never seen. `FADE_DURATION` (0.4 s) and `FLOOR_CARD_DURATION` (1.0 s) set the lengths.
+  - Loading a floor takes real time, so the frame after loading gets a large `dt`. The timer advances by `min(dt, MAX_TRANSITION_DT)` (1/30 s), so a slow load can't skip the card; however long the load took, it counts as one short frame.
+  - `set_floor_number(floor_number)` sets `floor_label` (a `TextLabel` at `FLOOR_CARD_FONT_SIZE`, Silkscreen 48) to `Floor {floor_number}` and centers it on the screen by its visible ink with `centered_text_x` / `centered_text_y`. It takes the number to show rather than reading the run's index, so the component stays independent.
+  - `draw(screen)` does nothing while inactive; otherwise it blits `fade_overlay` (a screen-sized surface filled with `PALETTE_VOID`) at `overlay_alpha()`, over everything including the HUD so the whole screen fades together, and the card text on top during `"card"`.
+  - `overlay_alpha()` says how dark the overlay is: `fade_left` goes from 1.0 to 0.0 as a fade runs, and the card is fully black.
+
+    ```
+    fade_left = time_left(timer) ÷ FADE_DURATION     (1.0 → 0.0)
+    fade_out:  alpha = round(255 × (1 − fade_left))  (0 → 255, darkening)
+    fade_in:   alpha = round(255 × fade_left)        (255 → 0, clearing)
+    card:      alpha = 255
+    ```
+
+  Inside a class named `FloorTransition`, the old `transition_` prefixes (`transition_phase`, `transition_timer`, `transition_alpha`) only repeated the class name, so the attributes are just `phase`, `timer` and `overlay_alpha`.
 - **`text_layout.py`**: shared helpers for placing text by its **visible ink** (`get_bounding_rect()`) rather than by its surface. A rendered surface is taller than its letters, because fonts reserve space above and below them (for Silkscreen at 24 the surface is 31 px tall but the digits only run from y 10 to 25), so lining up surfaces would leave text visibly off-center.
 
   ```
@@ -730,7 +734,7 @@ Everything that makes up a floor: how a map file is read, the tile sprites, and 
 
 This is `Level.update(dt)` followed by `Level.draw(screen)`.
 
-Before step 1, `update` has two early exits. While the player is dying, it only advances the death freeze (step 6). Then, while a floor transition is running, it only calls `update_transition(dt)` and returns. Both come before `read_input()` and `run_time += dt`, so input, ESC, the world and the run timer are all frozen; transition time doesn't count toward the run, since loading speed differs between computers.
+Before step 1, `update` has two early exits. While the player is dying, it only advances the death freeze (step 6). Then, while `floor_transition.is_active()`, it only calls `update_transition(dt)` and returns. Both come before `read_input()` and `run_time += dt`, so input, ESC, the world and the run timer are all frozen; transition time doesn't count toward the run, since loading speed differs between computers.
 
 **1. Read input.** `read_input()` returns a fresh intent dict and stores it on `player.intent`:
 
@@ -942,12 +946,12 @@ player.alpha  = round(255 × (1 − fade_progress))           (255 visible → 0
 
 So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
 
-**7. Leaving through the exit.** Climbing down takes **F**: walking onto the ladder does nothing by itself, so nobody leaves a floor by accident. Pressing F at the exit only sets `exit_requested` (see "What `interact` does"); the leaving happens here, after the death check. If `exit_requested` is set, the level clears it, then records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`level_index + 1 < len(LEVEL_ORDER)`). If there is, it starts the `"fade_out"` phase of the floor transition; `level_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns.
+**7. Leaving through the exit.** Climbing down takes **F**: walking onto the ladder does nothing by itself, so nobody leaves a floor by accident. Pressing F at the exit only sets `exit_requested` (see "What `interact` does"); the leaving happens here, after the death check. If `exit_requested` is set, the level clears it, then records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`level_index + 1 < len(LEVEL_ORDER)`). If there is, it calls `floor_transition.start()`, which begins the fade; `level_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the level switches to `"level_complete"`. Either way `update` returns.
 
 ```
 LEVEL_ORDER = [floor 0, floor 1]
 
-exit on floor 0:  0 + 1 < 2  →  "fade_out"  …  end of fade: level_index 0 → 1, load_floor(LEVEL_ORDER[1])
+exit on floor 0:  0 + 1 < 2  →  floor_transition.start()  …  update returns True: level_index 0 → 1, load_floor(LEVEL_ORDER[1])
 exit on floor 1:  1 + 1 < 2 is false  →  "level_complete"
 ```
 
@@ -1001,7 +1005,7 @@ find_target(player, floor) ──▶ ("chest", …) / ("item", …) / ("exit", e
 6. Scale the world onto the screen: `pygame.transform.scale_by(world_surface, GAME_SCALE)` returns a new surface 3 times bigger, using nearest-neighbor scaling so pixels stay crisp instead of blurring, and it's blitted at (0, 0).
 7. The HUD, `self.hud.draw(screen, player, run_time, level_index + 1, interact_prompt)`: the health panel (top left), the run timer (top center), the floor number (right of the timer), the quick slots (bottom left) and the interaction prompt (bottom center), on the screen at full resolution. It comes after step 6, so it lands on top of the world.
 8. The inventory overlay, if open.
-9. During a floor transition, `fade_overlay` at `transition_alpha()`, over everything including the HUD, then the floor card text during `"card"`.
+9. `floor_transition.draw(screen)`: during a floor transition, the black overlay at `overlay_alpha()` over everything including the HUD, then the floor card text during `"card"`.
 
 The pause menu and the end-of-run screens call `level.draw(screen)` to show the frozen level behind them, so they get the scaled view automatically.
 

@@ -7,9 +7,6 @@ from globals import (
     MENU_BACKGROUND_COLOR,
     PALETTE_CANDLE,
     PALETTE_STEEL,
-    PALETTE_VOID,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
     WORLD_HEIGHT,
     WORLD_WIDTH,
 )
@@ -19,21 +16,19 @@ from systems.camera import center_camera
 from systems.health import is_dead
 from systems.input import read_input
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
+from ui_components.floor_transition import FloorTransition
 from ui_components.hud import HUD
 from ui_components.inventory_ui import InventoryUI
-from ui_components.text_label import TextLabel
-from ui_components.text_layout import centered_text_x, centered_text_y
 from world.floor import Floor
 
+# Music
 LEVEL_MUSIC = "level_music"
 
-DEATH_DELAY = 3.0
-DEATH_FADE_DURATION = 1.5
+# Death: the world freezes while the player's body fades, then the game-over screen
+DEATH_DELAY = 3.0  # seconds, the whole freeze
+DEATH_FADE_DURATION = 1.5  # seconds; must be no longer than DEATH_DELAY
 
-FADE_DURATION = 0.4
-FLOOR_CARD_DURATION = 1.0
-MAX_TRANSITION_DT = 1 / 30
-
+# True makes the inventory pause the game (it's an overlay by default)
 INVENTORY_PAUSES_GAME = False
 
 
@@ -72,12 +67,8 @@ class Level:
         self.dying = False
         self.death_timer = new_timer()
 
-        # Floor transition: None while playing, else "fade_out", "card", or "fade_in"
-        self.transition_phase = None
-        self.transition_timer = new_timer()
-        self.fade_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.fade_overlay.fill(PALETTE_VOID)
-        self.floor_label = TextLabel("", font_size=48)
+        # Fade to black, "Floor N" card, fade back in
+        self.floor_transition = FloorTransition()
 
     def load_floor(self, map_path):
         self.floor = Floor(map_path, self.item_database)
@@ -108,7 +99,7 @@ class Level:
                 self.game_state_manager.set_state("game_over")
             return
 
-        if self.transition_phase is not None:
+        if self.floor_transition.is_active():
             self.update_transition(dt)
             return
 
@@ -164,8 +155,7 @@ class Level:
             self.floor.exit_requested = False
             self.splits.append(self.run_time)
             if self.level_index + 1 < len(LEVEL_ORDER):
-                self.transition_phase = "fade_out"
-                start_timer(self.transition_timer, FADE_DURATION)
+                self.floor_transition.start()
             else:
                 self.game_state_manager.set_state("level_complete")
             return
@@ -173,21 +163,10 @@ class Level:
         center_camera(self.player.rect.center)
 
     def update_transition(self, dt):
-        advance_timer(self.transition_timer, min(dt, MAX_TRANSITION_DT))
-        if is_running(self.transition_timer):
-            return
-
-        if self.transition_phase == "fade_out":
+        if self.floor_transition.update(dt):
             self.level_index += 1
             self.load_floor(LEVEL_ORDER[self.level_index])
-            self.show_floor_card()
-            self.transition_phase = "card"
-            start_timer(self.transition_timer, FLOOR_CARD_DURATION)
-        elif self.transition_phase == "card":
-            self.transition_phase = "fade_in"
-            start_timer(self.transition_timer, FADE_DURATION)
-        else:
-            self.transition_phase = None
+            self.floor_transition.set_floor_number(self.level_index + 1)
 
     def draw(self, screen):
         self.world_surface.fill(MENU_BACKGROUND_COLOR)
@@ -215,26 +194,4 @@ class Level:
         if self.show_inventory:
             self.inventory_ui.draw(screen, self.player.inventory)
 
-        if self.transition_phase is not None:
-            self.fade_overlay.set_alpha(self.transition_alpha())
-            screen.blit(self.fade_overlay, (0, 0))
-
-            if self.transition_phase == "card":
-                self.floor_label.draw(screen)
-
-    def show_floor_card(self):
-        self.floor_label.update_text(f"Floor {self.level_index + 1}")
-        text_surface = self.floor_label.text_surface
-        self.floor_label.pos = (
-            centered_text_x(text_surface, SCREEN_WIDTH // 2),
-            centered_text_y(text_surface, SCREEN_HEIGHT // 2),
-        )
-
-    def transition_alpha(self):
-        fade_left = time_left(self.transition_timer) / FADE_DURATION
-
-        if self.transition_phase == "fade_out":
-            return round(255 * (1 - fade_left))
-        if self.transition_phase == "fade_in":
-            return round(255 * fade_left)
-        return 255
+        self.floor_transition.draw(screen)
