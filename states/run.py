@@ -181,7 +181,10 @@ class Run:
 
         self.floor.draw(self.world_surface, self.player, highlight)
 
-        lights = visible_lights(self.floor.lights, self.player.rect.center, camera)
+        time = pygame.time.get_ticks() / 1000
+        lights = visible_lights(
+            self.floor.lights, self.player.rect.center, camera, time
+        )
         submit_world(
             self.world_surface, camera.topleft, lights, self.floor.light_blockers
         )
