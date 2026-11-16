@@ -5,6 +5,7 @@ from pytmx.util_pygame import load_pygame
 
 from constants import TILE_SIZE
 from systems.assets import load_animations
+from systems.lighting import flame_position
 from world.decor_texture_data import decor_texture_data
 from world.objects import Chest, Crate
 from world.tiles import AnimatedDecor, DecorTile, Door, WallTile
@@ -117,7 +118,8 @@ def build_decor(tmx_data, layer, decor_tiles, lights):
             pos=pos,
             start_index=random.randrange(len(frames)),
         )
-        lights.append((name, (pos[0] + TILE_SIZE / 2, pos[1] + TILE_SIZE / 2)))
+        tile_center = (pos[0] + TILE_SIZE / 2, pos[1] + TILE_SIZE / 2)
+        lights.append((name, flame_position(name, tile_center, flipped)))
 
 
 def tiled_gid_and_flip(tmx_data, gid):

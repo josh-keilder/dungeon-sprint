@@ -11,9 +11,10 @@ from constants import (
 from entities.player.load_player import load_player
 from items.item_database import initialize_item_database
 from systems import debug, interact, sound
-from systems.camera import center_camera
+from systems.camera import camera, center_camera
 from systems.health import is_dead
 from systems.input import read_input
+from systems.lighting import visible_lights
 from systems.renderer import submit_world
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.floor_transition import FloorTransition
@@ -180,7 +181,8 @@ class Run:
 
         self.floor.draw(self.world_surface, self.player, highlight)
 
-        submit_world(self.world_surface)
+        lights = visible_lights(self.floor.lights, self.player.rect.center, camera)
+        submit_world(self.world_surface, lights)
 
         self.hud.draw(
             screen,
