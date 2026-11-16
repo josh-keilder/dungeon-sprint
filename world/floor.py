@@ -2,10 +2,10 @@ import random
 
 import pygame
 
-from constants import TILE_SIZE
+from constants import BLUE, TILE_SIZE
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
-from systems import sound
+from systems import debug, sound
 from systems.assets import load_image
 from systems.camera import camera, is_on_screen
 from systems.collision import find_player_contacts
@@ -13,7 +13,7 @@ from systems.combat import resolve_contact, resolve_strike
 from systems.health import is_dead
 from systems.lighting import light_blockers
 from systems.loot import roll_loot
-from systems.masks import draw_highlight
+from systems.masks import draw_highlight, draw_hitbox
 from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
 from systems.separation import separate_enemies
@@ -117,6 +117,12 @@ class Floor:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(surface)
+
+        # Debug: wall outlines (the walls themselves are part of map_surface)
+        if debug.show_hitboxes:
+            for wall in self.edge_walls:
+                if is_on_screen(wall.rect):
+                    draw_hitbox(surface, wall.image, wall.rect, camera, BLUE)
 
         # Padlocks on locked doors, in the color of the key they need
         for key, center in self.padlocks:

@@ -373,11 +373,11 @@ After `run()` returns, `pygame.quit()` closes everything.
 **The renderer** (`systems/renderer.py`, ModernGL). The game always draws in a 1280×720 space, and all screen coordinates in the code are in it. Getting that onto the real window is the renderer's job (it used to be `pygame.SCALED`, which can't be combined with OpenGL). A frame is two **layers**, each a **texture** (an image on the GPU) drawn on a **quad** (a rectangle):
 
 ```
-Run.draw ── submit_world(world_surface) ─────▶ world layer: 427×240 texture, scaled ×3 by the GPU   (only if submitted)
-every state, FPS, cursor ── ui_surface ──────▶ UI layer:    1280×720 texture with alpha, on top
+Run.draw ── submit_world(world, camera offset, lights, blockers) ──▶ world layer: 427×240 texture, lit, scaled ×3 by the GPU   (only if submitted)
+every state, FPS, cursor ── ui_surface ─────────────────────────────▶ UI layer:    1280×720 texture with alpha, on top
 ```
 
-- **`submit_world(world_surface)`** is a module-level function: `Run` doesn't hold the renderer, so it hands its world over through the module, like `sound.play_sfx`. `present` uses the surface once and clears the slot (`_world_surface = None`), so a menu frame with no run behind it shows only its UI. The pause menu and end screens call `run.draw`, which submits the world, and their dim overlay is drawn on the UI layer, so it darkens the world underneath.
+- **`submit_world(world_surface, camera_offset, lights, blockers)`** is a module-level function: `Run` doesn't hold the renderer, so it hands its world over through the module, like `sound.play_sfx`. Everything the world layer needs that frame is kept in one slot, `_world`, a tuple: the surface, `camera.topleft`, the visible lights and the floor's light blockers (see **Lighting** below). `present` uses it once and clears it (`_world = None`), so a menu frame with no run behind it shows only its UI. The pause menu and end screens call `run.draw`, which submits the world, and their dim overlay is drawn on the UI layer, so it darkens the world underneath.
 - **A quad** is 4 corners drawn as a `TRIANGLE_STRIP` (corners 1-2-3 make one triangle, 2-3-4 the other). Each corner gives its position on screen and the point of the texture it shows. The **vertex shader** runs once per corner and passes `uv` on; the **fragment shader** runs once per pixel and reads the texture's color at that `uv`, interpolated between the corners:
 
   ```
@@ -387,7 +387,7 @@ every state, FPS, cursor ── ui_surface ──────▶ UI layer:    12
   (-1,-1)───(1,-1)         (0,1)─────(1,1)            and pygame's first row is the top
   ```
 
-  `make_quad(uv_right, uv_bottom)` builds one from a flat `array("f", ...)` of 4 corners × (x, y, u, v), marked `# fmt: skip` so Black keeps it as 4 rows; `"2f 2f"` tells the GPU each corner is two floats for `in_position`, then two for `in_uv`.
+  There are two **programs** (a vertex shader and a fragment shader compiled together): `ui_program` (`TEXTURE_SHADER`, which just shows the texture) and `world_program` (`WORLD_SHADER`, which also lights it). `make_quad(program, uv_right, uv_bottom)` builds a quad for one of them from a flat `array("f", ...)` of 4 corners × (x, y, u, v), marked `# fmt: skip` so Black keeps it as 4 rows; `"2f 2f"` tells the GPU each corner is two floats for `in_position`, then two for `in_uv`.
 - **`WORLD_UV_RIGHT`.** The world is `WORLD_WIDTH` × `GAME_SCALE` = 427 × 3 = 1281 pixels wide, one more than the screen. The CPU version simply cut the last column off; the world quad shows the texture only up to `SCREEN_WIDTH / (WORLD_WIDTH × GAME_SCALE)` = 1280 / 1281 of its width, so one world pixel stays exactly 3 screen pixels. (`WORLD_UV_BOTTOM` is 720 / 720 = 1.)
 - **Textures** use `NEAREST` filtering, so scaled pixels stay crisp blocks instead of blurring. The UI layer is blended with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, the normal "transparent over opaque" rule.
 - **Uploading.** Each frame both surfaces are copied to their textures (`texture.write`). The world uses `pygame.image.tobytes(surface, "RGBA")`, which converts its pixels into bytes in a known order. For the UI that conversion was the slowest part of the frame, so it's skipped: the UI surface's masks are `R = 0xFF0000, G = 0xFF00, B = 0xFF, A = 0xFF000000`, which on a little-endian PC means each pixel's bytes sit in memory as **B, G, R, A**. `surface.get_view("1")` exposes that memory with no copy, and `ui_texture.swizzle = "BGRA"` tells the texture which byte is which channel, so the GPU reorders them for free. The world keeps `tobytes`: its surface has no alpha, so its fourth byte is padding, and reading that as alpha could make the world see-through; at 427×240 the conversion only costs 0.25 ms.
@@ -399,7 +399,65 @@ every state, FPS, cursor ── ui_surface ──────▶ UI layer:    12
   old CPU path: scale_by(world, 3)      1.02 ms     ← gone, the GPU scales
   ```
 
-- **`present(ui_surface)`** clears the whole window to black, sets the **viewport** (the part of the window OpenGL draws into) to the letterboxed game area, then draws the world layer (if submitted) and the UI layer.
+- **`present(ui_surface)`** clears the whole window to black, sets the **viewport** (the part of the window OpenGL draws into) to the letterboxed game area, then draws the world layer (if submitted: camera offset, `set_blockers`, `set_lights`, upload, draw) and the UI layer.
+
+**Lighting** (`systems/lighting.py` for the values and the light list, `WORLD_SHADER` in `systems/renderer.py` for the drawing). Mood lighting: unlit areas are dimmed a little and cooled, and torches, candlesticks and the player add colored glows on top. Everything stays visible.
+
+```
+Floor ── lights: (name, flame position) per torch / candlestick      light_blockers: 1 byte per map tile
+   │                                                                   (1 = wall or closed door)
+Run.draw ── visible_lights(floor.lights, player center, camera, time)
+   │          player light first, then the floor's lights near the view (≤ MAX_LIGHTS = 32),
+   │          each as (position on the world surface, radius, color × intensity × flicker)
+   ▼
+submit_world(world_surface, camera.topleft, lights, floor.light_blockers)
+   ▼
+renderer ── set_blockers: the mask becomes a small integer texture (72×51 on floor 1), only rebuilt when it changes
+            set_lights:   the lights become uniform arrays
+            WORLD_SHADER: lights every world pixel
+```
+
+- **Uniforms** are values Python hands to a shader; they're the same for every pixel of one draw. Settings that never change (`world_size`, `tile_size`, `ambient`, `void_color`, `max_light`, `bands`, and which texture slot is which: `image` 0, `blockers` 1) are set once in `Renderer.__init__`. Per frame: `camera_offset`, `light_count` and the arrays `light_positions`, `light_radii`, `light_colors`. GLSL arrays have a fixed size, so `set_lights` always sends `MAX_LIGHTS` entries, padding the unused ones (radius `1.0`, never 0, so a slip could never divide by zero), and the loop stops at `light_count`. The arrays' size comes from Python: the shader source starts with `f"#define MAX_LIGHTS {MAX_LIGHTS}\n"`, so the number is defined once, in `lighting.py`; the rest of the shader is a plain string, because GLSL's `{ }` would clash with an f-string.
+- **Per world pixel**, the shader works out (`pixel` is the center of the world pixel being drawn, `floor(uv × world_size) + 0.5`, so light is computed once per **art** pixel and stays in crisp 3×3 blocks):
+
+  ```
+  light   = AMBIENT_LIGHT + Σ  color_i × falloff_i            (for each light that reaches the pixel)
+  falloff = clamp(1 − distance(pixel, position_i) / radius_i, 0, 1)        linear: 1 at the flame, 0 at the radius
+            stepped when LIGHT_BANDS > 0:  floor(falloff × LIGHT_BANDS) / LIGHT_BANDS
+  pixel   = art color × min(light, MAX_LIGHT)
+
+  AMBIENT_LIGHT (0.78, 0.78, 0.86): unlit art shows at 78%, blue a little higher, so the dark is slightly cool
+  MAX_LIGHT 1.25: lights can brighten art up to 25% above its own colors, and no further
+  ```
+
+  `LIGHT_BANDS = 0` is smooth (the default); 5 gives visible rings (`0.93 → 0.8`, `0.55 → 0.4`, `0.15 → 0`, the outer fifth unlit). Linear falloff was chosen over squared: with squared, most of each radius was too dark to read.
+- **Light types** (`LIGHT_TYPES`): `radius` in world pixels, `color` as 0–1 RGB, `intensity`, the flame's `offset` from the tile center, and `flicker`. Torches are warm orange (`(1.0, 0.62, 0.32)`, radius 90, side torches 72), candlesticks a softer yellow (`(1.0, 0.85, 0.50)`, radius 56), and the player a faint cool light (`(0.80, 0.88, 1.0)`, radius 64, intensity 0.3). `flame_position(name, tile_center, flipped)` adds the offset (a side torch's flame leans left; on a mirrored, right-wall torch the x offset flips), so the loader records where the flame is, not the tile's center.
+- **`visible_lights(floor_lights, player_center, camera, time)`** keeps the lights inside the camera rect grown by the largest radius on every side (a torch just off-screen still lights the edge of the view), turns their positions camera-relative (the shader works in world-surface pixels), and multiplies each color by its intensity and flicker, so the shader needs one color per light. The player's light goes first, so it's never the one cut off at `MAX_LIGHTS`.
+- **Flicker.** Every frame each flame's intensity is scaled by `1 + flicker × wave`:
+
+  ```
+  wave  = 0.6 × sin(time × 7.0 + phase) + 0.4 × sin(time × 12.7 + phase × 2.3)       → −1 … 1
+  phase = x × 0.37 + y × 0.73          from the light's position: fixed, different for each light
+
+  torch flicker 0.09 → 91% to 109%      candlestick 0.06 → 94% to 106%      player 0 → steady
+  ```
+
+  Two sine waves at speeds that don't divide evenly (`FLICKER_SPEEDS`) add up to a wobble that never quite repeats, and the position-based phase keeps neighboring flames out of step. Only the intensity flickers, not the radius, so the `visible_lights` area stays exact. `time` is `pygame.time.get_ticks() / 1000`, the game clock rather than `run_time`, so flames keep moving behind the pause menu.
+- **Walls block light.** `refresh_light_blockers()` (`Floor`) builds `light_blockers(map_size, tiles)` from every wall and door tile: `((columns, rows), bytes)`, one byte per tile, row by row. The renderer turns it into a one-channel unsigned-integer texture (`dtype="u1"`, read with a `usampler2D` and `texelFetch`: whole numbers by tile, no filtering, no UV math; integer textures must use `NEAREST`). `set_blockers` compares with `is`, so the texture is only rebuilt when the floor makes a new tuple: on a new floor, or when a door opens (`unlock_door` calls `refresh_light_blockers`). Crates don't cast shadows. For each light that's close enough to matter (`falloff > 0`), the shader checks whether it **reaches** the pixel:
+
+  ```
+  start  = the light's position          target = the pixel's position
+           (inside a wall: the center of the open tile in front of it, trying below, right, left, then above)
+
+  walk from start to target in SHADOW_STEP (4 px) steps:
+      a step lands on a blocker tile  →  no light from this one
+      no step does                    →  the light reaches the pixel
+  (off the map counts as a blocker)
+  ```
+
+  Torches sit inside wall tiles, so their walk starts from the floor tile they face; wall pixels walk to the open tile in front of them, which keeps wall faces lit from their own room while the void behind stays dark. (Without moving the target, walks along the top wall ran through the wall itself and left dark wedges between torches.) 4-pixel steps can't jump over a 16-pixel tile.
+- **The empty part of a wall tile never takes light.** Wall art doesn't fill its tile: a side wall's art is 7 of its 16 pixels wide, a bottom wall's about the top half, and the rest is `PALETTE_VOID`. Lit from the room, that void glowed as a strip beside the wall. So a pixel that is inside a blocker tile **and** exactly the void color (within half a color step, `0.5 / 255`, since the shader sees colors as 0–1 decimals) skips every light and keeps only the ambient. Only inside walls: floor tiles use the same color for their grid lines, which should be lit.
+- **Cost.** The whole light shader takes about 0.03 ms a frame on the GPU (RTX 4070 SUPER, 7 lights with wall checks), so lighting is effectively free; the CPU-side frame costs are in section 7, "Performance".
 
 **Letterboxing and the mouse** (`systems/display.py`). `letterbox(window_size)` fits the 1280×720 game into any window at the largest scale that fits, centered, with black bars on the sides that don't fill:
 
@@ -503,7 +561,7 @@ All states are built once at startup and kept alive, so leaving and returning to
   ───────────────────────────               ────────────────────────────────────
   run_time, splits, floor_index             map surface, tiles, doors + padlocks
   item_database ──── shared with ─────────▶ chests, crates, ground items, particles
-  player ──── placed at player_spawn ─────▶ enemies, solid_tiles, exit
+  player ──── placed at player_spawn ─────▶ enemies, solid_rects, exit
   hud, inventory_ui, death, transition      update(dt, player), draw(surface, player, highlight)
   input + the order of each frame           unlock_door, spawn_loot, highlighted_sprites
   ```
@@ -579,7 +637,8 @@ All states are built once at startup and kept alive, so leaving and returning to
 | `particles.py` | Short-lived visual effects | `emit_burst`, `update_particles`, `draw_particles`, presets such as `CRATE_DEBRIS` |
 | `camera.py` | The shared camera rect, the size of the world canvas (`WORLD_WIDTH` × `WORLD_HEIGHT`), not the screen, so a bigger `GAME_SCALE` means fewer tiles in view | `camera`, `center_camera`, `is_on_screen` |
 | `display.py` | Creating the OpenGL window, letterboxing it, and mapping the mouse into game coordinates | `create_window`, `letterbox`, `get_mouse_pos` |
-| `renderer.py` | Puts each frame in the window with ModernGL: the world layer (GPU-scaled) and the UI layer (section 4) | `Renderer` (`present`), `submit_world` |
+| `renderer.py` | Puts each frame in the window with ModernGL: the world layer (lit, GPU-scaled) and the UI layer (section 4) | `Renderer` (`present`, `set_lights`, `set_blockers`), `submit_world`, `WORLD_SHADER` |
+| `lighting.py` | The light look and light list: ambient, light types, flicker, which lights are near the view, the wall mask (section 4, "Lighting") | `LIGHT_TYPES`, `flame_position`, `flicker_wave`, `visible_lights`, `light_blockers` |
 | `debug.py` | Debug flags | `show_hitboxes`, `toggle_hitboxes` |
 | `sound.py` | Loading and playing audio. `play_music(name, loops=-1)` loops forever by default and remembers the track in `_current_music_name`. Asking for the track that is already playing does nothing, so it doesn't restart. `stop_music` clears the remembered name. | `load_sfx`, `load_music`, `play_sfx`, `play_music`, `stop_music`, `set_sfx_volume`, `set_music_volume` |
 | `settings.py` | Reading and saving `settings.json` | `load_settings`, `save_settings`, `get_setting`, `set_setting` |
@@ -796,8 +855,8 @@ Everything that makes up a floor: how a map file is read, the tile sprites, and 
 
 - **`map_loader.py`**: reads the TMX file with pytmx.
   - `load_floor_data(map_path)` returns one dict with everything the run needs.
-  - `build_map` draws the floor into a single surface and creates the tile and chest sprites. Its `elif` chain follows the map's layer order (Floor, Walls, decor, doors, then object groups); only the **first** matching branch of an `if`/`elif` chain runs, so a layer name must appear in it once.
-  - **Decor** (`build_decor(tmx_data, layer, decor_tiles, lights)`, for `Wall_Decor` and `Floor_Decor`). Each tile's Tiled GID is looked up in `ANIMATED_DECOR_GIDS` (`{91: "torch", 92: "side_torch", 94: "candlestick_1", 96: "candlestick_2"}`). Anything else (banners, rings, webs, rubble, bones, the ladder) becomes a still `DecorTile`, as before. A light GID becomes an `AnimatedDecor` with that animation's frames from `decor_texture_data`, mirrored with `pygame.transform.flip` if the tile was flipped (new surfaces per torch, so the shared cache is never changed), starting on a random frame (`random.randrange`) so neighbouring torches don't flicker in sync, and its tile center is added to `lights` as `(name, center)` (`floor_data["lights"]`, section 8). The map keeps the still tiles, so Tiled and `preview_map` show the decor with no special code; the swap only happens on load.
+  - `build_map` draws the floor **and the walls** into a single surface (`map_surface`; walls never change and are always under everything else, so they're drawn once at load instead of every frame) and creates the tile and chest sprites. Its `elif` chain follows the map's layer order (Floor, Walls, decor, doors, then object groups); only the **first** matching branch of an `if`/`elif` chain runs, so a layer name must appear in it once.
+  - **Decor** (`build_decor(tmx_data, layer, decor_tiles, lights)`, for `Wall_Decor` and `Floor_Decor`). Each tile's Tiled GID is looked up in `ANIMATED_DECOR_GIDS` (`{91: "torch", 92: "side_torch", 94: "candlestick_1", 96: "candlestick_2"}`). Anything else (banners, rings, webs, rubble, bones, the ladder) becomes a still `DecorTile`, as before. A light GID becomes an `AnimatedDecor` with that animation's frames from `decor_texture_data`, mirrored with `pygame.transform.flip` if the tile was flipped (new surfaces per torch, so the shared cache is never changed), starting on a random frame (`random.randrange`) so neighbouring torches don't flicker in sync, and its flame's position is added to `lights` as `(name, flame_position(name, tile_center, flipped))` (`floor_data["lights"]`, section 8; the loader is the only place that knows whether a torch is mirrored, so it applies the offset). The map keeps the still tiles, so Tiled and `preview_map` show the decor with no special code; the swap only happens on load.
   - **pytmx renumbers tiles.** Each combination of a Tiled GID and its flip flags gets its own *internal* gid, which is what `layer.iter_data()` yields as `(x, y, gid)`. `tiled_gid_and_flip(tmx_data, gid)` translates back with two lookups:
 
     ```
@@ -817,17 +876,19 @@ Everything that makes up a floor: how a map file is read, the tile sprites, and 
 - **`tiles.py`**: `WallTile`, `DecorTile`, `AnimatedDecor` and `Door` sprites. `AnimatedDecor(groups, frames, pos, start_index)` is a looping decor tile: its animation dict holds the one strip under the name `"loop"`, starts at `start_index`, and plays at `DECOR_ANIMATION_SPEED` (6 fps; at the default 10, a 4-frame flame loops 2.5 times a second and looks frantic). `update(dt)` advances it. Each draws itself offset by the camera. Doors carry a `door_id` and a `key` (the item id that opens them, `silver_key` or `gold_key`), both set by `assign_door_properties`.
 - **`decor_texture_data.py`**: `decor_texture_data`, the four light strips (`torch`, `side_torch`, `candlestick_1`, `candlestick_2`), 16×16 frames, 4 each, from `Assets/Objects/<name>_strip.png`.
 - **`floor.py`**: `Floor(map_path, item_database)`, everything on one map. `Run.load_floor` builds a new one for each floor, so its state starts clean by construction.
-  - **What it holds**: the map data from `load_floor_data` (`map_surface`, `decor_tiles`, `wall_tiles`, `door_tiles`, `chests`, `crates`, `exit_rect`, `player_spawn`, `lights`); `ground_items`, starting with the placed items from the map's `Items` layer (each a `GroundItem` of quantity 1, looked up in the item database, so an unknown id is a `KeyError` at load time, the right moment to find a typo); an empty `particles` list; the `enemies`; `exit_requested` (`False`); and the derived `solid_tiles` and `padlocks`.
-  - **`update(dt, player)`** runs the floor's frame, after the player has moved: if the player is rolling, `break_touched_crates(player)`; every enemy moves (`enemy.update`); `resolve_enemy_contacts(player)` resolves touches between the player and living enemies (roll hits, touch damage, the `roll_hit` sound) and calls `start_dying()` on an enemy at 0 HP; `resolve_enemy_strikes(player)` checks every living enemy's swing; `separate_enemies(self.enemies, player, self.solid_tiles)` pushes overlapping bodies apart; `remove_dead_enemies()` rolls the `loot_table` of each enemy whose death animation has finished, spawns the drops at its body's center and removes it (looping over `list(self.enemies)`, a copy, so removing is safe); then the decor animates (`decor_tiles.update(dt)`: `Group.update` calls `update(dt)` on every sprite, and a `DecorTile` inherits `Sprite.update`, which accepts any arguments and does nothing, so still and animated decor share one group with no checks), the ground items animate, `update_crates` finishes breaking crates, and `update_particles` moves the debris.
-  - **`player_walls(player)`** is what blocks the player this frame, passed by the run to `player.update`: while the player is rolling only `solid_tiles`, otherwise `solid_tiles` plus every solid enemy (`is_solid()`) that **isn't already overlapping** the player (section 7, step 5).
-  - **`draw(surface, player, highlight=None)`** draws the world in order: the map surface, walls, then decor (on top of them, since torches, banners and rings sit on wall tiles), then doors, a padlock on each locked door group, crates, ground items and chests, the interaction outline (`highlight` is `None` or a `(sprites, color)` pair from the run; nothing is drawn for an empty list), the player and enemies sorted by `rect.y` so whoever is lower is drawn in front, then the particles on top. Off-camera sprites are skipped with `is_on_screen`.
+  - **What it holds**: the map data from `load_floor_data` (`map_surface`, `decor_tiles`, `wall_tiles`, `door_tiles`, `chests`, `crates`, `exit_rect`, `player_spawn`, `lights`); `ground_items`, starting with the placed items from the map's `Items` layer (each a `GroundItem` of quantity 1, looked up in the item database, so an unknown id is a `KeyError` at load time, the right moment to find a typo); an empty `particles` list; the `enemies`; `exit_requested` (`False`); `edge_walls`; and the derived `solid_rects`, `light_blockers` and `padlocks`.
+  - **`edge_walls(wall_tiles)`** (a module function) keeps only the walls next to open space, including diagonally. Floor 1's walls fill the whole map, but only 614 of its 2570 touch a floor tile: anything moving hits one of those first, so the rest can never be touched and are left out of collision. Light still uses every wall (`light_blockers`), because the shader needs the full map.
+  - **`update(dt, player)`** runs the floor's frame, after the player has moved: if the player is rolling, `break_touched_crates(player)`; every enemy moves (`enemy.update`); `resolve_enemy_contacts(player)` resolves touches between the player and living enemies (roll hits, touch damage, the `roll_hit` sound) and calls `start_dying()` on an enemy at 0 HP; `resolve_enemy_strikes(player)` checks every living enemy's swing; `separate_enemies(self.enemies, player, self.solid_rects)` pushes overlapping bodies apart; `remove_dead_enemies()` rolls the `loot_table` of each enemy whose death animation has finished, spawns the drops at its body's center and removes it (looping over `list(self.enemies)`, a copy, so removing is safe); then the decor animates (`decor_tiles.update(dt)`: `Group.update` calls `update(dt)` on every sprite, and a `DecorTile` inherits `Sprite.update`, which accepts any arguments and does nothing, so still and animated decor share one group with no checks), the ground items animate, `update_crates` finishes breaking crates, and `update_particles` moves the debris.
+  - **`player_walls(player)`** is what blocks the player this frame, passed by the run to `player.update`: while the player is rolling only `solid_rects`, otherwise `solid_rects` plus the `rect` of every solid enemy (`is_solid()`) that **isn't already overlapping** the player (section 7, step 5). Like everything passed as `walls`, it's a list of plain rects.
+  - **`draw(surface, player, highlight=None)`** draws the world in order: the map surface (floor and walls), then decor (on top of the walls, since torches, banners and rings sit on wall tiles), then doors, a padlock on each locked door group, crates, ground items and chests, the interaction outline (`highlight` is `None` or a `(sprites, color)` pair from the run; nothing is drawn for an empty list), the player and enemies sorted by `rect.y` so whoever is lower is drawn in front, then the particles on top. Off-camera sprites are skipped with `is_on_screen`.
   - **`highlighted_sprites(target)`** says what to outline for an interaction target: every door tile with the target door's `door_id` (unlocking works on the whole group, so the outline does too), the exit's ladder (the decor tiles inside `exit_rect`, since the exit has no sprite of its own), or just the chest or item. The run chooses the color; the floor knows its doors and ladder.
   - Helpers:
     - `unlock_door(door_id)` removes every door tile with that id.
-    - `refresh_solid_tiles()` rebuilds `solid_tiles` (walls, remaining doors and unbroken crates).
+    - `refresh_solid_rects()` rebuilds `solid_rects`: the `rect`s of the edge walls, remaining doors and unbroken crates.
+    - `refresh_light_blockers()` rebuilds `light_blockers` from every wall and the remaining doors (section 4, "Lighting").
     - `refresh_padlocks()` rebuilds `padlocks`, a list of `(key, center)` pairs, one per locked door group. It groups the door tiles by `door_id` with `doors_by_id.setdefault(door.door_id, []).append(door)` (`setdefault` returns the list stored under a key, creating an empty one the first time: the usual "group things by a key" pattern), then takes each group's center from `rects[0].unionall(rects[1:])`, the rect around its tiles: the seam of a double door, or the middle of a vertical one. The padlock art is loaded in `__init__` into `padlock_images` (cached by `load_image`, so each file is read from disk once) from `PADLOCK_IMAGE_PATHS`, keyed by key item id, the same value as `door.key`.
-    - **Crates.** `refresh_solid_tiles()` adds every crate still in `crates` to `solid_tiles`, so crates block the player **and** enemies like walls. While the player is rolling, `update` calls `break_touched_crates(player)`: any crate touching the player's rect grown by `CRATE_TOUCH_MARGIN` (2 pixels) starts breaking, drops its `CRATE_LOOT` at its center, and, since a breaking crate isn't solid, `refresh_solid_tiles()` runs once if anything broke, so the roll carries straight through. The margin is needed because a solid crate pushes the player out, so the two never actually overlap; the grown rect catches "pressed right up against it". Walking into a crate just bumps it: rolling is the only way to break one, the same rule as damaging enemies. `update_crates(dt)` advances every crate and, for each one with `done_breaking`, emits a `CRATE_DEBRIS` burst at its center and kills it; it loops over `crates.sprites()`, a copy, so removing crates mid-loop is safe.
-    - `solid_tiles` and `padlocks` are both derived from `door_tiles`, so both are rebuilt together, in `__init__` and in `unlock_door`, whenever the doors change. Forgetting the second call leaves a padlock floating where an opened door used to be.
+    - **Crates.** `refresh_solid_rects()` adds every crate still in `crates` to `solid_rects`, so crates block the player **and** enemies like walls. While the player is rolling, `update` calls `break_touched_crates(player)`: any crate touching the player's rect grown by `CRATE_TOUCH_MARGIN` (2 pixels) starts breaking, drops its `CRATE_LOOT` at its center, and, since a breaking crate isn't solid, `refresh_solid_rects()` runs once if anything broke, so the roll carries straight through. The margin is needed because a solid crate pushes the player out, so the two never actually overlap; the grown rect catches "pressed right up against it". Walking into a crate just bumps it: rolling is the only way to break one, the same rule as damaging enemies. `update_crates(dt)` advances every crate and, for each one with `done_breaking`, emits a `CRATE_DEBRIS` burst at its center and kills it; it loops over `crates.sprites()`, a copy, so removing crates mid-loop is safe.
+    - `solid_rects`, `light_blockers` and `padlocks` are all derived from `door_tiles`, so all three are rebuilt together, in `__init__` and in `unlock_door`, whenever the doors change. Forgetting one leaves a padlock floating where an opened door used to be, or a doorway that still blocks light.
     - `spawn_loot(drops, center)` creates `GroundItem`s scattered randomly around a point.
     - `enemies_left()` counts the enemies that aren't dying, with `sum(1 for ...)`. Dying ones already count as defeated, so the exit opens the moment the last one is hit, without waiting out its death animation.
     - `exit_rect` is the current floor's exit area, or `None` if the map has none. `exit_requested` (`False` on every new floor) is set when the player presses F at the exit, and acted on by the run at frame step 7.
@@ -981,7 +1042,21 @@ multiplier
 
 - **Measured example.** Rolling from full walking speed, the player's `speed` sampled every 0.05 s is `270, 270, 270, 270, 270, 244, 160, 77`, then 70 on the first frame after the roll.
 
-**How `move_and_collide` works.** It moves on X, pushes the rect out of the first wall it overlaps, then does the same on Y. Doing the axes separately lets you slide along walls. Walls whose center is more than 64 pixels away on that axis are skipped for speed. It returns `(hit_x, hit_y)`.
+**How `move_and_collide` works.** It moves on X, pushes the rect out of the first wall it overlaps, then does the same on Y. Doing the axes separately lets you slide along walls. It returns `(hit_x, hit_y)`. `walls` is a list of plain rects, and each axis is one `rect.collidelist(walls)` call, which checks the whole list in C and returns the index of the first rect hit, or `-1`. `has_line_of_sight` and `separate_enemies` take the same rect list.
+
+**Performance.** Profiling 600 frames of a run on floor 1 (frame cap off, a room with torches and enemies in view) showed the time wasn't in rendering but in wall collision: `move_and_collide` looped over every wall in Python, twice per call, about 10 calls a frame, against floor 1's 2570 walls, about 50,000 checks a frame. Three changes fixed it, each measured:
+
+```
+                                                  uncapped FPS   ms per frame
+before                                                 142           7.05     (update alone 5.84)
+collide only with edge_walls (614 of 2570)             353           2.83
++ walls as rects, checked with collidelist             782           1.28     (update 0.21)
++ walls drawn into map_surface once                    draw −0.25 ms (Floor.draw no longer visits 2570 walls)
+
+now: 1.37 ms ≈ 730 FPS   update 0.19   state draw 0.48   present 0.68   flip 0.02
+```
+
+In game the counter sits around 200, not at the 240 cap: `clock.tick(240)` waits in whole milliseconds, so a 4.17 ms frame usually waits 5 ms. An empty loop with no work at all reaches only about 204 FPS with `tick(240)`. `clock.tick_busy_loop` would hit 240 exactly but keeps a CPU core busy waiting, which isn't worth it above any common monitor's refresh rate.
 
 **Particles** (`systems/particles.py`). A particle is a tiny short-lived square that flies out, slows down and shrinks away. It's pure data, a dict with `pos`, `velocity`, `color`, `size`, `drag`, `lifetime` and `age`, and the functions are the rules; the list of live particles belongs to the `Floor` (`floor.particles`, a fresh list for every floor).
 
@@ -1159,11 +1234,11 @@ find_target(player, floor) ──▶ ("chest", …) / ("item", …) / ("exit", e
 
 **Drawing order** (`Run.draw`, then `Floor.draw`). Steps 1 to 5 draw onto `world_surface`, at `position - camera`, and anything outside the camera (`is_on_screen`) is skipped. Every world-drawing call already takes the surface to draw on as a parameter, so tiles, items and actors don't know or care that it's a small canvas. `Run.draw` does step 1, picks the interaction outline's color, and calls `floor.draw(world_surface, player, highlight)` for steps 2 to 5; then it does steps 6 to 9 itself:
 1. Fill `world_surface` with `MENU_BACKGROUND_COLOR`, clearing last frame (the map doesn't cover the whole view, so old frames would otherwise smear around the edges).
-2. The pre-rendered floor surface.
-3. Walls, then decor (on top of the walls it hangs on), then doors, then a padlock centered on each locked door group, in the color of the key it needs (`padlock_images[key]`). `padlock_images.get(key)` returns `None` for a door with no key (only the old hand-made Level One has those), and that door is skipped instead of crashing.
+2. The pre-rendered floor surface, walls included.
+3. Decor (on top of the walls it hangs on; the walls themselves are part of the floor surface in step 2), then doors, then a padlock centered on each locked door group, in the color of the key it needs (`padlock_images[key]`). `padlock_images.get(key)` returns `None` for a door with no key (only the old hand-made Level One has those), and that door is skipped instead of crashing.
 4. Crates, ground items and chests (crates first, so loot dropped by a breaking crate is drawn on top of it), then the interaction outline around `highlighted_sprites` (candle or steel, from the `highlight` pair the run passed in), drawn after them so it isn't covered and before the actors so the player stays in front.
 5. The player and enemies, sorted by `rect.y` so whoever is lower on screen draws in front. Enemy health bars and debug hitboxes are drawn by the entities onto the same surface, so they scale too. Then the particles, on top of the world.
-6. Hand the world to the renderer: `submit_world(world_surface)`. The GPU scales it ×3 with nearest-neighbor filtering, so pixels stay crisp, and draws it under the UI layer (section 4).
+6. Hand the world to the renderer: `visible_lights(floor.lights, player center, camera, time)`, then `submit_world(world_surface, camera.topleft, lights, floor.light_blockers)`. The GPU lights it, scales it ×3 with nearest-neighbor filtering, so pixels stay crisp, and draws it under the UI layer (section 4, including "Lighting").
 7. The HUD, `self.hud.draw(screen, player, run_time, floor_index + 1, interact_prompt)`: the health panel (top left), the run timer (top center), the floor number (right of the timer), the quick slots (bottom left) and the interaction prompt (bottom center), on the screen at full resolution. It comes after step 6, so it lands on top of the world.
 8. The inventory overlay, if open.
 9. `floor_transition.draw(screen)`: during a floor transition, the black overlay at `overlay_alpha()` over everything including the HUD, then the floor card text during `"card"`.
@@ -1178,7 +1253,9 @@ The pause menu and the end-of-run screens call `run.draw(screen)` to show the fr
 
 ## 8. Data formats
 
-**`lights`** (`floor_data["lights"]`, kept as `floor.lights`): a list of `(name, center)` pairs, one per animated light tile, for the lighting step. `name` is the animation name (`"torch"`, `"side_torch"`, `"candlestick_1"`, `"candlestick_2"`), so different kinds can get different light radii; `center` is the tile's center in world pixels. Floor 1 has 21: 11 torches, 6 side torches and 4 candlesticks.
+**`lights`** (`floor_data["lights"]`, kept as `floor.lights`): a list of `(name, position)` pairs, one per animated light tile. `name` is the animation name (`"torch"`, `"side_torch"`, `"candlestick_1"`, `"candlestick_2"`), which is also the key into `LIGHT_TYPES`; `position` is the flame's position in world pixels (`flame_position`: the tile's center plus the type's offset, mirrored for right-wall side torches). Floor 1 has 21: 11 torches, 6 side torches and 4 candlesticks.
+
+**`light_blockers`** (`floor.light_blockers`): `((columns, rows), bytes)`, one byte per map tile, row by row (`row × columns + column`), 1 where light can't pass (a wall or closed door), else 0. Floor 1: 72×51 tiles, 2574 blockers (2570 walls and 4 door tiles).
 
 **Player `base_stats`** (`player.py`). These are the values before equipment:
 
@@ -1340,7 +1417,7 @@ Missing keys fall back to the defaults in `systems/settings.py`. A corrupted fil
 | Layer | Type | What the loader does |
 | --- | --- | --- |
 | `Floor` | Tile layer | Drawn once into `map_surface` |
-| `Walls` | Tile layer | One `WallTile` per tile. These block movement. |
+| `Walls` | Tile layer | Drawn once into `map_surface`, on top of the floor, and one `WallTile` per tile. The walls next to open space block movement (`edge_walls`); every wall blocks light. |
 | `Wall_Decor`, `Floor_Decor` | Tile layers | `DecorTile`s, drawn but not solid; light tiles (91, 92, 94, 96) become `AnimatedDecor` and lights |
 | `Door_Tiles` | Tile layer | One `Door` per tile. These block movement until unlocked. |
 | `Chests` | Object layer | One `Chest` per object named `chest` (any capitalization) |
@@ -1387,7 +1464,7 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door. T
 
 ## 10. Debug tools
 
-- **P**: toggles `debug.show_hitboxes`. While it's on, mask outlines are drawn for the player (green), enemies (red, around the art) and walls (blue). These are the same masks used for contact detection, so what you see is exactly what collides with enemies. Each enemy's **body** box is drawn in yellow (what moves, collides and blocks), and during the strike frames of a swing its **strike box** is drawn in red. Wall collision itself uses rectangles. The player's outline is still drawn while the sprite blinks during invulnerability.
+- **P**: toggles `debug.show_hitboxes`. While it's on, mask outlines are drawn for the player (green), enemies (red, around the art) and the walls next to open space (blue, drawn by `Floor.draw`, since the walls themselves are part of `map_surface`). These are the same masks used for contact detection, so what you see is exactly what collides with enemies. Each enemy's **body** box is drawn in yellow (what moves, collides and blocks), and during the strike frames of a swing its **strike box** is drawn in red. Wall collision itself uses rectangles. The player's outline is still drawn while the sprite blinks during invulnerability.
 - **FPS counter**: turn it on in Options. It shows in the top right and refreshes twice a second. The setting is saved.
 
 ## 11. Known gaps and planned work
@@ -1417,6 +1494,12 @@ Door tiles that share a `door_id` (e.g. `door_1`) unlock together as one door. T
 - The ASCII converter needs doors exactly 2 tiles long and walls at least 2 thick. Decor is automatic and first-pass (its values will need tuning), it places only keys, and several `X` cells become one bounding rect, so they should form a rectangle.
 - There are no rules for room sizes yet. They'll be needed before more floors: hand-made floors and Hard's generated ones should follow the same size rules, so floors feel consistent.
 - The old hand-made `Dungeon_Level_One.tmx` has no ladder tile, so its exit is invisible in-game now that the yellow outline is gone. It's only kept as Tiled reference.
+
+**Lighting and visuals:**
+- All light values are first-pass (`AMBIENT_LIGHT`, `LIGHT_TYPES`, flicker), to judge again as floors and art change.
+- Shadows follow the tile grid, so their edges are hard rather than soft, and a wall's whole tile is lit or not. Light walks in 4-pixel steps, so a walk that only clips a wall's corner can slip past it.
+- Torches and candlesticks start on random frames but switch frames on the same tick (every decor timer starts at 0 at the shared `DECOR_ANIMATION_SPEED`), so their animation looks in step next to the out-of-step flicker. A random starting timer, and maybe a slightly different speed per object, is in the backlog.
+- The potion is one still frame of the pack's small red flask; the pack's `flasks` folder has it as a 4-frame animation (and three more flasks for future potions). In the backlog, the same route as the keys' strips.
 
 **HUD:**
 - The health panel has a fixed width, so health text wider than `25/25` (for example `100/100`) won't fit. Its width should be worked out from the text before max health goes above 99.

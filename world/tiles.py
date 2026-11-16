@@ -1,10 +1,7 @@
 import pygame
 
-from constants import BLUE
-from systems import debug
 from systems.animation import advance_animation, new_animation
 from systems.camera import camera
-from systems.masks import draw_hitbox
 
 # Animated decor playback: flames read better slow
 DECOR_ANIMATION_SPEED = 6  # frames per second
@@ -15,12 +12,6 @@ class WallTile(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = image
         self.rect = self.image.get_frect(topleft=pos)
-
-    def draw(self, screen):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
-
-        if debug.show_hitboxes:
-            draw_hitbox(screen, self.image, self.rect, camera, BLUE)
 
 
 class DecorTile(pygame.sprite.Sprite):

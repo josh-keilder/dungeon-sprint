@@ -10,6 +10,7 @@ The game currently includes:
 - Player movement with rolling, interaction, healing, and inventory controls
 - Enemies, chests, doors, and collectible items
 - A camera system that tracks the player across the dungeon
+- GPU lighting: flickering torches and candles, a light around the player, and walls and closed doors that block light
 - Health bars for the player and enemies
 - Audio handling for menu and gameplay events
 - TMX map loading with layered tiles and object placement
@@ -32,7 +33,8 @@ The game currently includes:
 - Collision-driven interactions with the world
 - Inventory management with stackable items and equipment slots
 - Health and healing systems
-- Sprite animation support for player and enemies
+- Sprite animation support for player, enemies, items and decor
+- Lighting drawn by a ModernGL shader, with wall-blocked light and flame flicker
 - Asset-driven map and object loading from TMX files
 
 ## Tech Stack
@@ -50,7 +52,7 @@ The game currently includes:
 - `items/` - Item data: item classes, item database, sprite data, and loot tables
 - `states/` - Screens: the game state manager, the gameplay state, and the main, options and end-of-run menus
 - `world/` - Everything that makes up a floor: map loading, tiles, and the objects placed on it (ground items, chests, crates)
-- `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, rendering, sound, settings, and more
+- `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, rendering, lighting, sound, settings, and more
 - `ui_components/` - Buttons, sliders, text labels and text layout, health bars, HUD, inventory screen, FPS counter, cursor
 - `tools/` - Developer scripts: sprite generator, strip maker, map preview, ASCII → TMX map converter, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
 - `hooks/` - Git pre-commit hook
@@ -131,4 +133,4 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 
 ## Project Statistics
 - **Total Files:** 119
-- **Total Lines of Code:** 8495
+- **Total Lines of Code:** 8492
