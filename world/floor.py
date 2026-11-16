@@ -10,6 +10,7 @@ from systems.camera import camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact, resolve_strike
 from systems.health import is_dead
+from systems.lighting import light_blockers
 from systems.loot import roll_loot
 from systems.masks import draw_highlight
 from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
@@ -70,6 +71,7 @@ class Floor:
             key: load_image(path) for key, path in PADLOCK_IMAGE_PATHS.items()
         }
         self.refresh_solid_tiles()
+        self.refresh_light_blockers()
         self.refresh_padlocks()
 
     def update(self, dt, player):
@@ -207,11 +209,16 @@ class Floor:
                 door.kill()
 
         self.refresh_solid_tiles()
+        self.refresh_light_blockers()
         self.refresh_padlocks()
 
     def refresh_solid_tiles(self):
         solid_crates = [crate for crate in self.crates if not crate.breaking]
         self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles) + solid_crates
+
+    def refresh_light_blockers(self):
+        tiles = list(self.wall_tiles) + list(self.door_tiles)
+        self.light_blockers = light_blockers(self.map_surface.get_size(), tiles)
 
     def refresh_padlocks(self):
         doors_by_id = {}

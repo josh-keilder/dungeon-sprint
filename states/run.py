@@ -182,7 +182,9 @@ class Run:
         self.floor.draw(self.world_surface, self.player, highlight)
 
         lights = visible_lights(self.floor.lights, self.player.rect.center, camera)
-        submit_world(self.world_surface, lights)
+        submit_world(
+            self.world_surface, camera.topleft, lights, self.floor.light_blockers
+        )
 
         self.hud.draw(
             screen,

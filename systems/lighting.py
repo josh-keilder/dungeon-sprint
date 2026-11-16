@@ -1,3 +1,5 @@
+from constants import TILE_SIZE
+
 # Light look
 LIGHT_BANDS = 0  # light falls off in this many visible steps; 0 = smooth
 # Unlit areas: a little cool, everything stays visible
@@ -64,3 +66,14 @@ def visible_lights(floor_lights, player_center, camera):
         lights.append(((x - camera.x, y - camera.y), light_type["radius"], color))
 
     return lights[:MAX_LIGHTS]
+
+
+def light_blockers(map_size, tiles):
+    # One byte per map tile, row by row: 1 where light can't pass
+    columns, rows = map_size[0] // TILE_SIZE, map_size[1] // TILE_SIZE
+    mask = bytearray(columns * rows)
+    for tile in tiles:
+        column, row = int(tile.rect.x // TILE_SIZE), int(tile.rect.y // TILE_SIZE)
+        mask[row * columns + column] = 1
+
+    return (columns, rows), bytes(mask)

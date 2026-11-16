@@ -3,7 +3,15 @@ from array import array
 import moderngl
 import pygame
 
-from constants import GAME_SCALE, SCREEN_HEIGHT, SCREEN_WIDTH, WORLD_HEIGHT, WORLD_WIDTH
+from constants import (
+    GAME_SCALE,
+    PALETTE_VOID,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    TILE_SIZE,
+    WORLD_HEIGHT,
+    WORLD_WIDTH,
+)
 from systems.display import letterbox
 from systems.lighting import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT, MAX_LIGHTS
 
@@ -31,11 +39,15 @@ void main() {
 }
 """
 
-# The world, lit: ambient light plus each light's falloff, in bands or smooth
+# The world, lit: ambient light plus each light's falloff, stopped by walls and doors
 WORLD_SHADER = "#version 330\n" f"#define MAX_LIGHTS {MAX_LIGHTS}\n" + """
 uniform sampler2D image;
+uniform usampler2D blockers;
 uniform vec2 world_size;
+uniform vec2 camera_offset;
+uniform float tile_size;
 uniform vec3 ambient;
+uniform vec3 void_color;
 uniform float max_light;
 uniform int bands;
 uniform int light_count;
@@ -45,20 +57,79 @@ uniform vec3 light_colors[MAX_LIGHTS];
 in vec2 uv;
 out vec4 color;
 
+const float SHADOW_STEP = 4.0;
+const ivec2 FRONT_DIRECTIONS[4] = ivec2[4](ivec2(0, 1), ivec2(1, 0), ivec2(-1, 0), ivec2(0, -1));
+
+ivec2 cell_at(vec2 world_position) {
+    return ivec2(floor(world_position / tile_size));
+}
+
+// Walls, closed doors and everything off the map block light
+bool is_blocker(ivec2 cell) {
+    ivec2 map_size = textureSize(blockers, 0);
+    if (any(lessThan(cell, ivec2(0))) || any(greaterThanEqual(cell, map_size))) {
+        return true;
+    }
+    return texelFetch(blockers, cell, 0).r > 0u;
+}
+
+// Where light enters or leaves a tile: the point itself in the open, or the
+// center of the open tile in front of a wall (below, right, left, then above)
+bool open_point(vec2 world_position, out vec2 point) {
+    ivec2 cell = cell_at(world_position);
+    point = world_position;
+    if (!is_blocker(cell)) {
+        return true;
+    }
+    for (int i = 0; i < 4; i++) {
+        ivec2 front = cell + FRONT_DIRECTIONS[i];
+        if (!is_blocker(front)) {
+            point = (vec2(front) + 0.5) * tile_size;
+            return true;
+        }
+    }
+    return false;
+}
+
+// True when no wall or closed door stands between the two points
+bool reaches(vec2 from, vec2 to) {
+    vec2 start, target;
+    if (!open_point(from, start) || !open_point(to, target)) {
+        return false;
+    }
+    float steps = ceil(distance(start, target) / SHADOW_STEP);
+    for (float step = 1.0; step < steps; step++) {
+        if (is_blocker(cell_at(mix(start, target, step / steps)))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void main() {
     vec2 pixel = floor(uv * world_size) + 0.5;
     vec3 light = ambient;
+    vec4 art = texture(image, uv);
 
-    for (int i = 0; i < light_count; i++) {
+    // The empty part of a wall tile (only void color) never takes light
+    bool empty_wall = is_blocker(cell_at(pixel + camera_offset))
+        && all(lessThan(abs(art.rgb - void_color), vec3(0.5 / 255.0)));
+
+    for (int i = 0; i < light_count && !empty_wall; i++) {
         float distance_ratio = distance(pixel, light_positions[i]) / light_radii[i];
         float falloff = clamp(1.0 - distance_ratio, 0.0, 1.0);
+        if (falloff <= 0.0) {
+            continue;
+        }
+        if (!reaches(light_positions[i] + camera_offset, pixel + camera_offset)) {
+            continue;
+        }
         if (bands > 0) {
             falloff = floor(falloff * bands) / bands;
         }
         light += light_colors[i] * falloff;
     }
 
-    vec4 art = texture(image, uv);
     color = vec4(art.rgb * min(light, vec3(max_light)), art.a);
 }
 """
@@ -68,13 +139,14 @@ void main() {
 WORLD_UV_RIGHT = SCREEN_WIDTH / (WORLD_WIDTH * GAME_SCALE)
 WORLD_UV_BOTTOM = SCREEN_HEIGHT / (WORLD_HEIGHT * GAME_SCALE)
 
-# What a run handed over this frame: (world surface, lights), or None (menus)
+# What a run handed over this frame: (world surface, camera offset, lights,
+# light blockers), or None (menus)
 _world = None
 
 
-def submit_world(world_surface, lights):
+def submit_world(world_surface, camera_offset, lights, blockers):
     global _world
-    _world = (world_surface, lights)
+    _world = (world_surface, camera_offset, lights, blockers)
 
 
 class Renderer:
@@ -95,9 +167,15 @@ class Renderer:
         self.ui_quad = self.make_quad(self.ui_program, 1.0, 1.0)
 
         # Light settings that never change while the game runs
+        self.world_program["image"].value = 0  # texture slot 0: the world
+        self.world_program["blockers"].value = 1  # texture slot 1: the blocker mask
+        self.world_program["tile_size"].value = TILE_SIZE
         self.world_program["world_size"].value = (WORLD_WIDTH, WORLD_HEIGHT)
         self.world_program["ambient"].value = AMBIENT_LIGHT
         self.world_program["max_light"].value = MAX_LIGHT
+        self.world_program["void_color"].value = tuple(
+            channel / 255 for channel in PALETTE_VOID
+        )
         self.world_program["bands"].value = LIGHT_BANDS
 
         self.world_texture = self.make_texture((WORLD_WIDTH, WORLD_HEIGHT))
@@ -105,6 +183,10 @@ class Renderer:
         # The UI surface's memory is B, G, R, A per pixel (see its masks): upload it
         # untouched and let the texture read the channels in that order
         self.ui_texture.swizzle = "BGRA"
+
+        # The current floor's light blockers, rebuilt when they change
+        self.blockers = None
+        self.blocker_texture = None
 
     def present(self, ui_surface):
         global _world
@@ -122,7 +204,9 @@ class Renderer:
         )
 
         if _world is not None:
-            world_surface, lights = _world
+            world_surface, camera_offset, lights, blockers = _world
+            self.world_program["camera_offset"].value = camera_offset
+            self.set_blockers(blockers)
             self.set_lights(lights)
             self.world_texture.write(pygame.image.tobytes(world_surface, "RGBA"))
             self.draw_layer(self.world_texture, self.world_quad)
@@ -134,6 +218,18 @@ class Renderer:
     def draw_layer(self, texture, quad):
         texture.use(0)
         quad.render(moderngl.TRIANGLE_STRIP)
+
+    def set_blockers(self, blockers):
+        # A new mask only comes with a new floor or an opened door
+        if blockers is not self.blockers:
+            self.blockers = blockers
+            size, mask = blockers
+            if self.blocker_texture is not None:
+                self.blocker_texture.release()
+            self.blocker_texture = self.ctx.texture(size, 1, mask, dtype="u1")
+            self.blocker_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+
+        self.blocker_texture.use(1)
 
     def set_lights(self, lights):
         padding = MAX_LIGHTS - len(lights)
