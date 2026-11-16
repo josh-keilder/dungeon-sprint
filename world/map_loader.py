@@ -52,11 +52,9 @@ def build_map(tmx_data):
 
         elif layer.name == "Walls":
             for x, y, tile_image in layer.tiles():
-                WallTile(
-                    groups=wall_tiles,
-                    image=tile_image,
-                    pos=(x * TILE_SIZE, y * TILE_SIZE),
-                )
+                pos = (x * TILE_SIZE, y * TILE_SIZE)
+                map_surface.blit(tile_image, pos)
+                WallTile(groups=wall_tiles, image=tile_image, pos=pos)
 
         elif layer.name in ["Wall_Decor", "Floor_Decor"]:
             build_decor(tmx_data, layer, decor_tiles, lights)

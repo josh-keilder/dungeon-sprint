@@ -68,8 +68,8 @@ def has_line_of_sight(start, end, walls):
     ).inflate(SIGHT_SEARCH_MARGIN, SIGHT_SEARCH_MARGIN)
 
     for wall in walls:
-        if not search_rect.colliderect(wall.rect):
+        if not search_rect.colliderect(wall):
             continue
-        if wall.rect.clipline(start, end):
+        if wall.clipline(start, end):
             return False
     return True

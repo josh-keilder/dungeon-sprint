@@ -1,8 +1,5 @@
 import math
 
-# Wall collision: only walls this close (on the axis being moved) are tested
-WALL_CHECK_RANGE = 64  # pixels
-
 # Stopping: below this speed, a slowing body snaps to a stop
 STOP_SPEED = 1.0  # pixels per second
 
@@ -39,32 +36,29 @@ def decay_velocity(velocity, rate, dt):
 
 
 def move_and_collide(rect, displacement, walls):
+    # walls: a list of rects; collidelist returns the first one hit, or -1
     hit_x = False
     hit_y = False
 
     rect.x += displacement.x
-    for wall in walls:
-        if abs(rect.centerx - wall.rect.centerx) > WALL_CHECK_RANGE:
-            continue
-        if rect.colliderect(wall.rect):
-            if displacement.x > 0:
-                rect.right = wall.rect.left
-            if displacement.x < 0:
-                rect.left = wall.rect.right
-            hit_x = True
-            break
+    index = rect.collidelist(walls)
+    if index != -1:
+        wall = walls[index]
+        if displacement.x > 0:
+            rect.right = wall.left
+        if displacement.x < 0:
+            rect.left = wall.right
+        hit_x = True
 
     rect.y += displacement.y
-    for wall in walls:
-        if abs(rect.centery - wall.rect.centery) > WALL_CHECK_RANGE:
-            continue
-        if rect.colliderect(wall.rect):
-            if displacement.y > 0:
-                rect.bottom = wall.rect.top
-            if displacement.y < 0:
-                rect.top = wall.rect.bottom
-            hit_y = True
-            break
+    index = rect.collidelist(walls)
+    if index != -1:
+        wall = walls[index]
+        if displacement.y > 0:
+            rect.bottom = wall.top
+        if displacement.y < 0:
+            rect.top = wall.bottom
+        hit_y = True
 
     return hit_x, hit_y
 

@@ -2,6 +2,7 @@ import random
 
 import pygame
 
+from constants import TILE_SIZE
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
 from systems import sound
@@ -33,6 +34,22 @@ PADLOCK_IMAGE_PATHS = {
 }
 
 
+def edge_walls(wall_tiles):
+    # Walls next to open space (including diagonally); the rest can never be touched
+    cells = {
+        (wall.rect.x // TILE_SIZE, wall.rect.y // TILE_SIZE) for wall in wall_tiles
+    }
+    return [
+        wall
+        for wall in wall_tiles
+        if any(
+            (wall.rect.x // TILE_SIZE + dx, wall.rect.y // TILE_SIZE + dy) not in cells
+            for dx in (-1, 0, 1)
+            for dy in (-1, 0, 1)
+        )
+    ]
+
+
 class Floor:
     def __init__(self, map_path, item_database):
         self.item_database = item_database
@@ -42,6 +59,7 @@ class Floor:
         self.map_surface = floor_data["map_surface"]
         self.decor_tiles = floor_data["decor_tiles"]
         self.wall_tiles = floor_data["wall_tiles"]
+        self.edge_walls = edge_walls(self.wall_tiles)
         self.door_tiles = floor_data["door_tiles"]
         self.chests = floor_data["chests"]
         self.crates = floor_data["crates"]
@@ -70,7 +88,7 @@ class Floor:
         self.padlock_images = {
             key: load_image(path) for key, path in PADLOCK_IMAGE_PATHS.items()
         }
-        self.refresh_solid_tiles()
+        self.refresh_solid_rects()
         self.refresh_light_blockers()
         self.refresh_padlocks()
 
@@ -79,10 +97,10 @@ class Floor:
             self.break_touched_crates(player)
 
         for enemy in self.enemies:
-            enemy.update(dt, self.solid_tiles, player.pos)
+            enemy.update(dt, self.solid_rects, player.pos)
         self.resolve_enemy_contacts(player)
         self.resolve_enemy_strikes(player)
-        separate_enemies(self.enemies, player, self.solid_tiles)
+        separate_enemies(self.enemies, player, self.solid_rects)
         self.remove_dead_enemies()
 
         self.decor_tiles.update(dt)
@@ -94,8 +112,8 @@ class Floor:
         # Floor
         surface.blit(self.map_surface, (-camera.x, -camera.y))
 
-        # Static tiles: walls, decor on top of them, then doors
-        for group in [self.wall_tiles, self.decor_tiles, self.door_tiles]:
+        # Static tiles: decor on the walls (drawn into map_surface), then doors
+        for group in [self.decor_tiles, self.door_tiles]:
             for sprite in group:
                 if is_on_screen(sprite.rect):
                     sprite.draw(surface)
@@ -147,14 +165,14 @@ class Floor:
 
     def player_walls(self, player):
         if is_rolling(player.roll):
-            return self.solid_tiles
+            return self.solid_rects
 
         solid_enemies = [
-            enemy
+            enemy.rect
             for enemy in self.enemies
             if enemy.is_solid() and not enemy.rect.colliderect(player.rect)
         ]
-        return self.solid_tiles + solid_enemies
+        return self.solid_rects + solid_enemies
 
     def enemies_left(self):
         return sum(1 for enemy in self.enemies if not enemy.dying)
@@ -193,7 +211,7 @@ class Floor:
                 broke_any = True
 
         if broke_any:
-            self.refresh_solid_tiles()
+            self.refresh_solid_rects()
 
     def update_crates(self, dt):
         for crate in self.crates.sprites():
@@ -208,13 +226,14 @@ class Floor:
             if door.door_id == door_id:
                 door.kill()
 
-        self.refresh_solid_tiles()
+        self.refresh_solid_rects()
         self.refresh_light_blockers()
         self.refresh_padlocks()
 
-    def refresh_solid_tiles(self):
+    def refresh_solid_rects(self):
         solid_crates = [crate for crate in self.crates if not crate.breaking]
-        self.solid_tiles = list(self.wall_tiles) + list(self.door_tiles) + solid_crates
+        tiles = self.edge_walls + list(self.door_tiles) + solid_crates
+        self.solid_rects = [tile.rect for tile in tiles]
 
     def refresh_light_blockers(self):
         tiles = list(self.wall_tiles) + list(self.door_tiles)
