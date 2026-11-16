@@ -5,7 +5,7 @@ from constants import TILE_SIZE
 # Light look
 LIGHT_BANDS = 0  # light falls off in this many visible steps; 0 = smooth
 # Unlit areas: a little cool, everything stays visible
-AMBIENT_LIGHT = (0.70, 0.70, 0.80)
+AMBIENT_LIGHT = (0.78, 0.78, 0.86)
 MAX_LIGHT = 1.25  # lights may brighten the art up to this much above its own colors
 MAX_LIGHTS = 32  # sent to the shader at once (the shader's arrays use this size)
 # Flicker: two waves at speeds that don't line up, so the wobble never quite repeats
@@ -45,7 +45,7 @@ LIGHT_TYPES = {
     "player": {
         "radius": 64,
         "color": (0.80, 0.88, 1.0),
-        "intensity": 0.2,
+        "intensity": 0.3,
         "offset": (0, 0),
         "flicker": 0.0,
     },
