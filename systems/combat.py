@@ -38,6 +38,7 @@ def resolve_contact(player, enemy):
         )
 
         start_timer(enemy.invulnerability, enemy.invulnerability_duration)
+        start_timer(enemy.stagger, enemy.stagger_duration)
 
         if enemy.attack is not None:
             enemy.interrupt_attack()

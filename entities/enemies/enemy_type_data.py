@@ -26,6 +26,7 @@ ENEMY_TYPES = {
         "animation_prefix": None,  # Skull: one animation, no states
         "attack": None,  # Skull: hurts on touch instead
         "hit_particles": SKULL_SPARKS,
+        "stagger_duration": 0.0,  # its knockback is long enough on its own
     },
     "Skeleton": {
         "max_health": 100,
@@ -48,7 +49,10 @@ ENEMY_TYPES = {
             "strike_frames": (6, 7),  # the frames that hurt: where the slash is drawn
             "reach": 18,  # pixels the strike hitbox extends in front of the body
             "cooldown": 1.0,  # seconds after a swing before the next one
+            "line_up_gap": 16,  # pixels beside the player it walks to before swinging
+            "level_tolerance": 6,  # pixels of height difference it still swings at
         },
         "hit_particles": BONE_CHIPS,
+        "stagger_duration": 0.75,  # seconds without walking or swinging after a hit
     },
 }

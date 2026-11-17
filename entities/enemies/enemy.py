@@ -44,6 +44,7 @@ class Enemy:
         self.touch_damage = type_data["touch_damage"]
         self.animation_prefix = type_data["animation_prefix"]
         self.hit_particles = type_data["hit_particles"]
+        self.stagger_duration = type_data["stagger_duration"]
 
         # Position, sprite and animation
         self.pos = pygame.math.Vector2(pos)
@@ -67,6 +68,7 @@ class Enemy:
         # Health and hit timers
         self.health = new_health(type_data["max_health"])
         self.invulnerability = new_timer()
+        self.stagger = new_timer()
 
         # AI state
         self.flee_timer = new_timer()
@@ -91,12 +93,15 @@ class Enemy:
             if self.attacking:
                 velocity = pygame.Vector2()
                 self.update_attack(dt)
+            elif self.is_staggered():
+                velocity = pygame.Vector2()
             else:
                 velocity = self.update_movement(dt, walls, target_pos)
                 self.try_start_attack(target_pos)
 
             self.update_knockback(dt, walls)
             advance_timer(self.invulnerability, dt)
+            advance_timer(self.stagger, dt)
             advance_timer(self.attack_cooldown, dt)
 
             self.moving = pygame.Vector2(self.rect.center) != start_center
@@ -193,7 +198,10 @@ class Enemy:
             return velocity
 
         elif self.behavior == "wander_chase":
-            velocity = wander_chase_velocity(self, target_pos, walls)
+            chase_pos = target_pos
+            if self.attack is not None:
+                chase_pos = self.line_up_spot(target_pos)
+            velocity = wander_chase_velocity(self, target_pos, walls, chase_pos)
             move_and_collide(self.rect, velocity * dt, walls)
             return velocity
 
@@ -209,6 +217,11 @@ class Enemy:
             self.knockback_velocity, self.knockback_decay_rate, dt
         )
 
+    def is_staggered(self):
+        # After a roll hit: no walking or new swings while being pushed, or for
+        # the type's stagger time, whichever is longer
+        return is_running(self.stagger) or self.knockback_velocity.length_squared() > 0
+
     def shove(self, displacement, walls):
         move_and_collide(self.rect, displacement, walls)
         self.pos.xy = self.rect.topleft
@@ -218,11 +231,20 @@ class Enemy:
             return
         if self.pos.distance_to(target_pos) > self.attack["range"]:
             return
+        if abs(target_pos.y - self.pos.y) > self.attack["level_tolerance"]:
+            return
 
         self.attacking = True
         self.attack_time = 0.0
         self.attack_landed = False
         self.facing = "right" if target_pos.x >= self.pos.x else "left"
+
+    def line_up_spot(self, target_pos):
+        # The swing only reaches sideways, so walk beside the target, level with it
+        side = 1 if self.pos.x >= target_pos.x else -1
+        return pygame.Vector2(
+            target_pos.x + side * self.attack["line_up_gap"], target_pos.y
+        )
 
     def update_attack(self, dt):
         self.attack_time += dt
