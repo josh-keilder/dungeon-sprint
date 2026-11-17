@@ -1,4 +1,4 @@
-from systems.display import get_mouse_pos
+from engine.graphics.display import get_mouse_pos
 
 # Where the cursor image sits relative to the mouse
 CURSOR_OFFSET = 5  # pixels down and to the right

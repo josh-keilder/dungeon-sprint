@@ -1,20 +1,14 @@
 import pygame
 
-from constants import (
-    FRAME_RATE,
-    GREEN,
-    RED,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-)
+from constants import FRAME_RATE, GREEN, RED, SCREEN_HEIGHT, SCREEN_WIDTH, WINDOW_TITLE
 from engine.core.assets import load_image
 from engine.core.state_manager import GameStateManager
+from engine.graphics.display import create_window
 from states.menus.main_menu import MainMenu
 from states.menus.options import OptionsMenu
 from states.menus.run_end import RunEndScreen
 from states.run import Run
 from systems import settings, sound
-from systems.display import create_window
 from systems.renderer import Renderer
 from ui_components.cursor import Cursor
 from ui_components.fps_counter import FpsCounter
@@ -33,7 +27,9 @@ class Game:
         settings.load_settings()
 
         create_window(
-            SCREEN_WIDTH, SCREEN_HEIGHT, settings.get_setting("full_screen_enabled")
+            (SCREEN_WIDTH, SCREEN_HEIGHT),
+            settings.get_setting("full_screen_enabled"),
+            WINDOW_TITLE,
         )
 
         # Every frame is drawn on ui_surface (transparent), then the renderer puts the

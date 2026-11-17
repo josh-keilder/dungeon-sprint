@@ -1,8 +1,8 @@
 import pygame
 
 from constants import PALETTE_SHADOW, PALETTE_TORCH
+from engine.graphics.display import get_mouse_pos
 from systems import sound
-from systems.display import get_mouse_pos
 
 # Knob shape, in pixels
 KNOB_WIDTH = 20

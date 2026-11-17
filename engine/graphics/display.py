@@ -1,16 +1,16 @@
 import pygame
 
-from constants import SCREEN_HEIGHT, SCREEN_WIDTH
-
-# Window
-WINDOW_TITLE = "Dungeon Sprint"
+# The size the game draws at (set by create_window); the window may be letterboxed
+_screen_size = None
 
 
-def create_window(width, height, fullscreen):
-    pygame.display.set_caption(WINDOW_TITLE)
+def create_window(screen_size, fullscreen, title):
+    global _screen_size
+    _screen_size = screen_size
+    pygame.display.set_caption(title)
 
     display_flags = pygame.OPENGL | pygame.DOUBLEBUF
-    size = (width, height)
+    size = screen_size
     if fullscreen:
         display_flags |= pygame.FULLSCREEN
         size = (0, 0)  # the desktop's resolution
@@ -19,10 +19,11 @@ def create_window(width, height, fullscreen):
 
 
 def letterbox(window_size):
+    screen_width, screen_height = _screen_size
     window_width, window_height = window_size
-    scale = min(window_width / SCREEN_WIDTH, window_height / SCREEN_HEIGHT)
-    left = (window_width - SCREEN_WIDTH * scale) / 2
-    top = (window_height - SCREEN_HEIGHT * scale) / 2
+    scale = min(window_width / screen_width, window_height / screen_height)
+    left = (window_width - screen_width * scale) / 2
+    top = (window_height - screen_height * scale) / 2
     return left, top, scale
 
 

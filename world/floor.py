@@ -7,11 +7,11 @@ from engine.core import debug
 from engine.core.assets import load_image
 from engine.gameplay.health import is_dead
 from engine.gameplay.loot import roll_loot
+from engine.graphics.camera import is_on_screen
 from engine.graphics.masks import draw_highlight, draw_hitbox
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
 from systems import sound
-from systems.camera import camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact, resolve_strike
 from systems.lighting import light_blockers
@@ -112,20 +112,20 @@ class Floor:
         self.update_crates(dt)
         update_particles(self.particles, dt)
 
-    def draw(self, surface, player, highlight=None):
+    def draw(self, surface, player, camera, highlight=None):
         # Floor
         surface.blit(self.map_surface, (-camera.x, -camera.y))
 
         # Static tiles: decor on the walls (drawn into map_surface), then doors
         for group in [self.decor_tiles, self.door_tiles]:
             for sprite in group:
-                if is_on_screen(sprite.rect):
-                    sprite.draw(surface)
+                if is_on_screen(camera, sprite.rect):
+                    sprite.draw(surface, camera)
 
         # Debug: wall outlines (the walls themselves are part of map_surface)
         if debug.show_hitboxes:
             for wall in self.edge_walls:
-                if is_on_screen(wall.rect):
+                if is_on_screen(camera, wall.rect):
                     draw_hitbox(surface, wall.image, wall.rect, camera, BLUE)
 
         # Padlocks on locked doors, in the color of the key they need
@@ -141,7 +141,7 @@ class Floor:
         # Crates, ground items and chests
         for group in [self.crates, self.ground_items, self.chests]:
             for sprite in group:
-                if is_on_screen(sprite.rect):
+                if is_on_screen(camera, sprite.rect):
                     sprite.draw(surface, camera)
 
         # Outline what F would act on
@@ -153,7 +153,7 @@ class Floor:
         # Actors, sorted by y so lower ones draw on top
         actors = sorted([player] + self.enemies, key=lambda actor: actor.rect.y)
         for actor in actors:
-            if is_on_screen(actor.rect):
+            if is_on_screen(camera, actor.rect):
                 actor.draw(surface, camera)
 
         # Particles, on top of the world

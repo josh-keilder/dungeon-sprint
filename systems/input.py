@@ -1,6 +1,6 @@
 import pygame
 
-from systems.display import get_mouse_pos
+from engine.graphics.display import get_mouse_pos
 
 
 def read_input():

@@ -17,11 +17,11 @@ from engine.core.timer import (
     time_left,
 )
 from engine.gameplay.health import is_dead
+from engine.graphics.camera import center_camera, new_camera
 from engine.graphics.shake import new_shake, start_shake, update_shake
 from entities.player.load_player import load_player
 from items.item_database import initialize_item_database
 from systems import interact, settings, sound
-from systems.camera import camera, center_camera
 from systems.input import read_input
 from systems.lighting import visible_lights
 from systems.renderer import submit_world
@@ -68,6 +68,9 @@ class Run:
         # HUD setup
         self.hud = HUD(self.item_database)
 
+        # The visible part of the world, centered on the player each frame
+        self.camera = new_camera((WORLD_WIDTH, WORLD_HEIGHT))
+
         # Which entry of FLOOR_ORDER is being played, and its map
         self.floor_index = 0
         self.load_floor(FLOOR_ORDER[self.floor_index])
@@ -95,7 +98,7 @@ class Run:
         self.player.rect.center = self.floor.player_spawn
         self.player.pos.xy = self.player.rect.topleft
         self.player.velocity.update(0, 0)
-        center_camera(self.player.rect.center)
+        center_camera(self.camera, self.player.rect.center)
 
         self.interact_target = None
         self.interact_prompt = None
@@ -204,7 +207,7 @@ class Run:
     def update_camera(self):
         x, y = self.player.rect.center
         offset_x, offset_y = self.shake["offset"]
-        center_camera((x + offset_x, y + offset_y))
+        center_camera(self.camera, (x + offset_x, y + offset_y))
 
     def draw(self, screen):
         self.world_surface.fill(MENU_BACKGROUND_COLOR)
@@ -216,14 +219,14 @@ class Run:
             color = PALETTE_CANDLE if available else PALETTE_STEEL
             highlight = (self.floor.highlighted_sprites(self.interact_target), color)
 
-        self.floor.draw(self.world_surface, self.player, highlight)
+        self.floor.draw(self.world_surface, self.player, self.camera, highlight)
 
         time = pygame.time.get_ticks() / 1000
         lights = visible_lights(
-            self.floor.lights, self.player.rect.center, camera, time
+            self.floor.lights, self.player.rect.center, self.camera, time
         )
         submit_world(
-            self.world_surface, camera.topleft, lights, self.floor.light_blockers
+            self.world_surface, self.camera.topleft, lights, self.floor.light_blockers
         )
 
         self.hurt_vignette.draw(screen)

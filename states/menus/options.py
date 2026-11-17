@@ -10,10 +10,11 @@ from constants import (
     PALETTE_TORCH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    WINDOW_TITLE,
 )
+from engine.graphics.display import create_window
 from states.new_run import start_new_run
 from systems import settings, sound
-from systems.display import create_window
 from systems.input import read_input
 from ui_components.slider import Slider
 from ui_components.text_button import TextButton
@@ -191,7 +192,7 @@ class OptionsMenu:
             self.full_screen_button.set_text(
                 FULL_SCREEN_LABEL.format(on_off(fullscreen))
             )
-            create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)
+            create_window((SCREEN_WIDTH, SCREEN_HEIGHT), fullscreen, WINDOW_TITLE)
 
         if self.screen_shake_button.is_clicked():
             shake_enabled = not settings.get_setting("screen_shake_enabled")

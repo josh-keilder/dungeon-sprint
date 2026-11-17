@@ -14,7 +14,7 @@ from constants import (
     SCREEN_WIDTH,
 )
 from engine.core.assets import load_image
-from systems.display import get_mouse_pos
+from engine.graphics.display import get_mouse_pos
 from systems.inventory import add_item, can_equip
 from ui_components.panel import make_panel
 from ui_components.text_label import TextLabel

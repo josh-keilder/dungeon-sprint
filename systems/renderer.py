@@ -12,7 +12,7 @@ from constants import (
     WORLD_HEIGHT,
     WORLD_WIDTH,
 )
-from systems.display import letterbox
+from engine.graphics.display import letterbox
 from systems.lighting import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT, MAX_LIGHTS
 
 # Shaders: put a texture on a rectangle (the quad)

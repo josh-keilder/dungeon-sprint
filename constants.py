@@ -1,6 +1,7 @@
 import math
 
 # Screen and timing
+WINDOW_TITLE = "Dungeon Sprint"
 SCREEN_WIDTH = 1280  # pixels
 SCREEN_HEIGHT = 720  # pixels
 FRAME_RATE = 240  # frames per second cap
