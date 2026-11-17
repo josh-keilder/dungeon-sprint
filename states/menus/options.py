@@ -28,6 +28,7 @@ TITLE_Y = 50  # pixels from the top
 NAVIGATION_BUTTON_MARGIN = 20  # from the screen edges
 FPS_BUTTON_Y = 220
 FULL_SCREEN_BUTTON_Y = 300
+SCREEN_SHAKE_BUTTON_Y = 380
 
 # Volume sliders, centered on SLIDER_X, with a label above each
 SLIDER_WIDTH = 300
@@ -41,6 +42,7 @@ SLIDER_LABEL_OFFSET_Y = 45
 # Label templates, filled in with .format()
 FPS_LABEL = "FPS: {}"
 FULL_SCREEN_LABEL = "Fullscreen: {}"
+SCREEN_SHAKE_LABEL = "Screen Shake: {}"
 MUSIC_LABEL = "Music Volume: {}"
 SFX_LABEL = "SFX Volume: {}"
 
@@ -133,6 +135,15 @@ class OptionsMenu:
             hover_color=PALETTE_TORCH,
         )
 
+        self.screen_shake_button = TextButton(
+            SCREEN_SHAKE_LABEL.format(
+                on_off(settings.get_setting("screen_shake_enabled"))
+            ),
+            self.button_font,
+            (SCREEN_WIDTH // 2, SCREEN_SHAKE_BUTTON_Y),
+            hover_color=PALETTE_TORCH,
+        )
+
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, OVERLAY_ALPHA))
 
@@ -145,6 +156,7 @@ class OptionsMenu:
         self.main_menu_button.update()
         self.fps_button.update()
         self.full_screen_button.update()
+        self.screen_shake_button.update()
         self.music_volume_slider.update()
         self.sfx_volume_slider.update()
 
@@ -168,6 +180,13 @@ class OptionsMenu:
                 FULL_SCREEN_LABEL.format(on_off(fullscreen))
             )
             create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)
+
+        if self.screen_shake_button.is_clicked():
+            shake_enabled = not settings.get_setting("screen_shake_enabled")
+            settings.set_setting("screen_shake_enabled", shake_enabled)
+            self.screen_shake_button.set_text(
+                SCREEN_SHAKE_LABEL.format(on_off(shake_enabled))
+            )
 
         # Apply a volume change when a slider moves
         new_music_value = self.music_volume_slider.get_current_value()
@@ -203,8 +222,9 @@ class OptionsMenu:
         screen.blit(self.title_image, self.title_pos)
 
         self.main_menu_button.draw(screen)
-        self.full_screen_button.draw(screen)
         self.fps_button.draw(screen)
+        self.full_screen_button.draw(screen)
+        self.screen_shake_button.draw(screen)
 
         self.music_volume_slider.draw(screen)
         self.music_volume_text.draw(screen)

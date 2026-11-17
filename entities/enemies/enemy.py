@@ -43,6 +43,7 @@ class Enemy:
         self.behavior = type_data["behavior"]
         self.touch_damage = type_data["touch_damage"]
         self.animation_prefix = type_data["animation_prefix"]
+        self.hit_particles = type_data["hit_particles"]
 
         # Position, sprite and animation
         self.pos = pygame.math.Vector2(pos)

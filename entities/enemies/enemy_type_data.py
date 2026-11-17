@@ -3,6 +3,7 @@ from entities.enemies.enemy_texture_data import (
     skull_texture_data,
 )
 from items.loot_table_data import SKELETON_LOOT, SKULL_LOOT
+from systems.particles import BONE_CHIPS, SKULL_SPARKS
 
 # Enemy types: the key must match the map's spawn name after "Enemy_".
 # Every key is required; Enemy reads them with type_data["..."].
@@ -24,6 +25,7 @@ ENEMY_TYPES = {
         "touch_damage": True,  # hurts the player on contact
         "animation_prefix": None,  # Skull: one animation, no states
         "attack": None,  # Skull: hurts on touch instead
+        "hit_particles": SKULL_SPARKS,
     },
     "Skeleton": {
         "max_health": 100,
@@ -47,5 +49,6 @@ ENEMY_TYPES = {
             "reach": 18,  # pixels the strike hitbox extends in front of the body
             "cooldown": 1.0,  # seconds after a swing before the next one
         },
+        "hit_particles": BONE_CHIPS,
     },
 }

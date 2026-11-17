@@ -71,6 +71,7 @@ class Floor:
         self.ground_items = pygame.sprite.Group()
         self.particles = []
         self.exit_requested = False
+        self.hit_landed = False  # set by resolve_enemy_contacts; read by the run
 
         # Placed items (keys), from the map's Items layer
         for item_id, center in floor_data["placed_items"]:
@@ -93,6 +94,8 @@ class Floor:
         self.refresh_padlocks()
 
     def update(self, dt, player):
+        self.hit_landed = False  # set by resolve_enemy_contacts; read by the run
+
         if is_rolling(player.roll):
             self.break_touched_crates(player)
 
@@ -189,6 +192,13 @@ class Floor:
             enemy_hit = resolve_contact(player, enemy)
             if enemy_hit:
                 sound.play_sfx("roll_hit")
+                emit_burst(
+                    self.particles,
+                    enemy.rect.center,
+                    enemy.hit_particles,
+                    enemy.knockback_velocity,
+                )
+                self.hit_landed = True
 
             if is_dead(enemy.health):
                 enemy.start_dying()

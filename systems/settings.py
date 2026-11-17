@@ -8,6 +8,7 @@ SETTINGS_FILE_PATH = "settings.json"
 SETTINGS = {
     "fps_enabled": False,
     "full_screen_enabled": False,
+    "screen_shake_enabled": True,
     "music_volume": 0.5,
     "sfx_volume": 0.5,
 }

@@ -10,12 +10,13 @@ from constants import (
 )
 from entities.player.load_player import load_player
 from items.item_database import initialize_item_database
-from systems import debug, interact, sound
+from systems import debug, interact, settings, sound
 from systems.camera import camera, center_camera
 from systems.health import is_dead
 from systems.input import read_input
 from systems.lighting import visible_lights
 from systems.renderer import submit_world
+from systems.shake import new_shake, start_shake, update_shake
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.floor_transition import FloorTransition
 from ui_components.hud import HUD
@@ -31,6 +32,10 @@ DEATH_FADE_DURATION = 1.5  # seconds; must be no longer than DEATH_DELAY
 
 # True makes the inventory pause the game (it's an overlay by default)
 INVENTORY_PAUSES_GAME = False
+
+# Hit feel
+HIT_SHAKE_STRENGTH = 1  # world pixels
+HURT_SHAKE_STRENGTH = 4  # world pixels
 
 
 class Run:
@@ -67,6 +72,8 @@ class Run:
 
         self.dying = False
         self.death_timer = new_timer()
+
+        self.shake = new_shake()
 
         # Fade to black, "Floor N" card, fade back in
         self.floor_transition = FloorTransition()
@@ -113,6 +120,8 @@ class Run:
 
         self.run_time += dt
 
+        update_shake(self.shake, dt)
+
         if self.player.intent["debug"]:
             debug.toggle_hitboxes()
 
@@ -134,8 +143,14 @@ class Run:
         if self.inventory_open and INVENTORY_PAUSES_GAME:
             return
 
+        health_before = self.player.health["current"]
         self.player.update(dt, self.floor.player_walls(self.player))
         self.floor.update(dt, self.player)
+
+        if self.floor.hit_landed:
+            self.shake_camera(HIT_SHAKE_STRENGTH)
+        if self.player.health["current"] < health_before:
+            self.shake_camera(HURT_SHAKE_STRENGTH)
 
         # What F would act on now; drives the outline and the HUD prompt
         self.interact_target = interact.find_target(self.player, self.floor)
@@ -161,13 +176,22 @@ class Run:
                 self.game_state_manager.set_state("run_complete")
             return
 
-        center_camera(self.player.rect.center)
+        self.update_camera()
 
     def update_transition(self, dt):
         if self.floor_transition.update(dt):
             self.floor_index += 1
             self.load_floor(FLOOR_ORDER[self.floor_index])
             self.floor_transition.set_floor_number(self.floor_index + 1)
+
+    def shake_camera(self, strength):
+        if settings.get_setting("screen_shake_enabled"):
+            start_shake(self.shake, strength)
+
+    def update_camera(self):
+        x, y = self.player.rect.center
+        offset_x, offset_y = self.shake["offset"]
+        center_camera((x + offset_x, y + offset_y))
 
     def draw(self, screen):
         self.world_surface.fill(MENU_BACKGROUND_COLOR)
