@@ -1,9 +1,9 @@
 import pygame
 
 from constants import PALETTE_STEEL
+from engine.ui.button_outline import draw_outline, make_outline
 from systems import sound
 from systems.display import get_mouse_pos
-from ui_components.button_outline import draw_outline, make_outline
 
 
 class Button:

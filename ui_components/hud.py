@@ -12,10 +12,11 @@ from constants import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
-from systems.assets import load_image
+from engine.core.assets import load_image
+from engine.core.timer import time_left
+from engine.ui.time_format import format_run_time
 from systems.consumables import HEAL_COOLDOWN
 from systems.inventory import count_item
-from systems.timer import time_left
 from ui_components.panel import make_panel
 from ui_components.text_label import TextLabel
 from ui_components.text_layout import (
@@ -23,7 +24,6 @@ from ui_components.text_layout import (
     centered_text_x,
     centered_text_y,
 )
-from ui_components.time_format import format_run_time
 
 # Shared by every HUD part
 HUD_FONT_SIZE = 24

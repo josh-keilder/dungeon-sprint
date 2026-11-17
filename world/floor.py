@@ -3,17 +3,18 @@ import random
 import pygame
 
 from constants import BLUE, TILE_SIZE
+from engine.core import debug
+from engine.core.assets import load_image
+from engine.gameplay.health import is_dead
+from engine.gameplay.loot import roll_loot
+from engine.graphics.masks import draw_highlight, draw_hitbox
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
-from systems import debug, sound
-from systems.assets import load_image
+from systems import sound
 from systems.camera import camera, is_on_screen
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact, resolve_strike
-from systems.health import is_dead
 from systems.lighting import light_blockers
-from systems.loot import roll_loot
-from systems.masks import draw_highlight, draw_hitbox
 from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
 from systems.separation import separate_enemies

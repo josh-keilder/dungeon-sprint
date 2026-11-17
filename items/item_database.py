@@ -1,3 +1,4 @@
+from engine.core.assets import load_animations
 from items.item_texture_data import (
     gold_key_texture_data,
     health_potion_texture_data,
@@ -5,7 +6,6 @@ from items.item_texture_data import (
     speed_boots_texture_data,
 )
 from items.items import EquipmentItem, Item
-from systems.assets import load_animations
 
 # Item values
 SMALL_HEALTH_POTION_VALUE = 10

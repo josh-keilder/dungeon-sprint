@@ -2,7 +2,7 @@ import random
 
 import pygame
 
-from systems.timer import advance_timer, is_running, start_timer
+from engine.core.timer import advance_timer, is_running, start_timer
 
 # Line of sight: only walls near the sight line are checked
 SIGHT_SEARCH_MARGIN = 64  # pixels

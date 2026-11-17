@@ -1,6 +1,6 @@
 import random
 
-from systems.timer import advance_timer, is_running, new_timer, start_timer
+from engine.core.timer import advance_timer, is_running, new_timer, start_timer
 
 # Screen shake: the camera jumps by up to `strength` world pixels, fading out
 SHAKE_FADE = 20  # world pixels of strength lost per second

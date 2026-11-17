@@ -1,7 +1,13 @@
 import pygame
 
 from constants import PALETTE_BLOOD, SCREEN_HEIGHT, SCREEN_WIDTH
-from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
+from engine.core.timer import (
+    advance_timer,
+    is_running,
+    new_timer,
+    start_timer,
+    time_left,
+)
 
 # A red glow around the screen edges when the player is hurt, fading out
 VIGNETTE_DURATION = 0.35  # seconds

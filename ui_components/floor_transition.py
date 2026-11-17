@@ -1,7 +1,13 @@
 import pygame
 
 from constants import PALETTE_VOID, SCREEN_HEIGHT, SCREEN_WIDTH
-from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
+from engine.core.timer import (
+    advance_timer,
+    is_running,
+    new_timer,
+    start_timer,
+    time_left,
+)
 from ui_components.text_label import TextLabel
 from ui_components.text_layout import centered_text_x, centered_text_y
 

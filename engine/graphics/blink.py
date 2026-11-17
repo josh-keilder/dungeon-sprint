@@ -1,4 +1,4 @@
-from systems.timer import is_running, time_left
+from engine.core.timer import is_running, time_left
 
 
 def is_blink_hidden(invulnerability, blink_interval):

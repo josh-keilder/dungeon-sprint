@@ -1,6 +1,6 @@
 import pygame
 
-from systems.animation import advance_animation, new_animation
+from engine.graphics.animation import advance_animation, new_animation
 from systems.camera import camera
 
 # Animated decor playback: flames read better slow

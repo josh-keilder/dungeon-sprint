@@ -1,18 +1,18 @@
 import pygame
 
 from constants import GREEN
-from systems import debug
-from systems.animation import advance_animation, new_animation, set_animation
-from systems.blink import is_blink_hidden
+from engine.core import debug
+from engine.core.timer import advance_timer, new_timer
+from engine.gameplay.health import new_health, set_max_health
+from engine.gameplay.stats import compute_stats
+from engine.graphics.animation import advance_animation, new_animation, set_animation
+from engine.graphics.blink import is_blink_hidden
+from engine.graphics.masks import draw_hitbox
+from engine.physics.movement import decay_velocity, move_and_collide, steer
 from systems.consumables import use_small_health_potion
-from systems.health import new_health, set_max_health
 from systems.inventory import new_inventory
-from systems.masks import draw_hitbox
-from systems.movement import decay_velocity, move_and_collide, steer
 from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
 from systems.sound import play_sfx
-from systems.stats import compute_stats
-from systems.timer import advance_timer, new_timer
 
 # Hit feedback
 BLINK_INTERVAL = 0.1  # seconds per blink on/off while invulnerable

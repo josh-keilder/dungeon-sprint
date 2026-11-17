@@ -1,20 +1,26 @@
 import pygame
 
 from constants import RED, TILE_SIZE, YELLOW
-from systems import debug
-from systems.animation import (
+from engine.core import debug
+from engine.core.assets import load_animations
+from engine.core.timer import (
+    advance_timer,
+    is_running,
+    new_timer,
+    start_timer,
+    time_left,
+)
+from engine.gameplay.health import new_health
+from engine.graphics.animation import (
     DEFAULT_ANIMATION_SPEED,
     advance_animation,
     new_animation,
     set_animation,
 )
-from systems.assets import load_animations
-from systems.blink import is_blink_hidden
+from engine.graphics.blink import is_blink_hidden
+from engine.graphics.masks import draw_hitbox
+from engine.physics.movement import decay_velocity, move_and_collide
 from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_velocity
-from systems.health import new_health
-from systems.masks import draw_hitbox
-from systems.movement import decay_velocity, move_and_collide
-from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.health_bar import draw_health_bar
 
 # Health bar, in world pixels, shown above the sprite once the enemy is hurt

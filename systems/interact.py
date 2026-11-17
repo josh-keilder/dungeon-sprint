@@ -1,6 +1,6 @@
+from engine.gameplay.loot import roll_loot
 from items.loot_table_data import CHEST_LOOT
 from systems.inventory import add_item, has_item, remove_item
-from systems.loot import roll_loot
 
 # Reach: how far around the player F can act
 REACH = 15  # pixels added to the player's rect (split over both sides)

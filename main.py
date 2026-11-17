@@ -7,13 +7,13 @@ from constants import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
+from engine.core.assets import load_image
+from engine.core.state_manager import GameStateManager
 from states.menus.main_menu import MainMenu
 from states.menus.options import OptionsMenu
 from states.menus.run_end import RunEndScreen
 from states.run import Run
-from states.state_manager import GameStateManager
 from systems import settings, sound
-from systems.assets import load_image
 from systems.display import create_window
 from systems.renderer import Renderer
 from ui_components.cursor import Cursor

@@ -1,7 +1,7 @@
 from constants import TILE_SIZE
+from engine.core.assets import load_animations
 from entities.player.player import Player
 from entities.player.player_texture_data import player_texture_data
-from systems.assets import load_animations
 
 
 def load_player(spawn_pos):

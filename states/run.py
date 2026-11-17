@@ -8,16 +8,23 @@ from constants import (
     WORLD_HEIGHT,
     WORLD_WIDTH,
 )
+from engine.core import debug
+from engine.core.timer import (
+    advance_timer,
+    is_running,
+    new_timer,
+    start_timer,
+    time_left,
+)
+from engine.gameplay.health import is_dead
+from engine.graphics.shake import new_shake, start_shake, update_shake
 from entities.player.load_player import load_player
 from items.item_database import initialize_item_database
-from systems import debug, interact, settings, sound
+from systems import interact, settings, sound
 from systems.camera import camera, center_camera
-from systems.health import is_dead
 from systems.input import read_input
 from systems.lighting import visible_lights
 from systems.renderer import submit_world
-from systems.shake import new_shake, start_shake, update_shake
-from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.floor_transition import FloorTransition
 from ui_components.hud import HUD
 from ui_components.hurt_vignette import HurtVignette

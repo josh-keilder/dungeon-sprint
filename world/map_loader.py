@@ -4,7 +4,7 @@ import pygame
 from pytmx.util_pygame import load_pygame
 
 from constants import TILE_SIZE
-from systems.assets import load_animations
+from engine.core.assets import load_animations
 from systems.lighting import flame_position
 from world.decor_texture_data import decor_texture_data
 from world.objects import Chest, Crate
