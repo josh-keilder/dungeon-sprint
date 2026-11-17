@@ -8,7 +8,7 @@ from systems.consumables import use_small_health_potion
 from systems.health import new_health, set_max_health
 from systems.inventory import new_inventory
 from systems.masks import draw_hitbox
-from systems.movement import move_and_collide, steer
+from systems.movement import decay_velocity, move_and_collide, steer
 from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
 from systems.sound import play_sfx
 from systems.stats import compute_stats
@@ -16,6 +16,7 @@ from systems.timer import advance_timer, new_timer
 
 # Hit feedback
 BLINK_INTERVAL = 0.1  # seconds per blink on/off while invulnerable
+PLAYER_KNOCKBACK_DECAY = 16  # how fast a knockback slows; distance = speed / decay
 
 # Inventory
 INVENTORY_SLOT_COUNT = 20
@@ -29,6 +30,7 @@ class Player:
         self.pos = pygame.math.Vector2(pos)
         self.velocity = pygame.Vector2()
         self.speed = 0.0  # pixels per second, measured each frame
+        self.knockback_velocity = pygame.Vector2()
 
         # What the player asked for this frame, set by the run from input
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
@@ -96,6 +98,7 @@ class Player:
 
         self.update_movement(dt, walls)
         self.update_roll(dt, walls)
+        self.update_knockback(dt, walls)
 
         # Speed = how far the player actually moved this frame, after walls
         distance_moved = pygame.Vector2(self.rect.center).distance_to(start_pos)
@@ -173,6 +176,18 @@ class Player:
                 self.velocity.y = 0
 
         advance_roll(self.roll, dt)
+
+    def update_knockback(self, dt, walls):
+        hit_x, hit_y = move_and_collide(self.rect, self.knockback_velocity * dt, walls)
+
+        if hit_x:
+            self.knockback_velocity.x = 0
+        if hit_y:
+            self.knockback_velocity.y = 0
+
+        self.knockback_velocity = decay_velocity(
+            self.knockback_velocity, PLAYER_KNOCKBACK_DECAY, dt
+        )
 
     def update_animation(self):
         if is_rolling(self.roll):

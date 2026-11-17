@@ -26,16 +26,17 @@ TITLE_Y = 50  # pixels from the top
 
 # Buttons: Main Menu and Back in the bottom corners, toggles centered
 NAVIGATION_BUTTON_MARGIN = 20  # from the screen edges
-FPS_BUTTON_Y = 220
-FULL_SCREEN_BUTTON_Y = 300
-SCREEN_SHAKE_BUTTON_Y = 380
+FPS_BUTTON_Y = 200
+FULL_SCREEN_BUTTON_Y = 270
+SCREEN_SHAKE_BUTTON_Y = 340
+HURT_VIGNETTE_BUTTON_Y = 410
 
 # Volume sliders, centered on SLIDER_X, with a label above each
 SLIDER_WIDTH = 300
 SLIDER_HEIGHT = 20
 SLIDER_X = SCREEN_WIDTH // 2
-SFX_SLIDER_Y = 475
-MUSIC_SLIDER_Y = 575
+SFX_SLIDER_Y = 525
+MUSIC_SLIDER_Y = 615
 SLIDER_LABEL_X = SLIDER_X - SLIDER_WIDTH // 2
 SLIDER_LABEL_OFFSET_Y = 45
 
@@ -43,6 +44,7 @@ SLIDER_LABEL_OFFSET_Y = 45
 FPS_LABEL = "FPS: {}"
 FULL_SCREEN_LABEL = "Fullscreen: {}"
 SCREEN_SHAKE_LABEL = "Screen Shake: {}"
+HURT_VIGNETTE_LABEL = "Hurt Vignette: {}"
 MUSIC_LABEL = "Music Volume: {}"
 SFX_LABEL = "SFX Volume: {}"
 
@@ -144,6 +146,15 @@ class OptionsMenu:
             hover_color=PALETTE_TORCH,
         )
 
+        self.hurt_vignette_button = TextButton(
+            HURT_VIGNETTE_LABEL.format(
+                on_off(settings.get_setting("hurt_vignette_enabled"))
+            ),
+            self.button_font,
+            (SCREEN_WIDTH // 2, HURT_VIGNETTE_BUTTON_Y),
+            hover_color=PALETTE_TORCH,
+        )
+
         self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         self.overlay.fill((0, 0, 0, OVERLAY_ALPHA))
 
@@ -157,6 +168,7 @@ class OptionsMenu:
         self.fps_button.update()
         self.full_screen_button.update()
         self.screen_shake_button.update()
+        self.hurt_vignette_button.update()
         self.music_volume_slider.update()
         self.sfx_volume_slider.update()
 
@@ -186,6 +198,13 @@ class OptionsMenu:
             settings.set_setting("screen_shake_enabled", shake_enabled)
             self.screen_shake_button.set_text(
                 SCREEN_SHAKE_LABEL.format(on_off(shake_enabled))
+            )
+
+        if self.hurt_vignette_button.is_clicked():
+            hurt_vignette_enabled = not settings.get_setting("hurt_vignette_enabled")
+            settings.set_setting("hurt_vignette_enabled", hurt_vignette_enabled)
+            self.hurt_vignette_button.set_text(
+                HURT_VIGNETTE_LABEL.format(on_off(hurt_vignette_enabled))
             )
 
         # Apply a volume change when a slider moves
@@ -225,6 +244,7 @@ class OptionsMenu:
         self.fps_button.draw(screen)
         self.full_screen_button.draw(screen)
         self.screen_shake_button.draw(screen)
+        self.hurt_vignette_button.draw(screen)
 
         self.music_volume_slider.draw(screen)
         self.music_volume_text.draw(screen)

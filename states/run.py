@@ -20,6 +20,7 @@ from systems.shake import new_shake, start_shake, update_shake
 from systems.timer import advance_timer, is_running, new_timer, start_timer, time_left
 from ui_components.floor_transition import FloorTransition
 from ui_components.hud import HUD
+from ui_components.hurt_vignette import HurtVignette
 from ui_components.inventory_ui import InventoryUI
 from world.floor import Floor
 
@@ -75,6 +76,8 @@ class Run:
 
         self.shake = new_shake()
 
+        self.hurt_vignette = HurtVignette()
+
         # Fade to black, "Floor N" card, fade back in
         self.floor_transition = FloorTransition()
 
@@ -94,6 +97,7 @@ class Run:
         sound.play_music(LEVEL_MUSIC)
 
     def update(self, dt):
+        self.hurt_vignette.update(dt)
         if self.dying:
             self.interact_target = None
             self.interact_prompt = None
@@ -151,6 +155,8 @@ class Run:
             self.shake_camera(HIT_SHAKE_STRENGTH)
         if self.player.health["current"] < health_before:
             self.shake_camera(HURT_SHAKE_STRENGTH)
+            if settings.get_setting("hurt_vignette_enabled"):
+                self.hurt_vignette.start()
 
         # What F would act on now; drives the outline and the HUD prompt
         self.interact_target = interact.find_target(self.player, self.floor)
@@ -212,6 +218,8 @@ class Run:
         submit_world(
             self.world_surface, camera.topleft, lights, self.floor.light_blockers
         )
+
+        self.hurt_vignette.draw(screen)
 
         self.hud.draw(
             screen,
