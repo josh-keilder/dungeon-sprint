@@ -63,5 +63,18 @@ def move_and_collide(rect, displacement, walls):
     return hit_x, hit_y
 
 
+def move_knockback(rect, velocity, decay_rate, walls, dt):
+    # Pushes the rect, drops the push on each axis that hits a wall, then slows it;
+    # returns the new velocity
+    hit_x, hit_y = move_and_collide(rect, velocity * dt, walls)
+
+    if hit_x:
+        velocity.x = 0
+    if hit_y:
+        velocity.y = 0
+
+    return decay_velocity(velocity, decay_rate, dt)
+
+
 def approach_fraction(rate, dt):
     return 1 - math.exp(-rate * dt)

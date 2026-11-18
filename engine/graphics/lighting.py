@@ -1,5 +1,7 @@
 import math
 
+from engine.graphics.camera import world_to_screen
+
 # The shader's light arrays hold this many; visible_lights never returns more
 MAX_LIGHTS = 32
 # Flicker: two waves at speeds that don't line up, so the wobble never quite repeats
@@ -40,7 +42,7 @@ def visible_lights(lights, light_types, camera, time):
         flicker = 1 + light_type["flicker"] * flicker_wave(time, (x, y))
         intensity = light_type["intensity"] * flicker
         color = tuple(channel * intensity for channel in light_type["color"])
-        visible.append(((x - camera.x, y - camera.y), light_type["radius"], color))
+        visible.append((world_to_screen(camera, (x, y)), light_type["radius"], color))
 
     return visible[:MAX_LIGHTS]
 

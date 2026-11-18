@@ -7,9 +7,10 @@ from engine.gameplay.health import new_health, set_max_health
 from engine.gameplay.stats import compute_stats
 from engine.graphics.animation import advance_animation, new_animation, set_animation
 from engine.graphics.blink import is_blink_hidden
+from engine.graphics.camera import world_to_screen
 from engine.graphics.masks import draw_hitbox
 from engine.io.sound import play_sfx
-from engine.physics.movement import decay_velocity, move_and_collide, steer
+from engine.physics.movement import move_and_collide, move_knockback, steer
 from systems.consumables import use_small_health_potion
 from systems.inventory import new_inventory
 from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
@@ -112,7 +113,7 @@ class Player:
 
         self.pos = pygame.math.Vector2(self.rect.topleft)
 
-    def draw(self, screen, camera=None):
+    def draw(self, screen, camera):
         blink_hidden = is_blink_hidden(self.invulnerability, BLINK_INTERVAL)
 
         if not blink_hidden:
@@ -121,12 +122,7 @@ class Player:
                 image_to_draw = self.image.copy()
                 image_to_draw.set_alpha(self.alpha)
 
-            if camera:
-                screen.blit(
-                    image_to_draw, (self.rect.x - camera.x, self.rect.y - camera.y)
-                )
-            else:
-                screen.blit(image_to_draw, self.rect.topleft)
+            screen.blit(image_to_draw, world_to_screen(camera, self.rect.topleft))
 
         if debug.show_hitboxes:
             draw_hitbox(screen, self.image, self.rect, camera, GREEN)
@@ -178,15 +174,8 @@ class Player:
         advance_roll(self.roll, dt)
 
     def update_knockback(self, dt, walls):
-        hit_x, hit_y = move_and_collide(self.rect, self.knockback_velocity * dt, walls)
-
-        if hit_x:
-            self.knockback_velocity.x = 0
-        if hit_y:
-            self.knockback_velocity.y = 0
-
-        self.knockback_velocity = decay_velocity(
-            self.knockback_velocity, PLAYER_KNOCKBACK_DECAY, dt
+        self.knockback_velocity = move_knockback(
+            self.rect, self.knockback_velocity, PLAYER_KNOCKBACK_DECAY, walls, dt
         )
 
     def update_animation(self):

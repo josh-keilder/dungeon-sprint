@@ -18,8 +18,9 @@ from engine.graphics.animation import (
     set_animation,
 )
 from engine.graphics.blink import is_blink_hidden
+from engine.graphics.camera import rect_to_screen, world_to_screen
 from engine.graphics.masks import draw_hitbox
-from engine.physics.movement import decay_velocity, move_and_collide
+from engine.physics.movement import move_and_collide, move_knockback
 from engine.ui.health_bar import draw_health_bar
 from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_velocity
 
@@ -119,17 +120,14 @@ class Enemy:
         self.update_animation(dt)
         self.pos.xy = self.rect.topleft
 
-    def draw(self, screen, camera=None):
+    def draw(self, screen, camera):
         blink_hidden = (
             not self.dying
             and self.blink_interval is not None
             and is_blink_hidden(self.invulnerability, self.blink_interval)
         )
 
-        art_x, art_y = self.art_topleft()
-        draw_pos = (art_x, art_y)
-        if camera:
-            draw_pos = (art_x - camera.x, art_y - camera.y)
+        draw_pos = world_to_screen(camera, self.art_topleft())
 
         if not blink_hidden:
             screen.blit(self.image, draw_pos)
@@ -138,9 +136,7 @@ class Enemy:
             bar_x = self.rect.centerx - ENEMY_HEALTH_BAR_WIDTH // 2
             bar_y = self.rect.top - ENEMY_HEALTH_BAR_GAP
 
-            bar_pos = (bar_x, bar_y)
-            if camera:
-                bar_pos = (bar_x - camera.x, bar_y - camera.y)
+            bar_pos = world_to_screen(camera, (bar_x, bar_y))
 
             draw_health_bar(
                 screen,
@@ -153,16 +149,10 @@ class Enemy:
         if debug.show_hitboxes:
             art_rect = pygame.FRect(self.art_topleft(), self.image.get_size())
             draw_hitbox(screen, self.image, art_rect, camera, RED)
-            body_on_screen = (
-                self.rect.move(-camera.x, -camera.y) if camera else self.rect
-            )
+            body_on_screen = rect_to_screen(camera, self.rect)
 
             if self.is_striking():
-                strike_on_screen = (
-                    self.strike_rect().move(-camera.x, -camera.y)
-                    if camera
-                    else self.strike_rect()
-                )
+                strike_on_screen = rect_to_screen(camera, self.strike_rect())
                 pygame.draw.rect(screen, RED, strike_on_screen, 1)
 
             pygame.draw.rect(screen, YELLOW, body_on_screen, 1)
@@ -212,15 +202,8 @@ class Enemy:
             return velocity
 
     def update_knockback(self, dt, walls):
-        hit_x, hit_y = move_and_collide(self.rect, self.knockback_velocity * dt, walls)
-
-        if hit_x:
-            self.knockback_velocity.x = 0
-        if hit_y:
-            self.knockback_velocity.y = 0
-
-        self.knockback_velocity = decay_velocity(
-            self.knockback_velocity, self.knockback_decay_rate, dt
+        self.knockback_velocity = move_knockback(
+            self.rect, self.knockback_velocity, self.knockback_decay_rate, walls, dt
         )
 
     def is_staggered(self):

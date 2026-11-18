@@ -2,6 +2,7 @@ import pygame
 
 from engine.core.assets import load_animations, load_image
 from engine.graphics.animation import advance_animation, new_animation
+from engine.graphics.camera import world_to_screen
 from items.item_texture_data import crate_texture_data
 
 # Chest art
@@ -26,7 +27,7 @@ class GroundItem(pygame.sprite.Sprite):
         self.image = advance_animation(self.animation, dt)
 
     def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        screen.blit(self.image, world_to_screen(camera, self.rect.topleft))
 
 
 class Chest(pygame.sprite.Sprite):
@@ -36,7 +37,7 @@ class Chest(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(topleft=pos)
 
     def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        screen.blit(self.image, world_to_screen(camera, self.rect.topleft))
 
 
 class Crate(pygame.sprite.Sprite):
@@ -67,7 +68,7 @@ class Crate(pygame.sprite.Sprite):
         self.image = self.frames[CRATE_IMPACT_FRAMES[step]]
 
     def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        screen.blit(self.image, world_to_screen(camera, self.rect.topleft))
 
     def start_breaking(self):
         self.breaking = True

@@ -1,6 +1,7 @@
 import pygame
 
 from engine.graphics.animation import advance_animation, new_animation
+from engine.graphics.camera import world_to_screen
 
 # Animated decor playback: flames read better slow
 DECOR_ANIMATION_SPEED = 6  # frames per second
@@ -20,7 +21,7 @@ class DecorTile(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(topleft=pos)
 
     def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        screen.blit(self.image, world_to_screen(camera, self.rect.topleft))
 
 
 class AnimatedDecor(pygame.sprite.Sprite):
@@ -35,7 +36,7 @@ class AnimatedDecor(pygame.sprite.Sprite):
         self.image = advance_animation(self.animation, dt)
 
     def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        screen.blit(self.image, world_to_screen(camera, self.rect.topleft))
 
 
 class Door(pygame.sprite.Sprite):
@@ -48,4 +49,4 @@ class Door(pygame.sprite.Sprite):
         self.key = None
 
     def draw(self, screen, camera):
-        screen.blit(self.image, (self.rect.x - camera.x, self.rect.y - camera.y))
+        screen.blit(self.image, world_to_screen(camera, self.rect.topleft))

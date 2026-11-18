@@ -7,7 +7,7 @@ from engine.core import debug
 from engine.core.assets import load_image
 from engine.gameplay.health import is_dead
 from engine.gameplay.loot import roll_loot
-from engine.graphics.camera import is_on_screen
+from engine.graphics.camera import is_on_screen, world_to_screen
 from engine.graphics.lighting import light_blockers
 from engine.graphics.masks import draw_highlight, draw_hitbox
 from engine.graphics.particles import draw_particles, emit_burst, update_particles
@@ -115,7 +115,7 @@ class Floor:
 
     def draw(self, surface, player, camera, highlight=None):
         # Floor
-        surface.blit(self.map_surface, (-camera.x, -camera.y))
+        surface.blit(self.map_surface, world_to_screen(camera, (0, 0)))
 
         # Static tiles: decor on the walls (drawn into map_surface), then doors
         for group in [self.decor_tiles, self.door_tiles]:
@@ -134,9 +134,7 @@ class Floor:
             image = self.padlock_images.get(key)
             if image is None:
                 continue
-            padlock_rect = image.get_rect(
-                center=(center[0] - camera.x, center[1] - camera.y)
-            )
+            padlock_rect = image.get_rect(center=world_to_screen(camera, center))
             surface.blit(image, padlock_rect)
 
         # Crates, ground items and chests

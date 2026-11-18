@@ -1,5 +1,7 @@
 import pygame
 
+from engine.graphics.camera import world_to_screen
+
 # Cache: one mask per image, built on first use
 _MASK_CACHE = {}
 
@@ -19,8 +21,7 @@ def images_overlap(first_image, first_pos, second_image, second_pos):
 
 
 def draw_hitbox(screen, image, rect, camera, color):
-    offset_x = rect.x - (camera.x if camera else 0)
-    offset_y = rect.y - (camera.y if camera else 0)
+    offset_x, offset_y = world_to_screen(camera, rect.topleft)
 
     for point in get_mask(image).outline():
         screen.set_at((int(offset_x + point[0]), int(offset_y + point[1])), color)
@@ -48,7 +49,7 @@ def draw_highlight(screen, sprites, camera, color):
     ring.erase(shape, (0, 0))
 
     ring_image = ring.to_surface(setcolor=color, unsetcolor=(0, 0, 0, 0))
-    screen.blit(ring_image, (area.x - camera.x, area.y - camera.y))
+    screen.blit(ring_image, world_to_screen(camera, area.topleft))
 
 
 def grow_mask(mask):

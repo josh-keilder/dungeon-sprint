@@ -3,6 +3,8 @@ import random
 
 import pygame
 
+from engine.graphics.camera import world_to_screen
+
 # A preset is one recipe per effect, made by the game. Ranges are (lowest, highest),
 # picked at random per particle:
 #   "count":    particles per burst
@@ -54,6 +56,5 @@ def draw_particles(surface, particles, camera):
         life_left = 1 - particle["age"] / particle["lifetime"]
         size = max(1, math.ceil(particle["size"] * life_left))
 
-        x = int(particle["pos"].x - camera.x)
-        y = int(particle["pos"].y - camera.y)
-        surface.fill(particle["color"], (x, y, size, size))
+        x, y = world_to_screen(camera, particle["pos"])
+        surface.fill(particle["color"], (int(x), int(y), size, size))
