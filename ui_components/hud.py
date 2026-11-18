@@ -21,6 +21,7 @@ from engine.ui.text_layout import (
     bottom_right_text_pos,
     centered_text_x,
     centered_text_y,
+    snap_to_grid,
 )
 from engine.ui.time_format import format_run_time
 from systems.inventory import count_item
@@ -71,6 +72,14 @@ def segment_hp_for(max_health):
     return HEALTH_SEGMENT_STEPS[-1]
 
 
+def slot_icons(item_image):
+    # The item's icon at screen scale, and a faded copy for when the slot is empty
+    icon = pygame.transform.scale_by(item_image, GAME_SCALE)
+    icon_empty = icon.copy()
+    icon_empty.set_alpha(EMPTY_ICON_ALPHA)
+    return icon, icon_empty
+
+
 class HUD:
     def __init__(self, item_database):
         frame_image = load_image(PANEL_FRAME_PATH)
@@ -88,9 +97,7 @@ class HUD:
 
         # Run timer
         self.timer_panel = make_panel(frame_image, TIMER_PANEL_SIZE, PANEL_CORNER_SIZE)
-        self.timer_panel_x = (
-            (SCREEN_WIDTH - TIMER_PANEL_SIZE[0]) // 2 // GAME_SCALE * GAME_SCALE
-        )
+        self.timer_panel_x = snap_to_grid((SCREEN_WIDTH - TIMER_PANEL_SIZE[0]) // 2)
         self.timer_glyphs = {
             character: self.font.render(character, False, PALETTE_STEEL)
             for character in TIMER_CHARACTERS
@@ -105,7 +112,7 @@ class HUD:
         # Floor number
         self.floor_panel = make_panel(frame_image, FLOOR_PANEL_SIZE, PANEL_CORNER_SIZE)
         self.floor_panel_x = self.timer_panel_x + TIMER_PANEL_SIZE[0] + FLOOR_PANEL_GAP
-        self.floor_label = TextLabel("", color=PALETTE_STEEL, font=self.font)
+        self.floor_label = TextLabel("", font=self.font)
 
         # Quick slots
         self.quick_slot_panel = make_panel(
@@ -115,13 +122,11 @@ class HUD:
 
         # Potion slot
         self.potion_slot_pos = (HUD_MARGIN, slot_y)
-        self.potion_icon = pygame.transform.scale_by(
-            item_database["small_health_potion"].image, GAME_SCALE
+        self.potion_icon, self.potion_icon_empty = slot_icons(
+            item_database["small_health_potion"].image
         )
-        self.potion_icon_empty = self.potion_icon.copy()
-        self.potion_icon_empty.set_alpha(EMPTY_ICON_ALPHA)
         self.potion_count_label = TextLabel(
-            "", color=PALETTE_STEEL, font=self.font, outline_color=PALETTE_VOID
+            "", font=self.font, outline_color=PALETTE_VOID
         )
         self.potion_hotkey_label = TextLabel(
             "Q", color=PALETTE_TORCH, font=self.font, outline_color=PALETTE_VOID
@@ -135,9 +140,7 @@ class HUD:
         # Key slots, after the potion slot
         self.key_slots = []
         for index, item_id in enumerate(KEY_SLOT_ITEMS, start=1):
-            icon = pygame.transform.scale_by(item_database[item_id].image, GAME_SCALE)
-            icon_empty = icon.copy()
-            icon_empty.set_alpha(EMPTY_ICON_ALPHA)
+            icon, icon_empty = slot_icons(item_database[item_id].image)
 
             self.key_slots.append(
                 {
@@ -150,7 +153,6 @@ class HUD:
                     "icon_empty": icon_empty,
                     "count_label": TextLabel(
                         "",
-                        color=PALETTE_STEEL,
                         font=self.font,
                         outline_color=PALETTE_VOID,
                     ),
@@ -162,9 +164,7 @@ class HUD:
         self.cooldown_shade.fill((0, 0, 0, COOLDOWN_SHADE_ALPHA))
 
         # Interaction prompt
-        self.prompt_label = TextLabel(
-            "", color=PALETTE_STEEL, font=self.font, outline_color=PALETTE_VOID
-        )
+        self.prompt_label = TextLabel("", font=self.font, outline_color=PALETTE_VOID)
         self.prompt_blocked_label = TextLabel(
             "", color=PALETTE_BLOOD, font=self.font, outline_color=PALETTE_VOID
         )
@@ -183,18 +183,14 @@ class HUD:
         pygame.draw.rect(screen, PALETTE_SHADOW, bar_rect)
 
         health_ratio = health["current"] / health["maximum"]
-        fill_width = int(bar_rect.width * health_ratio) // GAME_SCALE * GAME_SCALE
+        fill_width = snap_to_grid(int(bar_rect.width * health_ratio))
         pygame.draw.rect(
             screen, PALETTE_BLOOD, (bar_rect.x, bar_rect.y, fill_width, bar_rect.height)
         )
 
         segment_hp = segment_hp_for(health["maximum"])
         for gap_hp in range(segment_hp, health["maximum"], segment_hp):
-            gap_offset = (
-                int(bar_rect.width * gap_hp / health["maximum"])
-                // GAME_SCALE
-                * GAME_SCALE
-            )
+            gap_offset = snap_to_grid(int(bar_rect.width * gap_hp / health["maximum"]))
 
             pygame.draw.rect(
                 screen,
@@ -283,10 +279,8 @@ class HUD:
         screen.blit(icon, icon_pos)
 
         if cooldown_fraction > 0:
-            shade_height = (
+            shade_height = snap_to_grid(
                 int(self.cooldown_shade.get_height() * cooldown_fraction)
-                // GAME_SCALE
-                * GAME_SCALE
             )
             inner_pos = (
                 slot_pos[0] + QUICK_SLOT_INNER_OFFSET,

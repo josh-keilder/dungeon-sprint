@@ -7,7 +7,6 @@ from constants import (
     PALETTE_BLOOD,
     PALETTE_SHADOW,
     PALETTE_STEEL,
-    PALETTE_TORCH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
@@ -15,6 +14,7 @@ from engine.graphics.overlay import new_overlay
 from engine.io import sound
 from engine.ui.text_button import TextButton
 from engine.ui.time_format import format_run_time, to_centiseconds
+from engine.ui.title import make_title
 from states.new_run import start_new_run
 
 # Title
@@ -55,11 +55,11 @@ class RunEndScreen:
     def __init__(self, game_state_manager, title, title_color, music):
         self.game_state_manager = game_state_manager
 
-        self.title_font = pygame.font.Font(FONT_PATH, TITLE_FONT_SIZE)
         self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
 
-        self.title_image = self.title_font.render(title, False, title_color)
-        self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
+        self.title_image, self.title_pos = make_title(
+            title, TITLE_FONT_SIZE, title_color, SCREEN_WIDTH, TITLE_Y
+        )
 
         self.music = music
 
@@ -67,14 +67,12 @@ class RunEndScreen:
             "Restart",
             self.button_font,
             (SCREEN_WIDTH // 2, RESTART_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
 
         self.main_menu_button = TextButton(
             "Main Menu",
             self.button_font,
             (SCREEN_WIDTH // 2, MAIN_MENU_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
 
         self.overlay = new_overlay(

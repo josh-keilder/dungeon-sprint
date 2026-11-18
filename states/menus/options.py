@@ -7,7 +7,6 @@ from constants import (
     OVERLAY_ALPHA,
     PALETTE_ICE,
     PALETTE_STEEL,
-    PALETTE_TORCH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
     WINDOW_TITLE,
@@ -19,6 +18,7 @@ from engine.io import sound
 from engine.ui.slider import Slider
 from engine.ui.text_button import TextButton
 from engine.ui.text_label import TextLabel
+from engine.ui.title import make_title
 from states.new_run import start_new_run
 from systems.input import read_input
 
@@ -60,11 +60,11 @@ class OptionsMenu:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
-        self.title_font = pygame.font.Font(FONT_PATH, TITLE_FONT_SIZE)
         self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
         self.label_font = pygame.font.Font(FONT_PATH, LABEL_FONT_SIZE)
-        self.title_image = self.title_font.render("OPTIONS", False, PALETTE_STEEL)
-        self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
+        self.title_image, self.title_pos = make_title(
+            "OPTIONS", TITLE_FONT_SIZE, PALETTE_STEEL, SCREEN_WIDTH, TITLE_Y
+        )
 
         # Volumes are saved as 0.0-1.0 and shown as 0-100
         self.music_slider_value = int(settings.get_setting("music_volume") * 100)
@@ -83,7 +83,6 @@ class OptionsMenu:
         self.music_volume_text = TextLabel(
             MUSIC_LABEL.format(self.music_slider_value),
             pos=(SLIDER_LABEL_X, MUSIC_SLIDER_Y - SLIDER_LABEL_OFFSET_Y),
-            color=PALETTE_STEEL,
             font=self.label_font,
         )
 
@@ -99,7 +98,6 @@ class OptionsMenu:
         self.sfx_volume_text = TextLabel(
             SFX_LABEL.format(self.sfx_slider_value),
             pos=(SLIDER_LABEL_X, SFX_SLIDER_Y - SLIDER_LABEL_OFFSET_Y),
-            color=PALETTE_STEEL,
             font=self.label_font,
         )
 
@@ -107,7 +105,6 @@ class OptionsMenu:
         self.main_menu_button = TextButton(
             "Main Menu",
             self.button_font,
-            hover_color=PALETTE_TORCH,
         )
         self.main_menu_button.rect.bottomleft = (
             NAVIGATION_BUTTON_MARGIN,
@@ -116,7 +113,6 @@ class OptionsMenu:
         self.back_button = TextButton(
             "Back",
             self.button_font,
-            hover_color=PALETTE_TORCH,
         )
         self.back_button.rect.bottomright = (
             SCREEN_WIDTH - NAVIGATION_BUTTON_MARGIN,
@@ -128,7 +124,6 @@ class OptionsMenu:
             FPS_LABEL.format(on_off(settings.get_setting("fps_enabled"))),
             self.button_font,
             (SCREEN_WIDTH // 2, FPS_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
 
         self.full_screen_button = TextButton(
@@ -137,7 +132,6 @@ class OptionsMenu:
             ),
             self.button_font,
             (SCREEN_WIDTH // 2, FULL_SCREEN_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
 
         self.screen_shake_button = TextButton(
@@ -146,7 +140,6 @@ class OptionsMenu:
             ),
             self.button_font,
             (SCREEN_WIDTH // 2, SCREEN_SHAKE_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
 
         self.hurt_vignette_button = TextButton(
@@ -155,7 +148,6 @@ class OptionsMenu:
             ),
             self.button_font,
             (SCREEN_WIDTH // 2, HURT_VIGNETTE_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
 
         self.overlay = new_overlay(

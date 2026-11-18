@@ -5,11 +5,11 @@ from constants import (
     FONT_PATH,
     MENU_BACKGROUND_COLOR,
     PALETTE_STEEL,
-    PALETTE_TORCH,
     SCREEN_WIDTH,
 )
 from engine.io import sound
 from engine.ui.text_button import TextButton
+from engine.ui.title import make_title
 
 # Title
 TITLE_FONT_SIZE = 96
@@ -28,31 +28,26 @@ class MainMenu:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
-        self.title_font = pygame.font.Font(FONT_PATH, TITLE_FONT_SIZE)
         self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
 
-        self.title_image = self.title_font.render(
-            "DUNGEON SPRINT", False, PALETTE_STEEL
+        self.title_image, self.title_pos = make_title(
+            "DUNGEON SPRINT", TITLE_FONT_SIZE, PALETTE_STEEL, SCREEN_WIDTH, TITLE_Y
         )
-        self.title_pos = ((SCREEN_WIDTH - self.title_image.get_width()) // 2, TITLE_Y)
 
         self.start_button = TextButton(
             "Start",
             self.button_font,
             (SCREEN_WIDTH // 2, START_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
         self.options_button = TextButton(
             "Options",
             self.button_font,
             (SCREEN_WIDTH // 2, OPTIONS_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
         self.exit_button = TextButton(
             "Exit",
             self.button_font,
             (SCREEN_WIDTH // 2, EXIT_BUTTON_Y),
-            hover_color=PALETTE_TORCH,
         )
 
     def enter(self):

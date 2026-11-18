@@ -19,7 +19,7 @@ from engine.graphics.display import get_mouse_pos
 from engine.graphics.overlay import new_overlay
 from engine.ui.panel import make_panel
 from engine.ui.text_label import TextLabel
-from engine.ui.text_layout import bottom_right_text_pos
+from engine.ui.text_layout import bottom_right_text_pos, snap_to_grid
 from systems.inventory import add_item, can_equip
 
 # Window layout
@@ -68,10 +68,9 @@ class InventoryUI:
             + WINDOW_PADDING
         )
         self.window_pos = (
-            SCREEN_WIDTH - window_width
-        ) // 2 // GAME_SCALE * GAME_SCALE, (
-            SCREEN_HEIGHT - window_height
-        ) // 2 // GAME_SCALE * GAME_SCALE
+            snap_to_grid((SCREEN_WIDTH - window_width) // 2),
+            snap_to_grid((SCREEN_HEIGHT - window_height) // 2),
+        )
 
         self.frame_image = load_image(PANEL_FRAME_PATH)
         self.window_panel = make_panel(
@@ -110,7 +109,6 @@ class InventoryUI:
 
         self.title_label = TextLabel(
             "INVENTORY",
-            color=PALETTE_STEEL,
             font=self.font,
         )
         title_x = (
@@ -119,9 +117,7 @@ class InventoryUI:
         )
         self.title_label.pos = (title_x, self.window_pos[1] + WINDOW_PADDING // 2)
 
-        self.count_label = TextLabel(
-            "", color=PALETTE_STEEL, font=self.font, outline_color=PALETTE_VOID
-        )
+        self.count_label = TextLabel("", font=self.font, outline_color=PALETTE_VOID)
 
         self.overlay = new_overlay(
             (SCREEN_WIDTH, SCREEN_HEIGHT), (0, 0, 0), INVENTORY_DIM_ALPHA
