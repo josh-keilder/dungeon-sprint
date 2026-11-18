@@ -13,8 +13,8 @@ from constants import (
     PALETTE_VOID,
     TILE_SIZE,
 )
-from items.item_database import initialize_item_database
-from world.map_loader import load_floor_data
+from game.data.item_database import initialize_item_database
+from game.world.map_loader import load_floor_data
 
 # Output image
 PREVIEW_SCALE = 2

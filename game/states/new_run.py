@@ -1,4 +1,4 @@
-from states.run import Run
+from game.states.run import Run
 
 
 def start_new_run(game_state_manager):

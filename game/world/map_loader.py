@@ -6,10 +6,10 @@ from pytmx.util_pygame import load_pygame
 from constants import TILE_SIZE
 from engine.core.assets import load_animations
 from engine.graphics.lighting import flame_position
-from world.decor_texture_data import decor_texture_data
-from world.light_types import LIGHT_TYPES
-from world.objects import Chest, Crate
-from world.tiles import AnimatedDecor, DecorTile, Door, WallTile
+from game.data.light_types import LIGHT_TYPES
+from game.data.textures.decor_texture_data import decor_texture_data
+from game.world.objects import Chest, Crate
+from game.world.tiles import AnimatedDecor, DecorTile, Door, WallTile
 
 # Tileset GIDs swapped for an animated version on load; all of them are light sources
 ANIMATED_DECOR_GIDS = {

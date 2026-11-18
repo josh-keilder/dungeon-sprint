@@ -12,8 +12,13 @@ from engine.graphics.camera import world_to_screen
 from engine.graphics.masks import draw_hitbox
 from engine.io.sound import play_sfx
 from engine.physics.movement import move_and_collide, move_knockback, steer
-from systems.consumables import use_small_health_potion
-from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
+from game.rules.consumables import use_small_health_potion
+from game.rules.roll import (
+    advance_roll,
+    is_rolling,
+    roll_speed_multiplier,
+    try_start_roll,
+)
 
 # Hit feedback
 BLINK_INTERVAL = 0.1  # seconds per blink on/off while invulnerable

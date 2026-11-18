@@ -15,7 +15,7 @@ from engine.io import sound
 from engine.ui.text_button import TextButton
 from engine.ui.time_format import format_run_time, to_centiseconds
 from engine.ui.title import make_title
-from states.new_run import start_new_run
+from game.states.new_run import start_new_run
 
 # Title
 TITLE_FONT_SIZE = 64

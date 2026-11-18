@@ -19,8 +19,8 @@ from engine.ui.slider import Slider
 from engine.ui.text_button import TextButton
 from engine.ui.text_label import TextLabel
 from engine.ui.title import make_title
-from states.new_run import start_new_run
-from systems.input import read_input
+from game.rules.input import read_input
+from game.states.new_run import start_new_run
 
 # Title and labels
 TITLE_FONT_SIZE = 96

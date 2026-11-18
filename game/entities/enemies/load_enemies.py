@@ -1,5 +1,5 @@
-from entities.enemies.enemy import Enemy
-from entities.enemies.enemy_type_data import ENEMY_TYPES
+from game.data.enemy_type_data import ENEMY_TYPES
+from game.entities.enemies.enemy import Enemy
 
 
 def load_enemies(enemy_spawns):

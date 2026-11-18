@@ -1,6 +1,6 @@
 from engine.core.assets import load_animations
 from engine.gameplay.items import EquipmentItem, Item
-from items.item_texture_data import (
+from game.data.textures.item_texture_data import (
     gold_key_texture_data,
     health_potion_texture_data,
     silver_key_texture_data,

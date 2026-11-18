@@ -31,11 +31,11 @@ from engine.io import sound
 from engine.ui.cursor import Cursor
 from engine.ui.fps_counter import FpsCounter
 from engine.ui.theme import set_theme
-from states.menus.main_menu import MainMenu
-from states.menus.options import OptionsMenu
-from states.menus.run_end import RunEndScreen
-from states.run import Run
-from world.light_types import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT
+from game.data.light_types import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT
+from game.states.menus.main_menu import MainMenu
+from game.states.menus.options import OptionsMenu
+from game.states.menus.run_end import RunEndScreen
+from game.states.run import Run
 
 # Cursor art
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"

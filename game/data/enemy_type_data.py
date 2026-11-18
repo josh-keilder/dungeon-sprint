@@ -1,9 +1,9 @@
-from entities.enemies.enemy_texture_data import (
+from game.data.loot_table_data import SKELETON_LOOT, SKULL_LOOT
+from game.data.particle_presets import BONE_CHIPS, SKULL_SPARKS
+from game.data.textures.enemy_texture_data import (
     skeleton_texture_data,
     skull_texture_data,
 )
-from items.loot_table_data import SKELETON_LOOT, SKULL_LOOT
-from world.particle_presets import BONE_CHIPS, SKULL_SPARKS
 
 # Enemy types: the key must match the map's spawn name after "Enemy_".
 # Every key is required; Enemy reads them with type_data["..."].

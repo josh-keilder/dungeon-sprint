@@ -22,16 +22,16 @@ from engine.graphics.lighting import visible_lights
 from engine.graphics.renderer import submit_world
 from engine.graphics.shake import new_shake, start_shake, update_shake
 from engine.io import sound
-from entities.player.load_player import load_player
-from items.item_database import initialize_item_database
-from systems import interact
-from systems.input import read_input
-from ui_components.floor_transition import FloorTransition
-from ui_components.hud import HUD
-from ui_components.hurt_vignette import HurtVignette
-from ui_components.inventory_ui import InventoryUI
-from world.floor import Floor
-from world.light_types import LIGHT_TYPES
+from game.data.item_database import initialize_item_database
+from game.data.light_types import LIGHT_TYPES
+from game.entities.player.load_player import load_player
+from game.rules import interact
+from game.rules.input import read_input
+from game.ui.floor_transition import FloorTransition
+from game.ui.hud import HUD
+from game.ui.hurt_vignette import HurtVignette
+from game.ui.inventory_ui import InventoryUI
+from game.world.floor import Floor
 
 # Music
 LEVEL_MUSIC = "level_music"

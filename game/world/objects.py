@@ -3,7 +3,7 @@ import pygame
 from engine.core.assets import load_animations, load_image
 from engine.graphics.animation import advance_animation, new_animation
 from engine.graphics.camera import world_to_screen
-from items.item_texture_data import crate_texture_data
+from game.data.textures.object_texture_data import crate_texture_data
 
 # Chest art
 CHEST_IMAGE_PATH = "Assets/Objects/chest_1.png"

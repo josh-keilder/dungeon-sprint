@@ -40,13 +40,3 @@ speed_boots_texture_data = {
         "file_path": "Assets/Items/speed_boots.png",
     },
 }
-
-# World objects
-crate_texture_data = {
-    "crate": {
-        "size": (TILE_SIZE, TILE_SIZE),
-        "position": (0, 0),
-        "frames": 4,
-        "file_path": "Assets/Objects/crate_strip.png",
-    },
-}

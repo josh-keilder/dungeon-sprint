@@ -2,8 +2,8 @@ import pygame
 
 from engine.core.timer import is_running, start_timer
 from engine.gameplay.health import take_damage
-from systems.enemy_ai import trigger_flee
-from systems.roll import is_rolling
+from game.rules.enemy_ai import trigger_flee
+from game.rules.roll import is_rolling
 
 # Player i-frames after being hit
 PLAYER_INVULNERABILITY_DURATION = 1.0  # seconds
