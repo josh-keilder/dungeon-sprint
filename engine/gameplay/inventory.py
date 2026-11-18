@@ -1,16 +1,7 @@
-# Equipment slots, in the order the inventory screen draws them
-EQUIPMENT_SLOT_NAMES = (
-    "head",
-    "chest",
-    "boots",
-    "ability",
-)
-
-
-def new_inventory(slot_count):
+def new_inventory(slot_count, equipment_slot_names):
     return {
         "slots": [None] * slot_count,
-        "equipment": {name: None for name in EQUIPMENT_SLOT_NAMES},
+        "equipment": {name: None for name in equipment_slot_names},
     }
 
 

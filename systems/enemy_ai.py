@@ -3,9 +3,7 @@ import random
 import pygame
 
 from engine.core.timer import advance_timer, is_running, start_timer
-
-# Line of sight: only walls near the sight line are checked
-SIGHT_SEARCH_MARGIN = 64  # pixels
+from engine.physics.collision import has_line_of_sight
 
 # After a contact: run away, then come back
 FLEE_TIME = 2.0  # seconds
@@ -67,19 +65,3 @@ def wander_chase_velocity(enemy, target_pos, walls, chase_pos=None):
         velocity = enemy.idle_direction * enemy.speed * WALK_WANDER_FACTOR
 
     return velocity
-
-
-def has_line_of_sight(start, end, walls):
-    search_rect = pygame.Rect(
-        min(start.x, end.x),
-        min(start.y, end.y),
-        abs(start.x - end.x),
-        abs(start.y - end.y),
-    ).inflate(SIGHT_SEARCH_MARGIN, SIGHT_SEARCH_MARGIN)
-
-    for wall in walls:
-        if not search_rect.colliderect(wall):
-            continue
-        if wall.clipline(start, end):
-            return False
-    return True

@@ -1,5 +1,4 @@
-import pygame
-
+from engine.physics.collision import push_out
 from systems.roll import is_rolling
 
 # Solid enemies (walkers, not fliers) may not stack on each other or sit on the player:
@@ -21,17 +20,3 @@ def separate_enemies(enemies, player, walls):
             push = push_out(enemy.rect, player.rect)
             if push is not None:
                 enemy.shove(push, walls)
-
-
-def push_out(rect, other_rect):
-    overlap = rect.clip(other_rect)
-    if overlap.width == 0 or overlap.height == 0:
-        return None
-
-    away = pygame.Vector2(rect.center) - pygame.Vector2(other_rect.center)
-    if overlap.width < overlap.height:
-        direction = 1 if away.x >= 0 else -1
-        return pygame.Vector2(overlap.width * direction, 0)
-
-    direction = 1 if away.y >= 0 else -1
-    return pygame.Vector2(0, overlap.height * direction)

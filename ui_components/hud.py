@@ -15,6 +15,7 @@ from constants import (
 )
 from engine.core.assets import load_image
 from engine.core.timer import fraction_left
+from engine.gameplay.inventory import count_item
 from engine.ui.panel import make_panel
 from engine.ui.text_label import TextLabel
 from engine.ui.text_layout import (
@@ -24,7 +25,6 @@ from engine.ui.text_layout import (
     snap_to_grid,
 )
 from engine.ui.time_format import format_run_time
-from systems.inventory import count_item
 
 # Shared by every HUD part
 HUD_FONT_SIZE = 24

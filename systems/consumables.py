@@ -1,7 +1,7 @@
 from engine.core.timer import is_running, start_timer
 from engine.gameplay.health import heal
+from engine.gameplay.inventory import has_item, remove_item
 from items.item_database import SMALL_HEALTH_POTION_VALUE
-from systems.inventory import has_item, remove_item
 
 # Healing
 HEAL_COOLDOWN = 3.0  # seconds between potions

@@ -4,6 +4,7 @@ from constants import GREEN
 from engine.core import debug
 from engine.core.timer import advance_timer, new_timer
 from engine.gameplay.health import new_health, set_max_health
+from engine.gameplay.inventory import new_inventory
 from engine.gameplay.stats import compute_stats
 from engine.graphics.animation import advance_animation, new_animation, set_animation
 from engine.graphics.blink import is_blink_hidden
@@ -12,7 +13,6 @@ from engine.graphics.masks import draw_hitbox
 from engine.io.sound import play_sfx
 from engine.physics.movement import move_and_collide, move_knockback, steer
 from systems.consumables import use_small_health_potion
-from systems.inventory import new_inventory
 from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
 
 # Hit feedback
@@ -21,6 +21,8 @@ PLAYER_KNOCKBACK_DECAY = 16  # how fast a knockback slows; distance = speed / de
 
 # Inventory
 INVENTORY_SLOT_COUNT = 20
+# Equipment slots, in the order the inventory screen draws them
+EQUIPMENT_SLOT_NAMES = ("head", "chest", "boots", "ability")
 
 
 class Player:
@@ -65,7 +67,7 @@ class Player:
 
         # Health, inventory, and stats
         self.health = new_health(self.base_stats["health"])
-        self.inventory = new_inventory(INVENTORY_SLOT_COUNT)
+        self.inventory = new_inventory(INVENTORY_SLOT_COUNT, EQUIPMENT_SLOT_NAMES)
         self.stats = compute_stats(
             self.base_stats, self.inventory["equipment"].values()
         )

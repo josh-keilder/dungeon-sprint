@@ -12,6 +12,7 @@ from engine.graphics.lighting import light_blockers
 from engine.graphics.masks import draw_highlight, draw_hitbox
 from engine.graphics.particles import draw_particles, emit_burst, update_particles
 from engine.io import sound
+from engine.physics.collision import edge_walls
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
 from systems.collision import find_player_contacts
@@ -36,22 +37,6 @@ PADLOCK_IMAGE_PATHS = {
 }
 
 
-def edge_walls(wall_tiles):
-    # Walls next to open space (including diagonally); the rest can never be touched
-    cells = {
-        (wall.rect.x // TILE_SIZE, wall.rect.y // TILE_SIZE) for wall in wall_tiles
-    }
-    return [
-        wall
-        for wall in wall_tiles
-        if any(
-            (wall.rect.x // TILE_SIZE + dx, wall.rect.y // TILE_SIZE + dy) not in cells
-            for dx in (-1, 0, 1)
-            for dy in (-1, 0, 1)
-        )
-    ]
-
-
 class Floor:
     def __init__(self, map_path, item_database):
         self.item_database = item_database
@@ -61,7 +46,7 @@ class Floor:
         self.map_surface = floor_data["map_surface"]
         self.decor_tiles = floor_data["decor_tiles"]
         self.wall_tiles = floor_data["wall_tiles"]
-        self.edge_walls = edge_walls(self.wall_tiles)
+        self.edge_walls = edge_walls(self.wall_tiles, TILE_SIZE)
         self.door_tiles = floor_data["door_tiles"]
         self.chests = floor_data["chests"]
         self.crates = floor_data["crates"]
