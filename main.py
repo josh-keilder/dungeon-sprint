@@ -3,27 +3,33 @@ import pygame
 from constants import (
     DEFAULT_SETTINGS,
     FRAME_RATE,
+    GAME_SCALE,
     GREEN,
     MUSIC_FOLDER,
+    PALETTE_VOID,
     RED,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
     SETTINGS_FILE_PATH,
     SFX_FOLDER,
+    TILE_SIZE,
     WINDOW_TITLE,
+    WORLD_HEIGHT,
+    WORLD_WIDTH,
 )
 from engine.core import settings
 from engine.core.assets import load_image
 from engine.core.state_manager import GameStateManager
 from engine.graphics.display import create_window
+from engine.graphics.renderer import Renderer
 from engine.io import sound
 from states.menus.main_menu import MainMenu
 from states.menus.options import OptionsMenu
 from states.menus.run_end import RunEndScreen
 from states.run import Run
-from systems.renderer import Renderer
 from ui_components.cursor import Cursor
 from ui_components.fps_counter import FpsCounter
+from world.light_types import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT
 
 # Cursor art
 CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
@@ -46,7 +52,18 @@ class Game:
 
         # Every frame is drawn on ui_surface (transparent), then the renderer puts the
         # world (if a run submitted one) and this surface into the window
-        self.renderer = Renderer()
+        self.renderer = Renderer(
+            screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+            world_size=(WORLD_WIDTH, WORLD_HEIGHT),
+            world_scale=GAME_SCALE,
+            tile_size=TILE_SIZE,
+            lighting={
+                "ambient": AMBIENT_LIGHT,
+                "max_light": MAX_LIGHT,
+                "bands": LIGHT_BANDS,
+                "void_color": PALETTE_VOID,  # wall tiles' empty part never takes light
+            },
+        )
         self.ui_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 
         self.clock = pygame.time.Clock()

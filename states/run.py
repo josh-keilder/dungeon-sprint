@@ -18,19 +18,20 @@ from engine.core.timer import (
 )
 from engine.gameplay.health import is_dead
 from engine.graphics.camera import center_camera, new_camera
+from engine.graphics.lighting import visible_lights
+from engine.graphics.renderer import submit_world
 from engine.graphics.shake import new_shake, start_shake, update_shake
 from engine.io import sound
 from entities.player.load_player import load_player
 from items.item_database import initialize_item_database
 from systems import interact
 from systems.input import read_input
-from systems.lighting import visible_lights
-from systems.renderer import submit_world
 from ui_components.floor_transition import FloorTransition
 from ui_components.hud import HUD
 from ui_components.hurt_vignette import HurtVignette
 from ui_components.inventory_ui import InventoryUI
 from world.floor import Floor
+from world.light_types import LIGHT_TYPES
 
 # Music
 LEVEL_MUSIC = "level_music"
@@ -223,11 +224,11 @@ class Run:
         self.floor.draw(self.world_surface, self.player, self.camera, highlight)
 
         time = pygame.time.get_ticks() / 1000
-        lights = visible_lights(
-            self.floor.lights, self.player.rect.center, self.camera, time
-        )
+        # The player's light first, so it's never the one cut at MAX_LIGHTS
+        lights = [("player", self.player.rect.center)] + self.floor.lights
+        visible = visible_lights(lights, LIGHT_TYPES, self.camera, time)
         submit_world(
-            self.world_surface, self.camera.topleft, lights, self.floor.light_blockers
+            self.world_surface, self.camera.topleft, visible, self.floor.light_blockers
         )
 
         self.hurt_vignette.draw(screen)

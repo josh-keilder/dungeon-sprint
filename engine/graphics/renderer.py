@@ -3,17 +3,8 @@ from array import array
 import moderngl
 import pygame
 
-from constants import (
-    GAME_SCALE,
-    PALETTE_VOID,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-    TILE_SIZE,
-    WORLD_HEIGHT,
-    WORLD_WIDTH,
-)
 from engine.graphics.display import letterbox
-from systems.lighting import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT, MAX_LIGHTS
+from engine.graphics.lighting import MAX_LIGHTS
 
 # Shaders: put a texture on a rectangle (the quad)
 VERTEX_SHADER = """
@@ -134,10 +125,6 @@ void main() {
 }
 """
 
-# The world is WORLD_WIDTH x GAME_SCALE = 1281 px wide on a 1280 px screen: show only the
-# part that fits, so one world pixel stays exactly GAME_SCALE screen pixels
-WORLD_UV_RIGHT = SCREEN_WIDTH / (WORLD_WIDTH * GAME_SCALE)
-WORLD_UV_BOTTOM = SCREEN_HEIGHT / (WORLD_HEIGHT * GAME_SCALE)
 
 # What a run handed over this frame: (world surface, camera offset, lights,
 # light blockers), or None (menus)
@@ -150,7 +137,10 @@ def submit_world(world_surface, camera_offset, lights, blockers):
 
 
 class Renderer:
-    def __init__(self):
+    def __init__(self, screen_size, world_size, world_scale, tile_size, lighting):
+        # lighting: {"ambient", "max_light", "bands", "void_color" (0-255 RGB)}
+        self.screen_size = screen_size
+
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
@@ -161,25 +151,28 @@ class Renderer:
         self.world_program = self.ctx.program(
             vertex_shader=VERTEX_SHADER, fragment_shader=WORLD_SHADER
         )
-        self.world_quad = self.make_quad(
-            self.world_program, WORLD_UV_RIGHT, WORLD_UV_BOTTOM
-        )
+
+        # The world is world width x world_scale px wide (1281 on a 1280 px screen):
+        # show only the part that fits, so one world pixel stays world_scale pixels
+        uv_right = screen_size[0] / (world_size[0] * world_scale)
+        uv_bottom = screen_size[1] / (world_size[1] * world_scale)
+        self.world_quad = self.make_quad(self.world_program, uv_right, uv_bottom)
         self.ui_quad = self.make_quad(self.ui_program, 1.0, 1.0)
 
         # Light settings that never change while the game runs
         self.world_program["image"].value = 0  # texture slot 0: the world
         self.world_program["blockers"].value = 1  # texture slot 1: the blocker mask
-        self.world_program["tile_size"].value = TILE_SIZE
-        self.world_program["world_size"].value = (WORLD_WIDTH, WORLD_HEIGHT)
-        self.world_program["ambient"].value = AMBIENT_LIGHT
-        self.world_program["max_light"].value = MAX_LIGHT
+        self.world_program["tile_size"].value = tile_size
+        self.world_program["world_size"].value = world_size
+        self.world_program["ambient"].value = lighting["ambient"]
+        self.world_program["max_light"].value = lighting["max_light"]
         self.world_program["void_color"].value = tuple(
-            channel / 255 for channel in PALETTE_VOID
+            channel / 255 for channel in lighting["void_color"]
         )
-        self.world_program["bands"].value = LIGHT_BANDS
+        self.world_program["bands"].value = lighting["bands"]
 
-        self.world_texture = self.make_texture((WORLD_WIDTH, WORLD_HEIGHT))
-        self.ui_texture = self.make_texture((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.world_texture = self.make_texture(world_size)
+        self.ui_texture = self.make_texture(screen_size)
         # The UI surface's memory is B, G, R, A per pixel (see its masks): upload it
         # untouched and let the texture read the channels in that order
         self.ui_texture.swizzle = "BGRA"
@@ -199,8 +192,8 @@ class Renderer:
         self.ctx.viewport = (
             round(left),
             round(top),  # the bars are equal, so top works from the bottom too
-            round(SCREEN_WIDTH * scale),
-            round(SCREEN_HEIGHT * scale),
+            round(self.screen_size[0] * scale),
+            round(self.screen_size[1] * scale),
         )
 
         if _world is not None:
