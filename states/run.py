@@ -8,7 +8,7 @@ from constants import (
     WORLD_HEIGHT,
     WORLD_WIDTH,
 )
-from engine.core import debug
+from engine.core import debug, settings
 from engine.core.timer import (
     advance_timer,
     is_running,
@@ -19,9 +19,10 @@ from engine.core.timer import (
 from engine.gameplay.health import is_dead
 from engine.graphics.camera import center_camera, new_camera
 from engine.graphics.shake import new_shake, start_shake, update_shake
+from engine.io import sound
 from entities.player.load_player import load_player
 from items.item_database import initialize_item_database
-from systems import interact, settings, sound
+from systems import interact
 from systems.input import read_input
 from systems.lighting import visible_lights
 from systems.renderer import submit_world

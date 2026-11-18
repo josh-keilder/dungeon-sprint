@@ -8,7 +8,7 @@ from constants import (
     PALETTE_TORCH,
     SCREEN_WIDTH,
 )
-from systems import sound
+from engine.io import sound
 from ui_components.text_button import TextButton
 
 # Title

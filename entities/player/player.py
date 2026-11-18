@@ -8,11 +8,11 @@ from engine.gameplay.stats import compute_stats
 from engine.graphics.animation import advance_animation, new_animation, set_animation
 from engine.graphics.blink import is_blink_hidden
 from engine.graphics.masks import draw_hitbox
+from engine.io.sound import play_sfx
 from engine.physics.movement import decay_velocity, move_and_collide, steer
 from systems.consumables import use_small_health_potion
 from systems.inventory import new_inventory
 from systems.roll import advance_roll, is_rolling, roll_speed_multiplier, try_start_roll
-from systems.sound import play_sfx
 
 # Hit feedback
 BLINK_INTERVAL = 0.1  # seconds per blink on/off while invulnerable

@@ -9,9 +9,9 @@ from engine.gameplay.health import is_dead
 from engine.gameplay.loot import roll_loot
 from engine.graphics.camera import is_on_screen
 from engine.graphics.masks import draw_highlight, draw_hitbox
+from engine.io import sound
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
-from systems import sound
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact, resolve_strike
 from systems.lighting import light_blockers

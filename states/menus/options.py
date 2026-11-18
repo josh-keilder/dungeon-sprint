@@ -12,9 +12,10 @@ from constants import (
     SCREEN_WIDTH,
     WINDOW_TITLE,
 )
+from engine.core import settings
 from engine.graphics.display import create_window
+from engine.io import sound
 from states.new_run import start_new_run
-from systems import settings, sound
 from systems.input import read_input
 from ui_components.slider import Slider
 from ui_components.text_button import TextButton

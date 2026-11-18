@@ -1,14 +1,26 @@
 import pygame
 
-from constants import FRAME_RATE, GREEN, RED, SCREEN_HEIGHT, SCREEN_WIDTH, WINDOW_TITLE
+from constants import (
+    DEFAULT_SETTINGS,
+    FRAME_RATE,
+    GREEN,
+    MUSIC_FOLDER,
+    RED,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    SETTINGS_FILE_PATH,
+    SFX_FOLDER,
+    WINDOW_TITLE,
+)
+from engine.core import settings
 from engine.core.assets import load_image
 from engine.core.state_manager import GameStateManager
 from engine.graphics.display import create_window
+from engine.io import sound
 from states.menus.main_menu import MainMenu
 from states.menus.options import OptionsMenu
 from states.menus.run_end import RunEndScreen
 from states.run import Run
-from systems import settings, sound
 from systems.renderer import Renderer
 from ui_components.cursor import Cursor
 from ui_components.fps_counter import FpsCounter
@@ -24,7 +36,7 @@ class Game:
     def __init__(self):
         pygame.init()
 
-        settings.load_settings()
+        settings.load_settings(DEFAULT_SETTINGS, SETTINGS_FILE_PATH)
 
         create_window(
             (SCREEN_WIDTH, SCREEN_HEIGHT),
@@ -48,8 +60,8 @@ class Game:
         # Sound: load files and apply saved volumes
         music_volume = settings.get_setting("music_volume")
         sfx_volume = settings.get_setting("sfx_volume")
-        sound.load_sfx()
-        sound.load_music()
+        sound.load_sfx(SFX_FOLDER)
+        sound.load_music(MUSIC_FOLDER)
         sound.set_sfx_volume(sfx_volume)
         sound.set_music_volume(music_volume)
 

@@ -15,6 +15,19 @@ WORLD_HEIGHT = math.ceil(SCREEN_HEIGHT / GAME_SCALE)  # 240 world pixels
 TILE_SIZE = 16
 PLAYER_SPRITE_SIZE = 64  # one frame of the player sheets, before cropping to a tile
 
+# Settings and audio
+SETTINGS_FILE_PATH = "settings.json"  # in the project root (git-ignored)
+DEFAULT_SETTINGS = {
+    "fps_enabled": False,
+    "full_screen_enabled": False,
+    "screen_shake_enabled": True,
+    "hurt_vignette_enabled": True,
+    "music_volume": 0.5,
+    "sfx_volume": 0.5,
+}
+SFX_FOLDER = "Assets/Sounds"
+MUSIC_FOLDER = "Assets/Music"
+
 # Basic colors: kept for debug drawing and later use (game art uses the palette below)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

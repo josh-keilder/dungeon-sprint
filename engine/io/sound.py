@@ -2,9 +2,7 @@ import os
 
 import pygame
 
-# Folders scanned at startup; each file is named by its filename without extension
-SFX_FOLDER = "Assets/Sounds"
-MUSIC_FOLDER = "Assets/Music"
+# Audio files a folder may hold; each is named by its filename without extension
 AUDIO_EXTENSIONS = (".wav", ".ogg")
 
 # Loaded audio: sound effects as Sound objects, music as file paths (streamed)
@@ -17,20 +15,20 @@ _current_music_volume = 0.5
 _current_music_name = None
 
 
-def load_sfx():
-    if os.path.exists(SFX_FOLDER):
-        for filename in os.listdir(SFX_FOLDER):
+def load_sfx(folder):
+    if os.path.exists(folder):
+        for filename in os.listdir(folder):
             if filename.endswith(AUDIO_EXTENSIONS):
                 name = os.path.splitext(filename)[0]
-                SFX[name] = pygame.mixer.Sound(os.path.join(SFX_FOLDER, filename))
+                SFX[name] = pygame.mixer.Sound(os.path.join(folder, filename))
 
 
-def load_music():
-    if os.path.exists(MUSIC_FOLDER):
-        for filename in os.listdir(MUSIC_FOLDER):
+def load_music(folder):
+    if os.path.exists(folder):
+        for filename in os.listdir(folder):
             if filename.endswith(AUDIO_EXTENSIONS):
                 name = os.path.splitext(filename)[0]
-                MUSIC[name] = os.path.join(MUSIC_FOLDER, filename)
+                MUSIC[name] = os.path.join(folder, filename)
 
 
 def play_sfx(name, volume=None):

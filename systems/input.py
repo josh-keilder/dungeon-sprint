@@ -1,37 +1,21 @@
 import pygame
 
-from engine.graphics.display import get_mouse_pos
+from engine.io.input import mouse_click_pos, move_direction, pressed_actions
+
+# Key bindings
+MOVE_KEYS = (pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s)  # left, right, up, down
+ACTION_KEYS = {
+    "roll": pygame.K_SPACE,
+    "interact": pygame.K_f,
+    "heal": pygame.K_q,
+    "inventory": pygame.K_e,
+    "pause": pygame.K_ESCAPE,
+    "debug": pygame.K_p,
+}
 
 
 def read_input():
-    keys_held = pygame.key.get_pressed()
-    keys_just_pressed = pygame.key.get_just_pressed()
-
-    direction_x, direction_y = 0, 0
-    if keys_held[pygame.K_a]:
-        direction_x -= 1
-    if keys_held[pygame.K_d]:
-        direction_x += 1
-    if keys_held[pygame.K_w]:
-        direction_y -= 1
-    if keys_held[pygame.K_s]:
-        direction_y += 1
-    move_direction = pygame.math.Vector2(direction_x, direction_y)
-    if move_direction.length_squared() > 0:
-        move_direction.normalize_ip()
-
-    left_button_just_pressed = pygame.mouse.get_just_pressed()[0]
-    left_click_pos = None
-    if left_button_just_pressed:
-        left_click_pos = get_mouse_pos()
-
-    return {
-        "move": move_direction,
-        "roll": keys_just_pressed[pygame.K_SPACE],
-        "interact": keys_just_pressed[pygame.K_f],
-        "heal": keys_just_pressed[pygame.K_q],
-        "inventory": keys_just_pressed[pygame.K_e],
-        "pause": keys_just_pressed[pygame.K_ESCAPE],
-        "debug": keys_just_pressed[pygame.K_p],
-        "mouse_left_click": left_click_pos,
-    }
+    intent = pressed_actions(pygame.key.get_just_pressed(), ACTION_KEYS)
+    intent["move"] = move_direction(pygame.key.get_pressed(), *MOVE_KEYS)
+    intent["mouse_left_click"] = mouse_click_pos()
+    return intent

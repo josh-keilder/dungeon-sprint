@@ -11,9 +11,9 @@ from constants import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
+from engine.io import sound
 from engine.ui.time_format import format_run_time, to_centiseconds
 from states.new_run import start_new_run
-from systems import sound
 from ui_components.text_button import TextButton
 
 # Title
