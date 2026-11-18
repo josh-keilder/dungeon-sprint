@@ -1,5 +1,5 @@
-from constants import PALETTE_STEEL, PALETTE_TORCH
-from ui_components.button import Button
+from engine.ui.button import Button
+from engine.ui.theme import get_theme
 
 
 class TextButton(Button):
@@ -8,9 +8,14 @@ class TextButton(Button):
         text,
         font,
         midtop=(0, 0),
-        text_color=PALETTE_STEEL,
-        hover_color=PALETTE_TORCH,
+        text_color=None,
+        hover_color=None,
     ):
+        if text_color is None:
+            text_color = get_theme("text_color")
+        if hover_color is None:
+            hover_color = get_theme("hover_color")
+
         self.font = font
         self.text_color = text_color
         self.hover_color = hover_color

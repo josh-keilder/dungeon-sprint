@@ -8,8 +8,8 @@ from engine.core.timer import (
     start_timer,
     time_left,
 )
-from ui_components.text_label import TextLabel
-from ui_components.text_layout import centered_text_x, centered_text_y
+from engine.ui.text_label import TextLabel
+from engine.ui.text_layout import centered_text_x, centered_text_y
 
 # Phase lengths
 FADE_DURATION = 0.4  # seconds, each way

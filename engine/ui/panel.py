@@ -1,17 +1,15 @@
 import pygame
 
-from constants import GAME_SCALE
-
-# 9-slice: corner size in art pixels.
-# Must match the border of the panel_frame sprite in tools/make_sprite.py
-PANEL_CORNER_SIZE = 4
+from engine.ui.theme import get_theme
 
 
-def make_panel(frame_image, size):
-    width = size[0] // GAME_SCALE
-    height = size[1] // GAME_SCALE
+def make_panel(frame_image, size, corner_size):
+    # 9-slice: corner_size is the frame art's border, in art pixels
+    scale = get_theme("pixel_scale")
+    width = size[0] // scale
+    height = size[1] // scale
 
-    corner = PANEL_CORNER_SIZE
+    corner = corner_size
 
     frame_width, frame_height = frame_image.get_size()
     frame_middle_width = frame_width - 2 * corner
@@ -75,4 +73,4 @@ def make_panel(frame_image, size):
         stretched_piece = pygame.transform.scale(piece, target_rect.size)
         panel.blit(stretched_piece, target_rect.topleft)
 
-    return pygame.transform.scale_by(panel, GAME_SCALE)
+    return pygame.transform.scale_by(panel, scale)

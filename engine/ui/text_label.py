@@ -1,20 +1,14 @@
 import pygame
 
-from constants import FONT_PATH, GAME_SCALE, PALETTE_STEEL
-
-# Defaults: Silkscreen at 24 sits on the 3x pixel grid
-DEFAULT_FONT_SIZE = 24
-
-# Outline: the outline-colored text is drawn one art pixel away in 4 directions
-OUTLINE_OFFSETS = ((-GAME_SCALE, 0), (GAME_SCALE, 0), (0, -GAME_SCALE), (0, GAME_SCALE))
+from engine.ui.theme import get_theme
 
 
 class TextLabel:
     def __init__(
         self,
         text,
-        font_size=DEFAULT_FONT_SIZE,
-        color=PALETTE_STEEL,
+        font_size=None,
+        color=None,
         pos=(0, 0),
         font=None,
         outline_color=None,
@@ -22,10 +16,14 @@ class TextLabel:
         pygame.font.init()
 
         if font is None:
-            self.font = pygame.font.Font(FONT_PATH, font_size)
+            if font_size is None:
+                font_size = get_theme("font_size")
+            self.font = pygame.font.Font(get_theme("font_path"), font_size)
         else:
             self.font = font
 
+        if color is None:
+            color = get_theme("text_color")
         self.color = color
         self.outline_color = outline_color
         self.pos = pos
@@ -35,7 +33,9 @@ class TextLabel:
 
     def draw(self, screen):
         if self.outline_surface is not None:
-            for offset_x, offset_y in OUTLINE_OFFSETS:
+            # The outline color drawn one pixel-grid step away in 4 directions
+            step = get_theme("pixel_scale")
+            for offset_x, offset_y in ((-step, 0), (step, 0), (0, -step), (0, step)):
                 screen.blit(
                     self.outline_surface,
                     (self.pos[0] + offset_x, self.pos[1] + offset_y),

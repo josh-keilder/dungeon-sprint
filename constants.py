@@ -101,6 +101,8 @@ MENU_BACKGROUND_COLOR = PALETTE_VOID  # Main Menu and Options fill
 FONT_PATH = "Assets/Fonts/Silkscreen-Regular.ttf"
 BUTTON_FONT_SIZE = 32  # every menu's buttons
 PANEL_FRAME_PATH = "Assets/UI/panel_frame.png"  # 9-slice frame for HUD and inventory
+# Corner size in art pixels; must match the panel_frame border in tools/make_sprite.py
+PANEL_CORNER_SIZE = 4
 OVERLAY_ALPHA = 160  # 0-255; how dark menus drawn over the game make it
 
 # The run: floor maps in play order

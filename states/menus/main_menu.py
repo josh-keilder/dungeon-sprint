@@ -9,7 +9,7 @@ from constants import (
     SCREEN_WIDTH,
 )
 from engine.io import sound
-from ui_components.text_button import TextButton
+from engine.ui.text_button import TextButton
 
 # Title
 TITLE_FONT_SIZE = 96

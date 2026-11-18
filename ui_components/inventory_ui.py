@@ -9,16 +9,17 @@ from constants import (
     PALETTE_STONE,
     PALETTE_TORCH,
     PALETTE_VOID,
+    PANEL_CORNER_SIZE,
     PANEL_FRAME_PATH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
 from engine.core.assets import load_image
 from engine.graphics.display import get_mouse_pos
+from engine.ui.panel import make_panel
+from engine.ui.text_label import TextLabel
+from engine.ui.text_layout import bottom_right_text_pos
 from systems.inventory import add_item, can_equip
-from ui_components.panel import make_panel
-from ui_components.text_label import TextLabel
-from ui_components.text_layout import bottom_right_text_pos
 
 # Window layout
 INVENTORY_FONT_SIZE = 24
@@ -72,8 +73,12 @@ class InventoryUI:
         ) // 2 // GAME_SCALE * GAME_SCALE
 
         self.frame_image = load_image(PANEL_FRAME_PATH)
-        self.window_panel = make_panel(self.frame_image, (window_width, window_height))
-        self.slot_panel = make_panel(self.frame_image, (SLOT_SIZE, SLOT_SIZE))
+        self.window_panel = make_panel(
+            self.frame_image, (window_width, window_height), PANEL_CORNER_SIZE
+        )
+        self.slot_panel = make_panel(
+            self.frame_image, (SLOT_SIZE, SLOT_SIZE), PANEL_CORNER_SIZE
+        )
 
         slots_top = self.window_pos[1] + WINDOW_PADDING + TITLE_HEIGHT
         equipment_x = self.window_pos[0] + WINDOW_PADDING
@@ -254,7 +259,7 @@ class InventoryUI:
         width = math.ceil(width / GAME_SCALE) * GAME_SCALE
         height = math.ceil(height / GAME_SCALE) * GAME_SCALE
 
-        tooltip = make_panel(self.frame_image, (width, height))
+        tooltip = make_panel(self.frame_image, (width, height), PANEL_CORNER_SIZE)
 
         for line_index, line in enumerate(rendered_lines):
             tooltip.blit(

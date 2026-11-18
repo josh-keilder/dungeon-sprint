@@ -1,8 +1,7 @@
 import pygame
 
-from constants import PALETTE_SHADOW, PALETTE_TORCH
 from engine.graphics.display import get_mouse_pos
-from engine.io import sound
+from engine.ui.theme import get_theme, play_theme_sound
 
 # Knob shape, in pixels
 KNOB_WIDTH = 20
@@ -62,7 +61,7 @@ class Slider:
             mouse_pos
         ):
             if not self.hovered:
-                sound.play_sfx("button_hover")
+                play_theme_sound("hover_sound")
             self.hovered = True
         else:
             self.hovered = False
@@ -83,7 +82,10 @@ class Slider:
     def draw(self, screen):
         # Main background track
         pygame.draw.rect(
-            screen, PALETTE_SHADOW, self.track_rect, border_radius=TRACK_CORNER_RADIUS
+            screen,
+            get_theme("slider_empty_color"),
+            self.track_rect,
+            border_radius=TRACK_CORNER_RADIUS,
         )
 
         # "Progress" fill: shows the distance between the start and the knob
@@ -98,7 +100,11 @@ class Slider:
         )
 
         # Knob rendering with visual feedback for interaction
-        color = PALETTE_TORCH if self.hovered or self.dragging else self.knob_color
+        color = (
+            get_theme("hover_color")
+            if self.hovered or self.dragging
+            else self.knob_color
+        )
         pygame.draw.rect(
             screen, color, self.knob_rect, border_radius=KNOB_CORNER_RADIUS
         )

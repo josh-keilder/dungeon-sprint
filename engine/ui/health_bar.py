@@ -1,15 +1,15 @@
 import pygame
 
-from constants import PALETTE_BLOOD, PALETTE_SHADOW, PALETTE_VOID
+from engine.ui.theme import get_theme
 
-# Enemy health bars: a void border around a shadow bar with a blood fill
+# Enemy health bars: a border around an empty bar with a fill, colors from the theme
 HEALTH_BAR_BORDER = 1  # pixels on every side
 
 
 def draw_health_bar(screen, health, x, y, width, height):
     pygame.draw.rect(
         screen,
-        PALETTE_VOID,
+        get_theme("health_bar_border_color"),
         (
             x - HEALTH_BAR_BORDER,
             y - HEALTH_BAR_BORDER,
@@ -18,7 +18,7 @@ def draw_health_bar(screen, health, x, y, width, height):
         ),
     )
 
-    pygame.draw.rect(screen, PALETTE_SHADOW, (x, y, width, height))
+    pygame.draw.rect(screen, get_theme("health_bar_empty_color"), (x, y, width, height))
 
     fill_width = int(width * health["current"] / health["maximum"])
 
@@ -26,4 +26,6 @@ def draw_health_bar(screen, health, x, y, width, height):
         fill_width = max(1, fill_width)
 
     if fill_width > 0:
-        pygame.draw.rect(screen, PALETTE_BLOOD, (x, y, fill_width, height))
+        pygame.draw.rect(
+            screen, get_theme("health_bar_fill_color"), (x, y, fill_width, height)
+        )

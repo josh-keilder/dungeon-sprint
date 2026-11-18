@@ -1,15 +1,15 @@
 import pygame
 
-from constants import PALETTE_STEEL
 from engine.graphics.display import get_mouse_pos
-from engine.io import sound
 from engine.ui.button_outline import draw_outline, make_outline
+from engine.ui.theme import get_theme, play_theme_sound
 
 
 class Button:
-    def __init__(
-        self, image, pos=(0, 0), outline_color=PALETTE_STEEL, hover_image=None
-    ):
+    def __init__(self, image, pos=(0, 0), outline_color=None, hover_image=None):
+        if outline_color is None:
+            outline_color = get_theme("button_outline_color")
+
         # Pictures: normal, hover, and an outline used when there's no hover picture
         self.image = image
         self.hover_image = hover_image
@@ -27,7 +27,7 @@ class Button:
 
         if self.rect.collidepoint(mouse_pos):
             if not self.hovered:
-                sound.play_sfx("button_hover")
+                play_theme_sound("hover_sound")
                 self.hovered = True
         else:
             self.hovered = False
@@ -35,7 +35,7 @@ class Button:
         self.clicked_this_frame = self.hovered and pygame.mouse.get_just_pressed()[0]
 
         if self.clicked_this_frame:
-            sound.play_sfx("button_click")
+            play_theme_sound("click_sound")
 
     def draw(self, screen):
         # A hover image replaces the normal one; without one, hover draws an outline

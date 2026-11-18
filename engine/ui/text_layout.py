@@ -1,12 +1,13 @@
-from constants import GAME_SCALE
+from engine.ui.theme import get_theme
 
 # Text is placed by its visible ink (get_bounding_rect), not by its surface: a rendered
 # surface has empty space above and below the letters, so lining up surfaces would leave
-# text visibly off-center. Centered positions are snapped to the 3 px pixel grid.
+# text visibly off-center. Centered positions are snapped to the theme's pixel grid.
 
 
 def snap_to_grid(value):
-    return value // GAME_SCALE * GAME_SCALE
+    scale = get_theme("pixel_scale")
+    return value // scale * scale
 
 
 def centered_text_x(text_surface, center_x):

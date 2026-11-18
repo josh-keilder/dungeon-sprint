@@ -20,8 +20,8 @@ from engine.graphics.animation import (
 from engine.graphics.blink import is_blink_hidden
 from engine.graphics.masks import draw_hitbox
 from engine.physics.movement import decay_velocity, move_and_collide
+from engine.ui.health_bar import draw_health_bar
 from systems.enemy_ai import fly_velocity, random_idle_direction, wander_chase_velocity
-from ui_components.health_bar import draw_health_bar
 
 # Health bar, in world pixels, shown above the sprite once the enemy is hurt
 ENEMY_HEALTH_BAR_WIDTH = TILE_SIZE

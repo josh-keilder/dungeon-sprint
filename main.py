@@ -2,10 +2,15 @@ import pygame
 
 from constants import (
     DEFAULT_SETTINGS,
+    FONT_PATH,
     FRAME_RATE,
     GAME_SCALE,
     GREEN,
     MUSIC_FOLDER,
+    PALETTE_BLOOD,
+    PALETTE_SHADOW,
+    PALETTE_STEEL,
+    PALETTE_TORCH,
     PALETTE_VOID,
     RED,
     SCREEN_HEIGHT,
@@ -23,12 +28,13 @@ from engine.core.state_manager import GameStateManager
 from engine.graphics.display import create_window
 from engine.graphics.renderer import Renderer
 from engine.io import sound
+from engine.ui.cursor import Cursor
+from engine.ui.fps_counter import FpsCounter
+from engine.ui.theme import set_theme
 from states.menus.main_menu import MainMenu
 from states.menus.options import OptionsMenu
 from states.menus.run_end import RunEndScreen
 from states.run import Run
-from ui_components.cursor import Cursor
-from ui_components.fps_counter import FpsCounter
 from world.light_types import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT
 
 # Cursor art
@@ -43,6 +49,23 @@ class Game:
         pygame.init()
 
         settings.load_settings(DEFAULT_SETTINGS, SETTINGS_FILE_PATH)
+
+        # The look every engine widget reads; set before any screen is built
+        set_theme(
+            font_path=FONT_PATH,
+            font_size=24,  # Silkscreen at 24 sits on the 3x pixel grid
+            pixel_scale=GAME_SCALE,
+            text_color=PALETTE_STEEL,
+            text_outline_color=PALETTE_VOID,
+            hover_color=PALETTE_TORCH,
+            button_outline_color=PALETTE_STEEL,
+            slider_empty_color=PALETTE_SHADOW,
+            hover_sound="button_hover",
+            click_sound="button_click",
+            health_bar_border_color=PALETTE_VOID,
+            health_bar_empty_color=PALETTE_SHADOW,
+            health_bar_fill_color=PALETTE_BLOOD,
+        )
 
         create_window(
             (SCREEN_WIDTH, SCREEN_HEIGHT),
@@ -83,7 +106,7 @@ class Game:
         sound.set_music_volume(music_volume)
 
         # FPS counter, shown when the setting is on
-        self.fps_counter = FpsCounter()
+        self.fps_counter = FpsCounter(SCREEN_WIDTH)
 
         # Screens, and the manager that switches between them
         self.game_state_manager = GameStateManager("main_menu")

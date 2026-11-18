@@ -15,11 +15,11 @@ from constants import (
 from engine.core import settings
 from engine.graphics.display import create_window
 from engine.io import sound
+from engine.ui.slider import Slider
+from engine.ui.text_button import TextButton
+from engine.ui.text_label import TextLabel
 from states.new_run import start_new_run
 from systems.input import read_input
-from ui_components.slider import Slider
-from ui_components.text_button import TextButton
-from ui_components.text_label import TextLabel
 
 # Title and labels
 TITLE_FONT_SIZE = 96

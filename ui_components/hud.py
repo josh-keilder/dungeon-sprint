@@ -8,22 +8,23 @@ from constants import (
     PALETTE_STEEL,
     PALETTE_TORCH,
     PALETTE_VOID,
+    PANEL_CORNER_SIZE,
     PANEL_FRAME_PATH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
 from engine.core.assets import load_image
 from engine.core.timer import time_left
-from engine.ui.time_format import format_run_time
-from systems.consumables import HEAL_COOLDOWN
-from systems.inventory import count_item
-from ui_components.panel import make_panel
-from ui_components.text_label import TextLabel
-from ui_components.text_layout import (
+from engine.ui.panel import make_panel
+from engine.ui.text_label import TextLabel
+from engine.ui.text_layout import (
     bottom_right_text_pos,
     centered_text_x,
     centered_text_y,
 )
+from engine.ui.time_format import format_run_time
+from systems.consumables import HEAL_COOLDOWN
+from systems.inventory import count_item
 
 # Shared by every HUD part
 HUD_FONT_SIZE = 24
@@ -77,7 +78,9 @@ class HUD:
         self.font = pygame.font.Font(FONT_PATH, HUD_FONT_SIZE)
 
         # Health panel
-        self.health_panel = make_panel(frame_image, HEALTH_PANEL_SIZE)
+        self.health_panel = make_panel(
+            frame_image, HEALTH_PANEL_SIZE, PANEL_CORNER_SIZE
+        )
         self.health_bar_rect = pygame.Rect(
             HUD_MARGIN + HEALTH_BAR_OFFSET[0],
             HUD_MARGIN + HEALTH_BAR_OFFSET[1],
@@ -85,7 +88,7 @@ class HUD:
         )
 
         # Run timer
-        self.timer_panel = make_panel(frame_image, TIMER_PANEL_SIZE)
+        self.timer_panel = make_panel(frame_image, TIMER_PANEL_SIZE, PANEL_CORNER_SIZE)
         self.timer_panel_x = (
             (SCREEN_WIDTH - TIMER_PANEL_SIZE[0]) // 2 // GAME_SCALE * GAME_SCALE
         )
@@ -101,12 +104,14 @@ class HUD:
         )
 
         # Floor number
-        self.floor_panel = make_panel(frame_image, FLOOR_PANEL_SIZE)
+        self.floor_panel = make_panel(frame_image, FLOOR_PANEL_SIZE, PANEL_CORNER_SIZE)
         self.floor_panel_x = self.timer_panel_x + TIMER_PANEL_SIZE[0] + FLOOR_PANEL_GAP
         self.floor_label = TextLabel("", color=PALETTE_STEEL, font=self.font)
 
         # Quick slots
-        self.quick_slot_panel = make_panel(frame_image, QUICK_SLOT_SIZE)
+        self.quick_slot_panel = make_panel(
+            frame_image, QUICK_SLOT_SIZE, PANEL_CORNER_SIZE
+        )
         slot_y = SCREEN_HEIGHT - HUD_MARGIN - QUICK_SLOT_SIZE[1]
 
         # Potion slot
