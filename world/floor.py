@@ -10,16 +10,17 @@ from engine.gameplay.loot import roll_loot
 from engine.graphics.camera import is_on_screen
 from engine.graphics.lighting import light_blockers
 from engine.graphics.masks import draw_highlight, draw_hitbox
+from engine.graphics.particles import draw_particles, emit_burst, update_particles
 from engine.io import sound
 from entities.enemies.load_enemies import load_enemies
 from items.loot_table_data import CRATE_LOOT
 from systems.collision import find_player_contacts
 from systems.combat import resolve_contact, resolve_strike
-from systems.particles import CRATE_DEBRIS, draw_particles, emit_burst, update_particles
 from systems.roll import is_rolling
 from systems.separation import separate_enemies
 from world.map_loader import load_floor_data
 from world.objects import GroundItem
+from world.particle_presets import CRATE_DEBRIS
 
 # Loot scatters a little around where it came from
 LOOT_SCATTER_X = 10  # world pixels
