@@ -1,16 +1,5 @@
 import pygame
 
-from constants import (
-    BUTTON_FONT_SIZE,
-    FONT_PATH,
-    MENU_BACKGROUND_COLOR,
-    OVERLAY_ALPHA,
-    PALETTE_ICE,
-    PALETTE_STEEL,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-    WINDOW_TITLE,
-)
 from engine.core import settings
 from engine.graphics.display import create_window
 from engine.graphics.overlay import new_overlay
@@ -19,6 +8,15 @@ from engine.ui.slider import Slider
 from engine.ui.text_button import TextButton
 from engine.ui.text_label import TextLabel
 from engine.ui.title import make_title
+from game.data.constants import (
+    BUTTON_FONT_SIZE,
+    FONT_PATH,
+    OVERLAY_ALPHA,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    WINDOW_TITLE,
+)
+from game.data.palette import MENU_BACKGROUND_COLOR, PALETTE_ICE, PALETTE_STEEL
 from game.rules.input import read_input
 from game.states.new_run import start_new_run
 

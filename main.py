@@ -1,27 +1,5 @@
 import pygame
 
-from constants import (
-    DEFAULT_SETTINGS,
-    FONT_PATH,
-    FRAME_RATE,
-    GAME_SCALE,
-    GREEN,
-    MUSIC_FOLDER,
-    PALETTE_BLOOD,
-    PALETTE_SHADOW,
-    PALETTE_STEEL,
-    PALETTE_TORCH,
-    PALETTE_VOID,
-    RED,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-    SETTINGS_FILE_PATH,
-    SFX_FOLDER,
-    TILE_SIZE,
-    WINDOW_TITLE,
-    WORLD_HEIGHT,
-    WORLD_WIDTH,
-)
 from engine.core import settings
 from engine.core.assets import load_image
 from engine.core.state_manager import GameStateManager
@@ -31,7 +9,31 @@ from engine.io import sound
 from engine.ui.cursor import Cursor
 from engine.ui.fps_counter import FpsCounter
 from engine.ui.theme import set_theme
+from game.data.constants import (
+    DEFAULT_SETTINGS,
+    FONT_PATH,
+    FRAME_RATE,
+    GAME_SCALE,
+    MUSIC_FOLDER,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    SETTINGS_FILE_PATH,
+    SFX_FOLDER,
+    TILE_SIZE,
+    WINDOW_TITLE,
+    WORLD_HEIGHT,
+    WORLD_WIDTH,
+)
 from game.data.light_types import AMBIENT_LIGHT, LIGHT_BANDS, MAX_LIGHT
+from game.data.palette import (
+    GREEN,
+    PALETTE_BLOOD,
+    PALETTE_SHADOW,
+    PALETTE_STEEL,
+    PALETTE_TORCH,
+    PALETTE_VOID,
+    RED,
+)
 from game.states.menus.main_menu import MainMenu
 from game.states.menus.options import OptionsMenu
 from game.states.menus.run_end import RunEndScreen

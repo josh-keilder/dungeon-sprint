@@ -1,13 +1,5 @@
 import pygame
 
-from constants import (
-    FLOOR_ORDER,
-    MENU_BACKGROUND_COLOR,
-    PALETTE_CANDLE,
-    PALETTE_STEEL,
-    WORLD_HEIGHT,
-    WORLD_WIDTH,
-)
 from engine.core import debug, settings
 from engine.core.timer import (
     advance_timer,
@@ -22,8 +14,10 @@ from engine.graphics.lighting import visible_lights
 from engine.graphics.renderer import submit_world
 from engine.graphics.shake import new_shake, start_shake, update_shake
 from engine.io import sound
+from game.data.constants import FLOOR_ORDER, WORLD_HEIGHT, WORLD_WIDTH
 from game.data.item_database import initialize_item_database
 from game.data.light_types import LIGHT_TYPES
+from game.data.palette import MENU_BACKGROUND_COLOR, PALETTE_CANDLE, PALETTE_STEEL
 from game.entities.player.load_player import load_player
 from game.rules import interact
 from game.rules.input import read_input

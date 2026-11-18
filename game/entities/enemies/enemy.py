@@ -1,6 +1,5 @@
 import pygame
 
-from constants import RED, TILE_SIZE, YELLOW
 from engine.core import debug
 from engine.core.assets import load_animations
 from engine.core.timer import (
@@ -22,6 +21,8 @@ from engine.graphics.camera import rect_to_screen, world_to_screen
 from engine.graphics.masks import draw_hitbox
 from engine.physics.movement import move_and_collide, move_knockback
 from engine.ui.health_bar import draw_health_bar
+from game.data.constants import TILE_SIZE
+from game.data.palette import RED, YELLOW
 from game.rules.enemy_ai import (
     fly_velocity,
     random_idle_direction,

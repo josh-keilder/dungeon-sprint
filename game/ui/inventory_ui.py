@@ -2,18 +2,6 @@ import math
 
 import pygame
 
-from constants import (
-    FONT_PATH,
-    GAME_SCALE,
-    PALETTE_STEEL,
-    PALETTE_STONE,
-    PALETTE_TORCH,
-    PALETTE_VOID,
-    PANEL_CORNER_SIZE,
-    PANEL_FRAME_PATH,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-)
 from engine.core.assets import load_image
 from engine.gameplay.inventory import add_item, can_equip
 from engine.graphics.display import get_mouse_pos
@@ -21,6 +9,15 @@ from engine.graphics.overlay import new_overlay
 from engine.ui.panel import make_panel
 from engine.ui.text_label import TextLabel
 from engine.ui.text_layout import bottom_right_text_pos, snap_to_grid
+from game.data.constants import (
+    FONT_PATH,
+    GAME_SCALE,
+    PANEL_CORNER_SIZE,
+    PANEL_FRAME_PATH,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
+from game.data.palette import PALETTE_STEEL, PALETTE_STONE, PALETTE_TORCH, PALETTE_VOID
 
 # Window layout
 INVENTORY_FONT_SIZE = 24

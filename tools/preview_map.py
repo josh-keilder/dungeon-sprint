@@ -3,17 +3,15 @@ import sys
 
 import pygame
 
-from constants import (
-    FLOOR_ORDER,
-    FONT_PATH,
+from game.data.constants import FLOOR_ORDER, FONT_PATH, TILE_SIZE
+from game.data.item_database import initialize_item_database
+from game.data.palette import (
     PALETTE_AZURE,
     PALETTE_BLOOD,
     PALETTE_GOLD,
     PALETTE_ICE,
     PALETTE_VOID,
-    TILE_SIZE,
 )
-from game.data.item_database import initialize_item_database
 from game.world.map_loader import load_floor_data
 
 # Output image

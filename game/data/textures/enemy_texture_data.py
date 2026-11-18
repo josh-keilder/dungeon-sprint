@@ -1,4 +1,4 @@
-from constants import TILE_SIZE
+from game.data.constants import TILE_SIZE
 
 # The art is bigger than the body; see "body" in ENEMY_TYPES
 SKELETON_FRAME_SIZE = (32, 32)

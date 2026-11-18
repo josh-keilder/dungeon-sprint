@@ -4,7 +4,7 @@ import sys
 import xml.etree.ElementTree as ET
 from collections import deque
 
-from constants import TILE_SIZE
+from game.data.constants import TILE_SIZE
 
 # Legend: one character per tile in the ASCII source
 WALL = "#"

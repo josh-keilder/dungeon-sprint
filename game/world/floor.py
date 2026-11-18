@@ -2,7 +2,6 @@ import random
 
 import pygame
 
-from constants import BLUE, TILE_SIZE
 from engine.core import debug
 from engine.core.assets import load_image
 from engine.gameplay.health import is_dead
@@ -13,7 +12,9 @@ from engine.graphics.masks import draw_highlight, draw_hitbox
 from engine.graphics.particles import draw_particles, emit_burst, update_particles
 from engine.io import sound
 from engine.physics.collision import edge_walls
+from game.data.constants import TILE_SIZE
 from game.data.loot_table_data import CRATE_LOOT
+from game.data.palette import BLUE
 from game.data.particle_presets import CRATE_DEBRIS
 from game.entities.enemies.load_enemies import load_enemies
 from game.rules.combat import resolve_contact, resolve_strike

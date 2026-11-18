@@ -1,6 +1,5 @@
 import pygame
 
-from constants import GREEN
 from engine.core import debug
 from engine.core.timer import advance_timer, new_timer
 from engine.gameplay.health import new_health, set_max_health
@@ -12,6 +11,7 @@ from engine.graphics.camera import world_to_screen
 from engine.graphics.masks import draw_hitbox
 from engine.io.sound import play_sfx
 from engine.physics.movement import move_and_collide, move_knockback, steer
+from game.data.palette import GREEN
 from game.rules.consumables import use_small_health_potion
 from game.rules.roll import (
     advance_roll,

@@ -1,18 +1,5 @@
 import pygame
 
-from constants import (
-    FONT_PATH,
-    GAME_SCALE,
-    PALETTE_BLOOD,
-    PALETTE_SHADOW,
-    PALETTE_STEEL,
-    PALETTE_TORCH,
-    PALETTE_VOID,
-    PANEL_CORNER_SIZE,
-    PANEL_FRAME_PATH,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-)
 from engine.core.assets import load_image
 from engine.core.timer import fraction_left
 from engine.gameplay.inventory import count_item
@@ -25,6 +12,21 @@ from engine.ui.text_layout import (
     snap_to_grid,
 )
 from engine.ui.time_format import format_run_time
+from game.data.constants import (
+    FONT_PATH,
+    GAME_SCALE,
+    PANEL_CORNER_SIZE,
+    PANEL_FRAME_PATH,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
+from game.data.palette import (
+    PALETTE_BLOOD,
+    PALETTE_SHADOW,
+    PALETTE_STEEL,
+    PALETTE_TORCH,
+    PALETTE_VOID,
+)
 
 # Shared by every HUD part
 HUD_FONT_SIZE = 24

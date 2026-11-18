@@ -1,4 +1,4 @@
-from constants import (
+from game.data.palette import (
     PALETTE_AZURE,
     PALETTE_BONE,
     PALETTE_CLAY,

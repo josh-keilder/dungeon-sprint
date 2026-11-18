@@ -1,15 +1,10 @@
 import pygame
 
-from constants import (
-    BUTTON_FONT_SIZE,
-    FONT_PATH,
-    MENU_BACKGROUND_COLOR,
-    PALETTE_STEEL,
-    SCREEN_WIDTH,
-)
 from engine.io import sound
 from engine.ui.text_button import TextButton
 from engine.ui.title import make_title
+from game.data.constants import BUTTON_FONT_SIZE, FONT_PATH, SCREEN_WIDTH
+from game.data.palette import MENU_BACKGROUND_COLOR, PALETTE_STEEL
 
 # Title
 TITLE_FONT_SIZE = 96

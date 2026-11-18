@@ -2,7 +2,7 @@ import os
 
 import pygame
 
-from constants import (
+from game.data.palette import (
     PALETTE_AZURE,
     PALETTE_BRASS,
     PALETTE_CANDLE,

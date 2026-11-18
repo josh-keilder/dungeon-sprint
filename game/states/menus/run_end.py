@@ -1,20 +1,18 @@
 import pygame
 
-from constants import (
-    BUTTON_FONT_SIZE,
-    FONT_PATH,
-    OVERLAY_ALPHA,
-    PALETTE_BLOOD,
-    PALETTE_SHADOW,
-    PALETTE_STEEL,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-)
 from engine.graphics.overlay import new_overlay
 from engine.io import sound
 from engine.ui.text_button import TextButton
 from engine.ui.time_format import format_run_time, to_centiseconds
 from engine.ui.title import make_title
+from game.data.constants import (
+    BUTTON_FONT_SIZE,
+    FONT_PATH,
+    OVERLAY_ALPHA,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
+from game.data.palette import PALETTE_BLOOD, PALETTE_SHADOW, PALETTE_STEEL
 from game.states.new_run import start_new_run
 
 # Title

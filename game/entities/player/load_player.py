@@ -1,5 +1,5 @@
-from constants import TILE_SIZE
 from engine.core.assets import load_animations
+from game.data.constants import TILE_SIZE
 from game.data.textures.player_texture_data import player_texture_data
 from game.entities.player.player import Player
 

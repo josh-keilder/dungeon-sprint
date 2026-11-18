@@ -1,4 +1,3 @@
-from constants import PALETTE_VOID, SCREEN_HEIGHT, SCREEN_WIDTH
 from engine.core.timer import (
     advance_timer,
     fraction_left,
@@ -9,6 +8,8 @@ from engine.core.timer import (
 from engine.graphics.overlay import new_overlay
 from engine.ui.text_label import TextLabel
 from engine.ui.text_layout import centered_text_x, centered_text_y
+from game.data.constants import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.data.palette import PALETTE_VOID
 
 # Phase lengths
 FADE_DURATION = 0.4  # seconds, each way

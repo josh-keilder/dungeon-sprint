@@ -3,9 +3,9 @@ import random
 import pygame
 from pytmx.util_pygame import load_pygame
 
-from constants import TILE_SIZE
 from engine.core.assets import load_animations
 from engine.graphics.lighting import flame_position
+from game.data.constants import TILE_SIZE
 from game.data.light_types import LIGHT_TYPES
 from game.data.textures.decor_texture_data import decor_texture_data
 from game.world.objects import Chest, Crate

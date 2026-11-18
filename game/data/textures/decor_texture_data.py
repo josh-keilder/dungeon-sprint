@@ -1,4 +1,4 @@
-from constants import TILE_SIZE
+from game.data.constants import TILE_SIZE
 
 # Animated decor: the pack's frames, joined into strips by tools/make_strip.py
 decor_texture_data = {
