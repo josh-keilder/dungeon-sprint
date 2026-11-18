@@ -16,6 +16,7 @@ from constants import (
 )
 from engine.core.assets import load_image
 from engine.graphics.display import get_mouse_pos
+from engine.graphics.overlay import new_overlay
 from engine.ui.panel import make_panel
 from engine.ui.text_label import TextLabel
 from engine.ui.text_layout import bottom_right_text_pos
@@ -122,8 +123,9 @@ class InventoryUI:
             "", color=PALETTE_STEEL, font=self.font, outline_color=PALETTE_VOID
         )
 
-        self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-        self.overlay.fill((0, 0, 0, INVENTORY_DIM_ALPHA))
+        self.overlay = new_overlay(
+            (SCREEN_WIDTH, SCREEN_HEIGHT), (0, 0, 0), INVENTORY_DIM_ALPHA
+        )
 
     def draw(self, screen, inventory):
         screen.blit(self.overlay, (0, 0))

@@ -14,7 +14,7 @@ from constants import (
     SCREEN_WIDTH,
 )
 from engine.core.assets import load_image
-from engine.core.timer import time_left
+from engine.core.timer import fraction_left
 from engine.ui.panel import make_panel
 from engine.ui.text_label import TextLabel
 from engine.ui.text_layout import (
@@ -23,7 +23,6 @@ from engine.ui.text_layout import (
     centered_text_y,
 )
 from engine.ui.time_format import format_run_time
-from systems.consumables import HEAL_COOLDOWN
 from systems.inventory import count_item
 
 # Shared by every HUD part
@@ -254,7 +253,7 @@ class HUD:
         self.floor_label.draw(screen)
 
     def draw_quick_slots(self, screen, player):
-        potion_cooldown_fraction = time_left(player.heal_cooldown) / HEAL_COOLDOWN
+        potion_cooldown_fraction = fraction_left(player.heal_cooldown)
 
         potion_count = count_item(player.inventory, "small_health_potion")
         potion_icon = self.potion_icon if potion_count > 0 else self.potion_icon_empty

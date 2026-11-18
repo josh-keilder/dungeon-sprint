@@ -11,6 +11,7 @@ from constants import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
+from engine.graphics.overlay import new_overlay
 from engine.io import sound
 from engine.ui.text_button import TextButton
 from engine.ui.time_format import format_run_time, to_centiseconds
@@ -76,8 +77,9 @@ class RunEndScreen:
             hover_color=PALETTE_TORCH,
         )
 
-        self.overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-        self.overlay.fill((0, 0, 0, OVERLAY_ALPHA))
+        self.overlay = new_overlay(
+            (SCREEN_WIDTH, SCREEN_HEIGHT), (0, 0, 0), OVERLAY_ALPHA
+        )
 
         self.split_rows = []
         self.divider_rect = pygame.Rect(0, 0, 0, 0)

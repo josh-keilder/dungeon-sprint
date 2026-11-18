@@ -3,10 +3,10 @@ import pygame
 from constants import PALETTE_BLOOD, SCREEN_HEIGHT, SCREEN_WIDTH
 from engine.core.timer import (
     advance_timer,
+    fraction_left,
     is_running,
     new_timer,
     start_timer,
-    time_left,
 )
 
 # A red glow around the screen edges when the player is hurt, fading out
@@ -41,5 +41,5 @@ class HurtVignette:
     def draw(self, screen):
         if not is_running(self.timer):
             return
-        self.overlay.set_alpha(round(255 * time_left(self.timer) / VIGNETTE_DURATION))
+        self.overlay.set_alpha(round(255 * fraction_left(self.timer)))
         screen.blit(self.overlay, (0, 0))

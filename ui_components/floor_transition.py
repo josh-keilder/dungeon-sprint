@@ -1,13 +1,12 @@
-import pygame
-
 from constants import PALETTE_VOID, SCREEN_HEIGHT, SCREEN_WIDTH
 from engine.core.timer import (
     advance_timer,
+    fraction_left,
     is_running,
     new_timer,
     start_timer,
-    time_left,
 )
+from engine.graphics.overlay import new_overlay
 from engine.ui.text_label import TextLabel
 from engine.ui.text_layout import centered_text_x, centered_text_y
 
@@ -29,8 +28,7 @@ class FloorTransition:
         self.timer = new_timer()
 
         # A screen-sized black overlay, faded in and out over everything
-        self.fade_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.fade_overlay.fill(PALETTE_VOID)
+        self.fade_overlay = new_overlay((SCREEN_WIDTH, SCREEN_HEIGHT), PALETTE_VOID)
         self.floor_label = TextLabel("", font_size=FLOOR_CARD_FONT_SIZE)
 
     def start(self):
@@ -76,7 +74,7 @@ class FloorTransition:
         )
 
     def overlay_alpha(self):
-        fade_left = time_left(self.timer) / FADE_DURATION
+        fade_left = fraction_left(self.timer)
 
         if self.phase == "fade_out":
             return round(255 * (1 - fade_left))

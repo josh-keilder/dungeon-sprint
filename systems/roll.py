@@ -1,4 +1,4 @@
-from engine.core.timer import advance_timer, is_running, start_timer, time_left
+from engine.core.timer import advance_timer, fraction_left, is_running, start_timer
 
 # Roll timing
 ROLL_DURATION = 0.4  # seconds
@@ -29,7 +29,7 @@ def is_rolling(roll):
 
 
 def roll_speed_multiplier(roll):
-    progress = 1 - time_left(roll["active_timer"]) / ROLL_DURATION
+    progress = 1 - fraction_left(roll["active_timer"])
 
     if progress < ROLL_EASE_OUT_START:
         return 1.0

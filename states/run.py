@@ -14,7 +14,7 @@ from engine.core.timer import (
     is_running,
     new_timer,
     start_timer,
-    time_left,
+    time_elapsed,
 )
 from engine.gameplay.health import is_dead
 from engine.graphics.camera import center_camera, new_camera
@@ -115,7 +115,7 @@ class Run:
             self.interact_prompt = None
 
             advance_timer(self.death_timer, dt)
-            elapsed = DEATH_DELAY - time_left(self.death_timer)
+            elapsed = time_elapsed(self.death_timer)
             fade_progress = min(1.0, elapsed / DEATH_FADE_DURATION)
             self.player.alpha = round(255 * (1 - fade_progress))
 
