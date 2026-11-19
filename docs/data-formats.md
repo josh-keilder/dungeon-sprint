@@ -16,19 +16,19 @@
 | `deceleration_rate` | 60 | How fast the player stops with no input (to a full stop in about 0.07 s) |
 | `grip` | 50 | How fast sideways and reversing velocity is removed (sideways drift gone in about 0.09 s) |
 
-Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 s (the cooldown starts when the roll starts), and `ROLL_EASE_OUT_START` 0.7 (the push starts fading after 70 % of the roll).
+Roll timing is in `game/rules/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 s (the cooldown starts when the roll starts), and `ROLL_EASE_OUT_START` 0.7 (the push starts fading after 70 % of the roll).
 
 **`roll` dict** (player): `{"direction", "active_timer", "cooldown_timer"}`. `direction` is the move direction copied when the roll started. `active_timer` holds the seconds left in the current roll, and `cooldown_timer` the seconds before the next roll can start. Both are timers from `new_timer()`. There is no separate "active" flag: `is_rolling(roll)` is true while `active_timer` is running, and all code asks it that way.
 
-**Timers** (`systems/timer.py`). Every countdown in the game is a `{"time_left": seconds}` dict made with `new_timer()`, including the enemies' flee and return countdowns. `start_timer(timer, duration)` sets it, `advance_timer(timer, dt)` subtracts `dt` each frame, and `is_running(timer)` is true while it is `> 0`. `time_left(timer)` returns the seconds left, never below 0, for code that needs the number itself, such as the roll ease-out and the player's blink. The value keeps counting below 0, which is harmless because every check goes through `is_running` or `time_left`. Only `timer.py` reads the `"time_left"` key directly, so the key could change again without touching anything else (it was renamed from `"timer"`, since a timer with a "timer" key read oddly and `time_left()` already returns it). The roll's `active_timer` and `cooldown_timer` are timers too. The one exception is animation, which is a different kind of timer that counts *up* to advance frames.
+**Timers** (`engine/core/timer.py`). Every countdown in the game is a `{"time_left": seconds, "duration": seconds}` dict made with `new_timer()`, including the enemies' flee and return countdowns. `start_timer(timer, duration)` sets both, so the timer remembers how long it was started for and `fraction_left(timer)` and `time_elapsed(timer)` need nothing else, `advance_timer(timer, dt)` subtracts `dt` each frame, and `is_running(timer)` is true while it is `> 0`. `time_left(timer)` returns the seconds left, never below 0, for code that needs the number itself, such as the roll ease-out and the player's blink. The value keeps counting below 0, which is harmless because every check goes through `is_running` or `time_left`. Only `timer.py` reads the `"time_left"` key directly, so the key could change again without touching anything else (it was renamed from `"timer"`, since a timer with a "timer" key read oddly and `time_left()` already returns it). The roll's `active_timer` and `cooldown_timer` are timers too. The one exception is animation, which is a different kind of timer that counts *up* to advance frames.
 
-**`invulnerability` dict** (player and enemies): a timer holding the seconds of invulnerability left. The player's window is `PLAYER_INVULNERABILITY_DURATION` (1.0 s, `systems/combat.py`), and each enemy's is its own `invulnerability_duration` from `ENEMY_TYPES`. The player's `BLINK_INTERVAL` is 0.1 s (`player.py`), and `ROLL_DAMAGE_PER_SPEED` is 0.15 (`systems/combat.py`), so an enemy with 100 health dies after about 3 rolls.
+**`invulnerability` dict** (player and enemies): a timer holding the seconds of invulnerability left. The player's window is `PLAYER_INVULNERABILITY_DURATION` (1.0 s, `game/rules/combat.py`), and each enemy's is its own `invulnerability_duration` from `ENEMY_TYPES`. The player's `BLINK_INTERVAL` is 0.1 s (`player.py`), and `ROLL_DAMAGE_PER_SPEED` is 0.15 (`game/rules/combat.py`), so an enemy with 100 health dies after about 3 rolls.
 
-**`heal_cooldown` dict** (player): a timer holding the seconds left before another potion can be used. `use_small_health_potion` refuses while `is_running(heal_cooldown)`. `HEAL_COOLDOWN` is 3.0 s (`systems/consumables.py`). The cooldown only starts when a potion is actually used, so a refused Q press (full health or no potion) doesn't start it.
+**`heal_cooldown` dict** (player): a timer holding the seconds left before another potion can be used. `use_small_health_potion` refuses while `is_running(heal_cooldown)`. `HEAL_COOLDOWN` is 3.0 s (`game/rules/consumables.py`). The cooldown only starts when a potion is actually used, so a refused Q press (full health or no potion) doesn't start it.
 
 **Equipment bonuses.** `compute_stats` copies `base_stats` and adds each equipped item's `bonuses` to stats with the same name. Bonus names that aren't in `base_stats` are ignored. Speed boots give `{"max_speed": 10, "acceleration_rate": 7, "defense": 3, "health": 10}`.
 
-**`ENEMY_TYPES`** (`enemy_type_data.py`). The key must match the map spawn name after `Enemy_`:
+**`ENEMY_TYPES`** (`game/data/enemy_type_data.py`). The key must match the map spawn name after `Enemy_`:
 
 ```python
 "Skull": {
@@ -47,6 +47,8 @@ Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 
     "touch_damage": True,          # hurts the player on contact
     "animation_prefix": None,      # one animation, no states
     "attack": None,                # no swing
+    "hit_particles": SKULL_SPARKS, # burst along the knockback when a roll hits it
+    "stagger_duration": 0.0,       # its knockback is long enough on its own
 },
 "Skeleton": {
     "max_health": 100,
@@ -69,7 +71,11 @@ Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 
         "strike_frames": (6, 7),   # the frames that hurt: where the slash is drawn
         "reach": 18,               # px the strike hitbox extends in front of the body
         "cooldown": 1.0,           # s after a swing before the next one
+        "line_up_gap": 16,         # px beside the player it walks to before swinging
+        "level_tolerance": 6,      # px of height difference it still swings at
     },
+    "hit_particles": BONE_CHIPS,
+    "stagger_duration": 0.75,      # s without walking or swinging after a hit
 },
 ```
 
@@ -77,13 +83,31 @@ Roll timing is in `systems/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1.0 
 - **`body`** is the box that moves, collides, gets separated and blocks the player, given inside the art frame, so art can be bigger than the body (the Skeleton's 32×32 frame has a lot of empty space around a 14×16 body).
 - **`animation_prefix`** turns on animation states: the texture data must then have `<prefix>_idle_right`, `_move_right`, `_hurt_right` and `_death_right` (and `_attack_right` for a type with an `attack`). `None` keeps the single `start_animation`.
 - **`blink_interval`** `None` turns the hit blink off, for types whose hurt animation already shows the hit.
-- **`attack`** `None` means no swing; a dict turns on the telegraphed swing ([One frame](frame.md), step 4).
+- **`attack`** `None` means no swing; a dict turns on the telegraphed swing ([One frame](frame.md), step 4). Its swing only reaches sideways, so the enemy walks to a spot `line_up_gap` beside the player and only swings when the player is within `level_tolerance` of its height.
+- **`hit_particles`** is a particle preset (below) burst when a roll hits it.
+- **`stagger_duration`** is how long it stands still after a roll hit, at least as long as its knockback lasts. 0 means only the knockback.
+
+**Particle presets** (`game/data/particle_presets.py`), handed to the engine's `emit_burst`. Ranges are `(lowest, highest)`, picked at random per particle:
+
+```python
+CRATE_DEBRIS = {
+    "count": 8,                    # particles per burst
+    "colors": (PALETTE_LEATHER, PALETTE_TORCH, PALETTE_CLAY),   # one picked per particle
+    "speed": (40, 100),            # px per second
+    "lifetime": (0.25, 0.45),      # seconds
+    "size": (2, 3),                # px, square
+    "drag": 6,                     # how fast they slow down; higher stops sooner
+    "spread": 360,                 # degrees around the direction; 360 = all around
+}
+```
+
+`BONE_CHIPS` (6 bone-colored chips, spread 120°) and `SKULL_SPARKS` (7 icy sparks, spread 140°) are sprayed along a roll hit's knockback, so the burst flies away from the player.
 
 Every key is required. `Enemy.__init__` reads them with `type_data["..."]`, so a missing key raises `KeyError` naming it when the floor loads, instead of silently using a default.
 
 `knockback_multiplier` scales the player's hit strength: 1.0 is normal, above 1 is light (pushed further), below 1 is heavy, and 0 can't be moved at all. The Skull is 1.2 and the Skeleton 0.7, so the same roll slides a Skull about 38 px and a Skeleton about 14 px.
 
-**Blink** (`systems/blink.py`). `is_blink_hidden(invulnerability, blink_interval)` is the shared rule: while the timer is running, `int(time_left / blink_interval)` counts up once per interval, and every odd count is hidden. The rule is shared, but each entity owns its interval: the player's `BLINK_INTERVAL` and each enemy's `blink_interval`.
+**Blink** (`engine/graphics/blink.py`). `is_blink_hidden(invulnerability, blink_interval)` is the shared rule: while the timer is running, `int(time_left / blink_interval)` counts up once per interval, and every odd count is hidden. The rule is shared, but each entity owns its interval: the player's `BLINK_INTERVAL` and each enemy's `blink_interval`.
 
 ```
 blink_phase = int(time_left(invulnerability) ÷ blink_interval)    (counts up once per interval)
@@ -108,9 +132,9 @@ hidden      = timer is running  and  blink_phase is odd
 
 Results are cached by the set of animation names plus `crop_size`. Two texture dicts with identical names would share one cache entry, so give each animation a unique name. Images are cached by path in `load_image`.
 
-**Health dict** (`systems/health.py`). `{"current": hp, "maximum": hp}`, made with `new_health(maximum)`, which starts full. `take_damage` and `heal` keep `current` between 0 and `maximum`; `set_max_health(health, new_max)` changes `maximum` and clamps `current` (used when gear changes the player's health stat). An enemy's health comes from its type's `"max_health"` stat in `ENEMY_TYPES`: that key names the stat, while the dict itself uses `"current"` and `"maximum"`.
+**Health dict** (`engine/gameplay/health.py`). `{"current": hp, "maximum": hp}`, made with `new_health(maximum)`, which starts full. `take_damage` and `heal` keep `current` between 0 and `maximum`; `set_max_health(health, new_max)` changes `maximum` and clamps `current` (used when gear changes the player's health stat). An enemy's health comes from its type's `"max_health"` stat in `ENEMY_TYPES`: that key names the stat, while the dict itself uses `"current"` and `"maximum"`.
 
-**Animation dict** (`systems/animation.py`). `{"frames", "current", "index", "timer", "speed"}`. `speed` is frames per second: 10 by default, and 4 for item animations. `set_animation` only restarts when the name actually changes and exists.
+**Animation dict** (`engine/graphics/animation.py`). `{"frames", "current", "index", "timer", "speed"}`. `speed` is frames per second: 10 by default, and 4 for item animations. `set_animation` only restarts when the name actually changes and exists.
 
 **Item database** (`item_database.py`). Keys are item ids, values are `Item` or `EquipmentItem` templates. Templates are never put in an inventory directly. Code always works with `clone()`s.
 
@@ -155,7 +179,7 @@ chance of no drop at all:  0.75² × 0.65² ≈ 0.24   (about 1 clear in 4)
 {"fps_enabled": false, "full_screen_enabled": false, "music_volume": 0.5, "sfx_volume": 0.5}
 ```
 
-Missing keys fall back to the defaults in `systems/settings.py`. A corrupted file prints a warning and uses the defaults.
+Missing keys fall back to the game's `DEFAULT_SETTINGS` (`game/data/constants.py`), and saved keys the defaults don't have are dropped. A corrupted file prints a warning and uses the defaults.
 
 **Sounds.** Every file ending in one of `AUDIO_EXTENSIONS` (`.wav`, `.ogg`) in `SFX_FOLDER` (`Assets/Sounds`) and `MUSIC_FOLDER` (`Assets/Music`) is loaded and named by its filename without the extension. Sound files are named in lowercase snake_case, so their keys are too. Names currently used: `button_hover`, `button_click`, `pause`, `heal`, `death` and `roll_hit` (SFX), and `menu_music`, `level_music` and `game_over` (music). Each state picks its own track in `enter()` ([Architecture](architecture.md)). A missing name prints a message instead of crashing.
 

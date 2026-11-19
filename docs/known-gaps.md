@@ -3,7 +3,6 @@
 **Combat:**
 - Death fades the player's body out as a stand-in until real character art and a death animation exist.
 - A per-enemy speed drain on contact (set in `ENEMY_TYPES`) is planned.
-- A stagger (no AI movement while an enemy is being knocked back) is a possible follow-up if hits feel too floaty.
 - `KNOCKBACK_PER_SPEED` could move into the player's `base_stats` if gear should ever boost knockback, so `compute_stats` picks up the bonus.
 - The `defense` stat exists but isn't used yet.
 - A Skeleton starts a swing by distance, but the strike box only reaches left or right, so a player standing straight above or below it can make it swing at nothing. Fine for now; a vertical strike (or only swinging when the player is level with it) is a possible follow-up.

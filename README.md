@@ -46,19 +46,29 @@ The game currently includes:
 
 ## Project Structure
 
-- `main.py` - Game startup and main loop
-- `constants.py` - Shared constants: screen and world size, tile size, colors and the tileset palette, shared UI values, the floor order
-- `entities/` - Player and enemy classes, their stats and sprite data
-- `items/` - Item data: item classes, item database, sprite data, and loot tables
-- `states/` - Screens: the game state manager, the gameplay state, and the main, options and end-of-run menus
-- `world/` - Everything that makes up a floor: map loading, tiles, and the objects placed on it (ground items, chests, crates)
-- `systems/` - Gameplay rules as function modules: input, movement, roll, combat, health, inventory, camera, rendering, lighting, sound, settings, and more
-- `ui_components/` - Buttons, sliders, text labels and text layout, health bars, HUD, inventory screen, FPS counter, cursor
-- `tools/` - Developer scripts: sprite generator, strip maker, map preview, ASCII → TMX map converter, and the line counter used by the pre-commit hook (see [Developer Tools](#developer-tools))
-- `hooks/` - Git pre-commit hook
+The code is split into a reusable engine and the game built on it. `engine/` never imports the game; the pre-commit hook checks that on every commit.
+
+- `main.py` - Dungeon Sprint's setup: settings, theme, window, renderer, sound and screens, then the engine's game loop
+- `engine/` - Everything not specific to this game, for reuse in future pygame games:
+  - `core/` - Game loop, screen switching, timers, settings, image loading, debug flags
+  - `graphics/` - The OpenGL renderer and lighting, camera, display and letterboxing, animation, particles, screen shake, overlays, masks
+  - `physics/` - Movement, knockback, wall collision, line of sight
+  - `io/` - Input helpers and sound
+  - `ui/` - Widgets (buttons, sliders, text labels, panels, health bars, titles, cursor, FPS counter) and the theme the game sets at startup
+  - `gameplay/` - Health, stats, inventory, items and loot rolls
+- `game/` - What Dungeon Sprint is:
+  - `data/` - Every table: constants, the palette, enemy types, items, loot, particle presets, light types, sprite sheet layouts
+  - `rules/` - Combat, the roll, the enemy sword swing, enemy behaviour, interaction, consumables, input bindings
+  - `entities/` - The player and enemies
+  - `world/` - Floors: map loading, tiles, and the objects placed on them (ground items, chests, crates)
+  - `ui/` - HUD, inventory screen, floor transition, hit feedback and the hurt vignette
+  - `states/` - The run, its death sequence, and the main, options and end-of-run menus
+- `tools/` - Developer scripts: sprite generator, strip maker, map preview, ASCII → TMX map converter, the engine import check and the line counter (see [Developer Tools](#developer-tools))
+- `hooks/` - Git pre-commit hook: formats staged files with isort and black, runs the engine import check, updates the statistics below
+- `docs/` - How the code works
 - `Assets/` - Sprites, maps, audio, fonts, and UI art
 
-For how the code works, see the documentation in [docs/](docs/README.md): design rules, tooling, architecture, a module reference, one frame step by step, data formats and how-to guides.
+For how the code works, see the documentation in [docs/](docs/README.md): design rules, tooling, architecture, engine and game references, one frame step by step, data formats, how-to guides and reusing the engine.
 
 ## Running Locally
 
@@ -82,7 +92,7 @@ For how the code works, see the documentation in [docs/](docs/README.md): design
 
 ## Developer Tools
 
-Run every tool from the project root as a module (`-m tools.<name>`), so it can import the game's code such as `constants.py`.
+Run every tool from the project root as a module (`-m tools.<name>`), so it can import the game's code such as `game.data.constants`.
 
 - **Sprite generator** (`tools/make_sprite.py`): regenerates every sprite drawn as text in its `SPRITES` dict (the UI panel frame, the speed boots) and saves them as PNGs in `Assets/`.
 
@@ -108,6 +118,12 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 
 	```bash
 	.venv/Scripts/python -m tools.make_strip
+	```
+
+- **Engine import check** (`tools/check_engine_imports.py`): fails if anything under `engine/` imports the game (`game`, `main` or `tools`). The pre-commit hook runs it on every commit.
+
+	```bash
+	.venv/Scripts/python tools/check_engine_imports.py
 	```
 
 - **Line counter** (`tools/line_counter.py`): updates the Project Statistics section of this README. The pre-commit hook runs it automatically; enable the hook once per clone with `git config core.hooksPath hooks`.

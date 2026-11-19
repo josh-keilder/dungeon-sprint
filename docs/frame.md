@@ -1,8 +1,8 @@
 # One gameplay frame, step by step
 
-This is `Run.update(dt)` followed by `Run.draw(screen)`.
+This is `Run.update(dt)` followed by `Run.draw(screen)`. `update` reads as a list of steps, each a method of `Run` ([Game reference](game.md)): `handle_actions`, `update_world`, `update_interact_target`, `finish_floor`, `update_camera`.
 
-Before step 1, `update` has two early exits. While the player is dying, it only advances the death freeze (step 6). Then, while `floor_transition.is_active()`, it only calls `update_transition(dt)` and returns. Both come before `read_input()` and `run_time += dt`, so input, ESC, the world and the run timer are all frozen; transition time doesn't count toward the run, since loading speed differs between computers.
+First of all, `hit_feedback.update(dt)` advances the camera shake and the hurt vignette, on every frame, frozen ones included, so a vignette started by the killing hit still fades during the death freeze. Then come two early exits. While `death.is_active()`, it only calls `update_death(dt)` (step 6). Then, while `floor_transition.is_active()`, it only calls `update_transition(dt)` and returns. Both come before `read_input()` and `run_time += dt`, so input, ESC, the world and the run timer are all frozen; transition time doesn't count toward the run, since loading speed differs between computers.
 
 **1. Read input.** `read_input()` returns a fresh intent dict and stores it on `player.intent`:
 
@@ -19,9 +19,9 @@ Before step 1, `update` has two early exits. While the player is dying, it only 
 
 "Pressed this frame" uses pygame-ce's `get_just_pressed`, so holding a key triggers it only once.
 
-**2. Level-wide intents.**
+**2. Run-wide actions** (`handle_actions`, with the pause check and the timer just before it).
 - `pause`: switch to options, play `pause`, and stop this frame's update.
-- Right after the pause check, `run_time += dt`. Its position is the whole pause logic: while paused, `Run.update` isn't called at all; while dying, the dying block has already returned; and on the frame ESC is pressed, the pause check returns first. So the timer only counts frames of real play. Opening the inventory doesn't pause the game, so it doesn't pause the timer either.
+- Right after the pause check, `run_time += dt`. Its position is the whole pause logic: while paused, `Run.update` isn't called at all; while dying, `update_death` has already returned; and on the frame ESC is pressed, the pause check returns first. So the timer only counts frames of real play. Opening the inventory doesn't pause the game, so it doesn't pause the timer either.
 - `debug`: toggle hitbox drawing.
 - `interact`: run `interact.interact(player, floor)` (below).
 - `inventory`: open the inventory. When closing, any held item goes back into the inventory first. If it doesn't fit, the inventory stays open.
@@ -33,7 +33,7 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 1. Sets `walking` and updates `facing` from the move direction. Facing doesn't change mid-roll. Vertical input wins over horizontal for facing.
 2. Recomputes `stats` from `base_stats` plus equipment bonuses, every frame, so equipping takes effect immediately. If the health stat changed, `set_max_health` updates the maximum and clamps current health.
 3. `roll` intent → `try_start_roll`. A roll needs a move direction, can't start during another roll (`is_rolling`), and can't start while `cooldown_timer` is running. Starting one starts both `active_timer` and `cooldown_timer`.
-4. `heal` intent → `use_small_health_potion`. Heals `SMALL_HEALTH_POTION_VALUE` (10 of the 25 max), removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player play the `heal` sound. The sound is played here rather than in `systems/consumables.py` because it is feedback, not a rule.
+4. `heal` intent → `use_small_health_potion`. Heals `SMALL_HEALTH_POTION_VALUE` (10 of the 25 max), removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player play the `heal` sound. The sound is played here rather than in `game/rules/consumables.py` because it is feedback, not a rule.
 5. `update_movement`: `steer` computes the new velocity from the move direction and the `max_speed`, `acceleration_rate`, `deceleration_rate` and `grip` stats, then `move_and_collide` moves the rect against the walls the run passed in, `floor.player_walls(player)`: the solid tiles, plus solid enemies while walking (step 5). Hitting a wall zeros velocity on that axis.
 6. `update_roll`: while rolling, the player is also moved by `roll_speed` in the roll direction (on top of normal movement), scaled by `roll_speed_multiplier` so the push fades out at the end of the roll (see below), then `advance_roll` counts down `active_timer` and `cooldown_timer`.
    Then the player's `speed` is measured. At the very start of `update`, the player's center is copied into `start_pos`, before anything moves. After `update_movement` and `update_roll`, the distance from `start_pos` to the new center, divided by `dt`, gives the actual speed in pixels per second. Because it is measured rather than calculated, it includes walls: rolling into a wall gives a low speed.
@@ -97,7 +97,7 @@ new velocity    = velocity + (target velocity − velocity) × fraction
   total distance travelled ≈ starting speed ÷ rate
   ```
 
-**How the roll eases out.** The roll push isn't constant. `roll_speed_multiplier(roll)` (`systems/roll.py`) scales it, holding at 1.0 for most of the roll and then fading to 0.0 just as the roll ends, so the player slides back into walking speed instead of dropping to it in one frame.
+**How the roll eases out.** The roll push isn't constant. `roll_speed_multiplier(roll)` (`game/rules/roll.py`) scales it, holding at 1.0 for most of the roll and then fading to 0.0 just as the roll ends, so the player slides back into walking speed instead of dropping to it in one frame.
 
 ```
 multiplier
@@ -111,10 +111,10 @@ multiplier
            ROLL_EASE_OUT_START (0.7)
 ```
 
-- **Progress.** `active_timer` counts down from `ROLL_DURATION` (0.4) to 0, so the fraction of the roll done is `1 - time_left(active_timer) / ROLL_DURATION`: 0.0 at the start, 1.0 at the end. `time_left` clamps at 0, because a timer that has counted below zero would otherwise give progress above 1.0 and a negative multiplier.
+- **Progress.** `active_timer` counts down from `ROLL_DURATION` (0.4) to 0, so the fraction of the roll done is `1 - fraction_left(active_timer)`: 0.0 at the start, 1.0 at the end. `fraction_left` divides by the duration the timer was started with, and `time_left` inside it clamps at 0, because a timer that has counted below zero would otherwise give progress above 1.0 and a negative multiplier.
 
   ```
-  progress = 1 − time_left(active_timer) ÷ ROLL_DURATION       (0.0 at the start → 1.0 at the end)
+  progress = 1 − fraction_left(active_timer)                    (0.0 at the start → 1.0 at the end)
   ```
 
 - **The fade.** Before `ROLL_EASE_OUT_START` the multiplier is 1.0. After it, it is `(1 - progress) / (1 - ROLL_EASE_OUT_START)`, a straight line from 1.0 at progress 0.7 to 0.0 at progress 1.0. With a 0.4 s roll, the fade covers the last 0.12 s.
@@ -144,7 +144,7 @@ now: 1.37 ms ≈ 730 FPS   update 0.19   state draw 0.48   present 0.68   flip 0
 
 In game the counter sits around 200, not at the 240 cap: `clock.tick(240)` waits in whole milliseconds, so a 4.17 ms frame usually waits 5 ms. An empty loop with no work at all reaches only about 204 FPS with `tick(240)`. `clock.tick_busy_loop` would hit 240 exactly but keeps a CPU core busy waiting, which isn't worth it above any common monitor's refresh rate.
 
-**Particles** (`systems/particles.py`). A particle is a tiny short-lived square that flies out, slows down and shrinks away. It's pure data, a dict with `pos`, `velocity`, `color`, `size`, `drag`, `lifetime` and `age`, and the functions are the rules; the list of live particles belongs to the `Floor` (`floor.particles`, a fresh list for every floor).
+**Particles** (`engine/graphics/particles.py`, with the presets in `game/data/particle_presets.py`). A particle is a tiny short-lived square that flies out, slows down and shrinks away. It's pure data, a dict with `pos`, `velocity`, `color`, `size`, `drag`, `lifetime` and `age`, and the functions are the rules; the list of live particles belongs to the `Floor` (`floor.particles`, a fresh list for every floor).
 
 ```
 something happens ──▶ emit_burst(particles, center, PRESET)    adds `count` particles
@@ -163,7 +163,7 @@ speed after t seconds = start speed × e^(−drag × t)        (frame-rate indep
 size on screen        = ceil(start size × (1 − age ÷ lifetime)), at least 1
 ```
 
-**After `floor.update`, the interaction target** is worked out (see "The interaction target, outline and prompt" below), and drawn later with **`draw_highlight(screen, sprites, camera, color)`** from `systems/masks.py`. `draw_hitbox` (the debug outline) draws each sprite's `mask.outline()` on the sprite's own edge pixels, which went wrong for interaction in two ways: each door tile was outlined separately, so the shared edge between the halves showed as a line down the middle, and `outline()` only traces **one** connected shape, so the chest, whose art has a transparent row between lid and body, only got its lid outlined. `draw_highlight` instead builds one combined shape from all the sprites, seals 1-pixel gaps, and draws a ring just **outside** it, so the art isn't painted over:
+**After `floor.update`, the interaction target** is worked out (see "The interaction target, outline and prompt" below), and drawn later with **`draw_highlight(screen, sprites, camera, color)`** from `engine/graphics/masks.py`. `draw_hitbox` (the debug outline) draws each sprite's `mask.outline()` on the sprite's own edge pixels, which went wrong for interaction in two ways: each door tile was outlined separately, so the shared edge between the halves showed as a line down the middle, and `outline()` only traces **one** connected shape, so the chest, whose art has a transparent row between lid and body, only got its lid outlined. `draw_highlight` instead builds one combined shape from all the sprites, seals 1-pixel gaps, and draws a ring just **outside** it, so the art isn't painted over:
 
   ```
   grow:   every set pixel also sets its 4 neighbors       (grow_mask; 1 px bigger all round)
@@ -176,31 +176,32 @@ size on screen        = ceil(start size × (1 − age ÷ lifetime)), at least 1
   - `mask.draw(other, offset)` copies another mask's set pixels in at an offset (used to combine the sprites, and 4 times by `grow_mask`); `invert()` flips every pixel; `erase(other, offset)` clears pixels; `to_surface(setcolor=color, unsetcolor=(0, 0, 0, 0))` turns the ring into an image with everything else transparent.
   - It's rebuilt each frame for at most a couple of 16-pixel sprites, which is cheap.
 
-**4. The floor's frame: enemies.** Right after the player moves, `Run.update` calls `floor.update(dt, player)` (`world/floor.py`), which runs steps 4 and 5 and then finishes the floor's frame: crate breaking first if the player is rolling, then the enemies, then contacts, swing strikes, separation and removing finished deaths, then the ground items, breaking crates and particles. Each enemy gets the solid tiles and the player's position. An enemy that isn't swinging moves with its behaviour:
+**4. The floor's frame: enemies.** Right after the player moves, `update_world` calls `floor.update(dt, player)` (`game/world/floor.py`), which runs steps 4 and 5 and then finishes the floor's frame: crate breaking first if the player is rolling, then the enemies, then combat (`resolve_combat`: contacts, then swing strikes), separation and removing finished deaths, then the ground items, breaking crates and particles. Each enemy gets the solid tiles and the player's position. An enemy that isn't swinging or staggered moves with its behaviour:
 - **`fly`** (Skull): ignores walls. While its `flee_timer` is running it moves away from the player, then while its `return_timer` is running it moves toward the player (both are timers from `new_timer()`, started by `trigger_flee` after a contact), within `CHASE_RANGE` (200) it chases, and otherwise it drifts slowly in a random diagonal that occasionally changes.
-- **`wander_chase`** (Skeleton): collides with walls. If it has line of sight to the player (no wall rect crosses the line between them), it chases. Otherwise it wanders at half speed.
-- **The swing** (types with an `"attack"` dict, the Skeleton). After moving, `try_start_attack` starts a swing when the attack cooldown isn't running and the player's position is within `range` (20 px): it sets `attacking`, zeroes `attack_time`, clears `attack_landed` and turns to face the player. While `attacking`, the enemy doesn't move; `update_attack` counts `attack_time` up. The attack animation **is** the swing's clock: `attack_step()` is `int(attack_time × frame_rate)`, the frame shown and the swing's phase at once, so the hitbox can never drift out of sync with the art:
+- **`wander_chase`** (Skeleton): collides with walls. If it has line of sight to the player (`has_line_of_sight`: no wall rect crosses the line between them), it chases. Otherwise it wanders at half speed. A type with an `"attack"` doesn't chase the player's own position but `line_up_spot`: a point `line_up_gap` (16 px) beside the player, on the side it's already on and level with them, because its swing only reaches sideways; it stops once it's within `ARRIVE_DISTANCE` (1 px) of it.
+- **Stagger.** After a roll hit the enemy stands still while `is_staggered()`: its `stagger` timer (the type's `stagger_duration`: Skull 0, Skeleton 0.75 s) is running, or its knockback hasn't stopped, whichever is longer. It can't start a swing then either.
+- **The swing** (types with an `"attack"` dict, the Skeleton; `game/rules/swing.py`, its state in the enemy's `swing` dict). After moving, `try_start_swing` starts a swing when the cooldown (`swing["cooldown"]`) isn't running, the player is within `range` (20 px), and the player is level with it (within `level_tolerance`, 6 px, of height): it sets `swing["active"]`, zeroes `swing["time"]`, clears `swing["landed"]` and turns to face the player. While the swing is active, the enemy doesn't move; `update_swing` counts `swing["time"]` up. The attack animation **is** the swing's clock: `swing_step(enemy)` is `int(time × frame_rate)`, the frame shown and the swing's phase at once, so the hitbox can never drift out of sync with the art:
 
   ```
-  attack_step = int(attack_time × frame_rate)            frame_rate 10 → one frame per 0.1 s
+  swing_step = int(swing["time"] × frame_rate)           frame_rate 10 → one frame per 0.1 s
 
   step:   0  1  2  3  4  5 │ 6  7 │ 8
           └── wind-up ───┘ │strike│ recover               9 attack frames
-          0.0 s ─────── 0.6 s ─ 0.8 s ─ 0.9 s → attacking = False, cooldown starts (1.0 s)
+          0.0 s ─────── 0.6 s ─ 0.8 s ─ 0.9 s → end_swing: inactive, cooldown starts (1.0 s)
   ```
 
-  `is_striking()` is true while the step is one of `strike_frames` (6 and 7, where the slash is drawn). `strike_rect()` is the hitbox in front of the body: `reach` (18 px) wide and as tall as the body, against the body's right edge when facing right and its left edge when facing left. When the step passes the last frame, the swing ends and `attack_cooldown` starts. The 0.6 s wind-up is the telegraph: long enough to walk out of the swing or roll through it.
-- **Knockback**, after the behaviour's movement: `update_knockback` moves the enemy by `knockback_velocity * dt` with `move_and_collide`, sets the shove to 0 on any axis that hits a wall (so the enemy doesn't keep pressing into it), then fades it with `decay_velocity` at the enemy's `knockback_decay_rate`. Walls block knockback for every enemy, including flying Skulls that otherwise pass through walls. The AI keeps running during a shove, and since a hit also starts the flee, both push the enemy away.
+  `is_striking(enemy)` is true while the step is one of `strike_frames` (6 and 7, where the slash is drawn). `strike_rect(enemy)` is the hitbox in front of the body: `reach` (18 px) wide and as tall as the body, against the body's right edge when facing right and its left edge when facing left. When the step passes the last frame, `end_swing` ends it and starts the cooldown; it's the one place a swing finishes, shared with `interrupt_swing`. The 0.6 s wind-up is the telegraph: long enough to walk out of the swing or roll through it.
+- **Knockback**, after the behaviour's movement: `update_knockback` calls the engine's `move_knockback`, which moves the enemy by `knockback_velocity * dt` with `move_and_collide`, sets the shove to 0 on any axis that hits a wall (so the enemy doesn't keep pressing into it), then fades it with `decay_velocity` at the enemy's `knockback_decay_rate`. The player's knockback when hurt uses the same function. Walls block knockback for every enemy, including flying Skulls that otherwise pass through walls. The AI keeps running during a shove for types with no stagger, and since a hit also starts the flee, both push the enemy away.
 
-**5. The floor's frame: contact and combat** (`floor.resolve_enemy_contacts`). `find_player_contacts` checks enemies within 100 pixels and keeps those whose masks actually overlap the player (pixel-perfect, not rectangle). For each contact, `resolve_contact`:
+**5. The floor's frame: contact and combat** (`resolve_combat(player, enemies, particles)` in `game/rules/combat.py`). `find_player_contacts` checks enemies within 100 pixels and keeps those whose masks actually overlap the player (pixel-perfect, not rectangle). For each contact, `resolve_contact`:
 - **only while the player is rolling**, deals `round(player.speed * ROLL_DAMAGE_PER_SPEED)` to the enemy, shoves it, and starts the enemy's own invulnerability window for `enemy.invulnerability_duration`, unless the enemy is already invulnerable. Rolling is the player's only attack: walking into an enemy doesn't hurt it.
-- **interrupts a swing**: a roll hit on an enemy with an `attack` calls `interrupt_attack()`, which cancels a swing still in its wind-up (not once it's striking or has landed) and starts the attack cooldown, so rolling into a winding-up Skeleton stops the blow,
-- **only for types with `touch_damage`** (the Skull), deals the enemy's `attack_damage` to the player and starts the player's invulnerability window, unless the player is already invulnerable or is rolling. The Skeleton only hurts with its swing,
+- **interrupts a swing**: a roll hit on an enemy with an `attack` calls `interrupt_swing(enemy)`, which cancels a swing still in its wind-up (not once it's striking or has landed) and starts the attack cooldown, so rolling into a winding-up Skeleton stops the blow,
+- **only for types with `touch_damage`** (the Skull), hurts the player with `hurt_player(player, enemy)`: the enemy's `attack_damage`, the player's invulnerability window, and a knockback away from the enemy (`PLAYER_KNOCKBACK_SPEED`, 160 px/s), unless the player is already invulnerable or is rolling. The Skeleton only hurts with its swing,
 - always starts the enemy's flee (2 s) then return (3 s) timers, even when both hits were skipped, so an enemy can't stay on top of the player.
 
 An enemy whose health reaches 0 calls `start_dying()`: it stops moving, attacking and blocking, and plays its death animation. Once `is_done_dying()`, `remove_dead_enemies` rolls its `loot_table` with `roll_loot`, spawns the drops at its center with `spawn_loot`, then removes it from `enemies`. The drops are spawned before the removal, while the enemy and its position still exist.
 
-**Strikes** (`floor.resolve_enemy_strikes` → `resolve_strike(player, enemy)` in `systems/combat.py`). For every living enemy with an `attack`: if it `is_striking()`, hasn't landed this swing, and its `strike_rect()` touches the player's rect, the swing **lands**: `attack_landed` is set, so one swing can only hit once across both strike frames. If the player is invulnerable or rolling, the landed swing does nothing (dodged); otherwise it deals `attack_damage` and starts the player's invulnerability window. It returns whether the player was hit. The strike uses rectangles, not masks: the hitbox is a rule, not a picture.
+**Strikes** (the second half of `resolve_combat` → `resolve_strike(player, enemy)`). For every living enemy with an `attack` (an enemy killed by this frame's contacts can't strike back): if it `is_striking(enemy)`, hasn't landed this swing, and its `strike_rect(enemy)` touches the player's rect, the swing **lands**: `swing["landed"]` is set, so one swing can only hit once across both strike frames. If the player is invulnerable or rolling, the landed swing does nothing (dodged); otherwise it calls `hurt_player`, the same as a touch. It returns whether the player was hit. The strike uses rectangles, not masks: the hitbox is a rule, not a picture.
 
 **Bodies: separation and blocking.** Solid enemies (walkers, not fliers or the dying; `enemy.is_solid()`) can't stack on each other or stand on the player, and the player can't push them:
 
@@ -213,7 +214,7 @@ two enemies overlap     → separation pushes each half the overlap apart
 fliers (Skull)          → not solid: pass over everything, so their touch damage can always reach you
 ```
 
-`separate_enemies(enemies, player, walls)` (`systems/separation.py`) runs **after** contacts and strikes, so combat has had its chance to see an overlap before it's undone. For each pair of solid enemies, `push_out(rect, other_rect)` returns the shortest way out of the overlap, or `None` if they don't overlap: it clips the two rects, and pushes along the **thinner** side of the overlap (the minimum translation), in the direction from the other's center to this one's. Each enemy is then `shove`d half of it, in opposite directions. Then, unless the player is rolling, an enemy overlapping the player is shoved the **whole** way out: the enemy always yields, because the player is blocked by solid enemies and can't be the one moving into them. While rolling there's no push, or the roll would carry the enemy along in front of it.
+`separate_enemies(enemies, player, walls)` (`game/rules/separation.py`) runs **after** contacts and strikes, so combat has had its chance to see an overlap before it's undone. For each pair of solid enemies, the engine's `push_out(rect, other_rect)` (`engine/physics/collision.py`) returns the shortest way out of the overlap, or `None` if they don't overlap: it clips the two rects, and pushes along the **thinner** side of the overlap (the minimum translation), in the direction from the other's center to this one's. Each enemy is then `shove`d half of it, in opposite directions. Then, unless the player is rolling, an enemy overlapping the player is shoved the **whole** way out: the enemy always yields, because the player is blocked by solid enemies and can't be the one moving into them. While rolling there's no push, or the roll would carry the enemy along in front of it.
 
 ```
 overlap = rect.clip(other_rect)                    the shared area (width or height 0 = no overlap)
@@ -245,29 +246,29 @@ roll damage = round(player.speed  ×  ROLL_DAMAGE_PER_SPEED)
                       roll speed
 ```
 
-`ROLL_DAMAGE_PER_SPEED` is 0.15, so a roll at about 204 pixels per second deals 31, and a 100 health enemy takes about 3 rolls. Because damage comes from measured speed and the roll push fades out, a hit near the end of a roll does less damage than one early in it, which rewards rolling *into* enemies. Because an enemy's invulnerability (1 s) lasts longer than a roll (0.4 s), each enemy can be hit at most once per roll, but different enemies each have their own window, so rolling through a group hits them all. `resolve_contact` returns `True` when the enemy was hit, and `Run.update` then plays the `roll_hit` sound. The sound is played in the floor (`resolve_enemy_contacts`) rather than in `systems/combat.py` because it is feedback, not a rule.
+`ROLL_DAMAGE_PER_SPEED` is 0.15, so a roll at about 204 pixels per second deals 31, and a 100 health enemy takes about 3 rolls. Because damage comes from measured speed and the roll push fades out, a hit near the end of a roll does less damage than one early in it, which rewards rolling *into* enemies. Because an enemy's invulnerability (1 s) lasts longer than a roll (0.4 s), each enemy can be hit at most once per roll, but different enemies each have their own window, so rolling through a group hits them all. `resolve_contact` returns `True` when the enemy was hit, and `resolve_combat` then plays the `roll_hit` sound and bursts the enemy's `hit_particles` along its knockback. `resolve_combat` returns whether any roll hit landed, `floor.update` passes that on, and `update_world` calls `hit_feedback.on_hit()` for it (a 1-pixel camera shake) and `hit_feedback.on_hurt()` when the player's health went down this frame (a 4-pixel shake and the red vignette, each only if its setting is on).
 
-**6. Player death.** After all contacts are resolved, the run checks `is_dead(player.health) and not self.dying`. The check is here rather than in `systems/health.py` because `is_dead` is the rule and what happens next is the run's decision.
+**6. Player death.** After `update_world` and the interaction target, the run checks `is_dead(player.health)`. The check is here rather than in `engine/gameplay/health.py` because `is_dead` is the rule and what happens next is the run's decision.
 
-`is_dead` is a condition that stays true on every frame once health is 0, but the death sequence must start only once, at the moment of death. The `dying` flag handles that: on the first dead frame the run sets `dying = True`, starts `death_timer` with `DEATH_DELAY`, stops the music, plays the `death` sound, and returns early so the ground items and camera don't update. On later frames `not self.dying` is false, so none of it repeats.
+`is_dead` stays true on every frame once health is 0, but the death sequence must start only once. It does, because the check is only reached while the death **isn't** running: on the first dead frame the run calls `death.start()` (`game/states/death_sequence.py`), which starts its timer with `DEATH_DELAY`, stops the music and plays the `death` sound, and returns early so the exit check and camera don't update. From the next frame on, `death.is_active()` sends `update` straight to `update_death`, so the check is never reached again.
 
-While `dying` is true, the very first thing `Run.update` does is count `death_timer` down by `dt`, update the fade, and return. Because that check comes before `read_input()`, input, movement, enemies and contacts are all skipped, so ESC can't pause and Q can't heal during the freeze. `Run.draw` still runs every frame, so the world stays on screen, frozen as it was. When the timer reaches 0 the run switches to `"game_over"`. Restart and Main Menu build a brand new `Run`, so `dying` and the timer reset on their own.
+`update_death(dt)` clears the interaction target and prompt, and calls `death.update(dt, player)`, which advances the timer, updates the fade, and returns `True` once the freeze is over, when the run switches to `"game_over"`. Because this comes before `read_input()`, input, movement, enemies and contacts are all skipped, so ESC can't pause and Q can't heal during the freeze. `Run.draw` still runs every frame, so the world stays on screen, frozen as it was. Restart and Main Menu build a brand new `Run`, so the death sequence resets on its own.
 
-**The death fade.** Each dying frame, the Run works out how far the fade has gone and hands the result to the player, who only draws it:
+**The death fade.** Each frame of the freeze, `DeathSequence.update` works out how far the fade has gone and hands the result to the player, who only draws it:
 
 ```
-elapsed       = DEATH_DELAY − time_left(death_timer)
+elapsed       = time_elapsed(timer)                         (the timer remembers DEATH_DELAY)
 fade_progress = min(1.0, elapsed ÷ DEATH_FADE_DURATION)    (0.0 → 1.0, then held)
 player.alpha  = round(255 × (1 − fade_progress))           (255 visible → 0 invisible)
 ```
 
-- `elapsed = DEATH_DELAY - time_left(death_timer)` is the seconds since death (the timer counts down, so time passed is the total minus what's left).
+- `time_elapsed(timer)` is the seconds since death: the timer counts down and remembers the duration it was started with, so time passed is that duration minus what's left.
 - `fade_progress = min(1.0, elapsed / DEATH_FADE_DURATION)` goes from 0.0 at death to 1.0 when the fade is done. The `min` holds it at 1.0 afterwards.
 - `player.alpha = round(255 * (1 - fade_progress))` takes the body from fully visible to invisible.
 
-So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
+So the body fades over 1.5 s, then the empty spot holds until the 3.0 s delay ends. The alpha is set in `update`, where the timer advances, so the player's `draw` only draws. The player's blink doesn't interfere: the killing hit started the player's i-frames at 1.0 s, the freeze stops them counting down, and that frozen blink phase is a visible one.
 
-**7. Leaving through the exit.** Climbing down takes **F**, and only once the floor is cleared: walking onto the ladder does nothing by itself, so nobody leaves a floor by accident, and F is refused while `floor.enemies_left()` is above 0. Pressing F at the exit only sets `exit_requested` (see "What `interact` does"); the leaving happens here, after the death check. If `exit_requested` is set, the run clears it, then records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`floor_index + 1 < len(FLOOR_ORDER)`). If there is, it calls `floor_transition.start()`, which begins the fade; `floor_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the run switches to `"run_complete"`. Either way `update` returns.
+**7. Leaving through the exit.** Climbing down takes **F**, and only once the floor is cleared: walking onto the ladder does nothing by itself, so nobody leaves a floor by accident, and F is refused while `floor.enemies_left()` is above 0. Pressing F at the exit only sets `exit_requested` (see "What `interact` does"); the leaving happens here, after the death check. If `exit_requested` is set, `finish_floor` clears it, then records the split (`splits.append(run_time)`), for every floor including the last, then checks whether there is another floor (`floor_index + 1 < len(FLOOR_ORDER)`). If there is, it calls `floor_transition.start()`, which begins the fade; `floor_index` only goes up later, when the next floor actually loads at the end of the fade. Otherwise the run is over and the run switches to `"run_complete"`. Either way `update` returns.
 
 ```
 FLOOR_ORDER = [floor 0, floor 1]
