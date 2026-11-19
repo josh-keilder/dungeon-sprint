@@ -332,7 +332,7 @@ find_target(player, floor) ──▶ ("chest", …) / ("item", …) / ("exit", e
 The pause menu and the end-of-run screens call `run.draw(screen)` to show the frozen run behind them, so the world is submitted and shown under their overlay automatically.
 
 **Inventory screen** (`InventoryUI`):
-- A centered window with 4 equipment slots (`head`, `chest`, `boots`, `ability`) on the left and a 5 × 4 grid of the 20 inventory slots on the right, over the dimmed world (layout and formulas in [Reference](reference.md)).
+- A centered window with 4 equipment slots (`head`, `chest`, `boots`, `ability`) on the left and a 5 × 4 grid of the 20 inventory slots on the right, over the dimmed world (layout and formulas in [Game reference](game.md)).
 - Clicking a grid slot swaps it with the item in your hand, which picks up, places or swaps.
 - Clicking an equipment slot while holding an item equips it only if `item.slot` matches that slot name. Clicking it with an empty hand takes the equipped item off.
 - Hovering an item with an empty hand shows a framed tooltip with its name, description and `value_text` (if any); hovering an empty equipment slot shows the slot's name. Stack counts show, outlined, in the slot corner.

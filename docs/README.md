@@ -9,7 +9,8 @@ The project's `README.md` covers what the game is, how to install it and how to 
 | [Design rules](design-rules.md) | the engine and game split, the folders, state as plain dicts, the code style and file layout |
 | [Tooling](tooling.md) | setup, formatting, the pre-commit hook, every tool in `tools/`, the debug keys |
 | [Architecture](architecture.md) | startup, the game loop, the renderer and lighting, letterboxing, the screens and how they switch |
-| [Reference](reference.md) | every module, folder by folder |
+| [Engine reference](engine.md) | every module under `engine/`, by folder |
+| [Game reference](game.md) | every module under `game/`, and `main.py` |
 | [One frame](frame.md) | one gameplay frame, step by step |
 | [Data formats](data-formats.md) | the shape of every table: enemy types, items, loot, maps, textures, settings |
 | [How to](how-to.md) | adding enemies, items, floors and more |
