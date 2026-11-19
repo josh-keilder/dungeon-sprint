@@ -58,7 +58,7 @@ The game currently includes:
 - `hooks/` - Git pre-commit hook
 - `Assets/` - Sprites, maps, audio, fonts, and UI art
 
-For a full explanation of how the code works, see [Project_Documentation.md](Project_Documentation.md).
+For how the code works, see the documentation in [docs/](docs/README.md): design rules, tooling, architecture, a module reference, one frame step by step, data formats and how-to guides.
 
 ## Running Locally
 
@@ -97,7 +97,7 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 	.venv/Scripts/python -m tools.preview_map Assets/Maps/Dungeon_Level_One.tmx
 	```
 
-- **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a floor sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls and automatic decor (torches, banners, wall rings, side torches, webs, rubble, bones, and candlesticks in treasure rooms). A second argument sets a different output path. The legend is in `Project_Documentation.md`, section 3.
+- **ASCII → TMX converter** (`tools/ascii_to_tmx.py`): turns a floor sketched as text in `Assets/Maps/Source/` into a Tiled map in `Assets/Maps/`, with autotiled walls and automatic decor (torches, banners, wall rings, side torches, webs, rubble, bones, and candlesticks in treasure rooms). A second argument sets a different output path. The legend is in [docs/tooling.md](docs/tooling.md).
 
 	```bash
 	.venv/Scripts/python -m tools.ascii_to_tmx Assets/Maps/Source/test_room.txt
