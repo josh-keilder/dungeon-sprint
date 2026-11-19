@@ -1,7 +1,8 @@
 import json
 import os
 
-# Current settings: the game's defaults, with saved values for those same settings merged over them
+# Current settings: the game's defaults, with the saved values for those same settings
+# merged over them
 SETTINGS = {}
 _file_path = None  # set by load_settings
 

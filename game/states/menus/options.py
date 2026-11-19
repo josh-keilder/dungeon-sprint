@@ -58,6 +58,7 @@ class OptionsMenu:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
+        # Fonts and the title
         self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
         self.label_font = pygame.font.Font(FONT_PATH, LABEL_FONT_SIZE)
         self.title_image, self.title_pos = make_title(
@@ -68,7 +69,7 @@ class OptionsMenu:
         self.music_slider_value = int(settings.get_setting("music_volume") * 100)
         self.sfx_slider_value = int(settings.get_setting("sfx_volume") * 100)
 
-        # Volume sliders and labels
+        # Music volume: slider and label
         self.music_volume_slider = Slider(
             pos=(SLIDER_X, MUSIC_SLIDER_Y),
             size=(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -84,6 +85,7 @@ class OptionsMenu:
             font=self.label_font,
         )
 
+        # SFX volume: slider and label
         self.sfx_volume_slider = Slider(
             pos=(SLIDER_X, SFX_SLIDER_Y),
             size=(SLIDER_WIDTH, SLIDER_HEIGHT),
@@ -123,7 +125,6 @@ class OptionsMenu:
             self.button_font,
             (SCREEN_WIDTH // 2, FPS_BUTTON_Y),
         )
-
         self.full_screen_button = TextButton(
             FULL_SCREEN_LABEL.format(
                 on_off(settings.get_setting("full_screen_enabled"))
@@ -131,7 +132,6 @@ class OptionsMenu:
             self.button_font,
             (SCREEN_WIDTH // 2, FULL_SCREEN_BUTTON_Y),
         )
-
         self.screen_shake_button = TextButton(
             SCREEN_SHAKE_LABEL.format(
                 on_off(settings.get_setting("screen_shake_enabled"))
@@ -139,7 +139,6 @@ class OptionsMenu:
             self.button_font,
             (SCREEN_WIDTH // 2, SCREEN_SHAKE_BUTTON_Y),
         )
-
         self.hurt_vignette_button = TextButton(
             HURT_VIGNETTE_LABEL.format(
                 on_off(settings.get_setting("hurt_vignette_enabled"))
@@ -148,6 +147,7 @@ class OptionsMenu:
             (SCREEN_WIDTH // 2, HURT_VIGNETTE_BUTTON_Y),
         )
 
+        # Dims the paused run drawn behind the menu
         self.overlay = new_overlay(
             (SCREEN_WIDTH, SCREEN_HEIGHT), (0, 0, 0), OVERLAY_ALPHA
         )

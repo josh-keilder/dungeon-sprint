@@ -26,15 +26,6 @@ def steer(
     return new_velocity
 
 
-def decay_velocity(velocity, rate, dt):
-    new_velocity = velocity * (1 - approach_fraction(rate, dt))
-
-    if new_velocity.length_squared() < STOP_SPEED**2:
-        new_velocity.update(0, 0)
-
-    return new_velocity
-
-
 def move_and_collide(rect, displacement, walls):
     # walls: a list of rects; collidelist returns the first one hit, or -1
     hit_x = False
@@ -78,3 +69,12 @@ def move_knockback(rect, velocity, decay_rate, walls, dt):
 
 def approach_fraction(rate, dt):
     return 1 - math.exp(-rate * dt)
+
+
+def decay_velocity(velocity, rate, dt):
+    new_velocity = velocity * (1 - approach_fraction(rate, dt))
+
+    if new_velocity.length_squared() < STOP_SPEED**2:
+        new_velocity.update(0, 0)
+
+    return new_velocity

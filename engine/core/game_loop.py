@@ -19,12 +19,14 @@ class GameLoop:
         cursor_image=None,
         fps_setting=None,
     ):
+        # What the loop drives
         self.renderer = renderer
         self.state_manager = state_manager
         self.frame_rate = frame_rate
         # The name of the setting that shows the FPS counter (None: never shown)
         self.fps_setting = fps_setting
 
+        # The frame's surface, its timing, and the flag closing the window clears
         self.ui_surface = pygame.Surface(screen_size, pygame.SRCALPHA)
         self.clock = pygame.time.Clock()
         self.running = True
@@ -35,6 +37,7 @@ class GameLoop:
             pygame.mouse.set_visible(False)
             self.cursor = Cursor(cursor_image)
 
+        # Top right, shown while fps_setting is on
         self.fps_counter = FpsCounter(screen_size[0])
 
     def run(self):

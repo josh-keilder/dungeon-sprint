@@ -18,15 +18,6 @@ def flame_position(light_type, tile_center, flipped):
     return (tile_center[0] + offset_x, tile_center[1] + offset_y)
 
 
-def flicker_wave(time, position):
-    # -1 to 1; each light gets its own phase from where it stands
-    phase = position[0] * 0.37 + position[1] * 0.73
-    slow, fast = FLICKER_SPEEDS
-    slow_wave = math.sin(time * slow + phase)
-    fast_wave = math.sin(time * fast + phase * 2.3)
-    return 0.6 * slow_wave + 0.4 * fast_wave
-
-
 def visible_lights(lights, light_types, camera, time):
     # lights: (type name, world position) pairs. Returns the ones near the camera as
     # (position on the world surface, radius, color), at most MAX_LIGHTS, in list order
@@ -56,3 +47,12 @@ def light_blockers(map_size, tiles, tile_size):
         mask[row * columns + column] = 1
 
     return (columns, rows), bytes(mask)
+
+
+def flicker_wave(time, position):
+    # -1 to 1; each light gets its own phase from where it stands
+    phase = position[0] * 0.37 + position[1] * 0.73
+    slow, fast = FLICKER_SPEEDS
+    slow_wave = math.sin(time * slow + phase)
+    fast_wave = math.sin(time * fast + phase * 2.3)
+    return 0.6 * slow_wave + 0.4 * fast_wave

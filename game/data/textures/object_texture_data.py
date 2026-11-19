@@ -1,6 +1,7 @@
 from game.data.constants import TILE_SIZE
 
-# Sheet layouts: each entry is a one-row strip of square frames, sliced by load_animations
+# Sheet layouts: each entry is a one-row strip of square frames, sliced by
+# load_animations
 
 # World objects, used by game/world/objects.py
 

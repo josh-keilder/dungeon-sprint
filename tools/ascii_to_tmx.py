@@ -19,9 +19,10 @@ GOLD_KEY = "g"
 PLACED_ITEMS = {SILVER_KEY: "silver_key", GOLD_KEY: "gold_key"}
 ENEMY_TYPES = {"w": "Skull", "k": "Skeleton"}
 
-# Door tiles, and the key that opens them; a door is two touching tiles of the same letter
+# Door tiles, and the key that opens them; a door is two touching tiles of one letter
 DOOR_KEYS = {"S": "silver_key", "G": "gold_key"}
 
+# Every character the converter understands; anything else is an error
 KNOWN_CHARACTERS = (
     {WALL, FLOOR, VOID, PLAYER, EXIT, CHEST, CRATE}
     | set(ENEMY_TYPES)

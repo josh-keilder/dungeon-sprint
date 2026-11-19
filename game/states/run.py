@@ -56,9 +56,11 @@ class Run:
         self.floor_index = 0
         self.load_floor(FLOOR_ORDER[self.floor_index])
 
+        # The inventory screen, open or closed
         self.inventory_open = False
         self.inventory_ui = InventoryUI(self.player.inventory)
 
+        # What F would act on and its HUD prompt, found again each frame
         self.interact_target = None
         self.interact_prompt = None
 
@@ -68,18 +70,6 @@ class Run:
 
         # Fade to black, "Floor N" card, fade back in
         self.floor_transition = FloorTransition()
-
-    def load_floor(self, map_path):
-        self.floor = Floor(map_path, self.item_database)
-
-        # Move the same player (health, inventory, gear) to this floor's spawn
-        self.player.rect.center = self.floor.player_spawn
-        self.player.pos.xy = self.player.rect.topleft
-        self.player.velocity.update(0, 0)
-        center_camera(self.camera, self.player.rect.center)
-
-        self.interact_target = None
-        self.interact_prompt = None
 
     def enter(self):
         sound.play_music(LEVEL_MUSIC)
@@ -120,6 +110,53 @@ class Run:
             return
 
         self.update_camera()
+
+    def draw(self, screen):
+        self.world_surface.fill(MENU_BACKGROUND_COLOR)
+
+        # Outline what F would act on: candle if it will work, steel if not
+        highlight = None
+        if self.interact_target is not None:
+            _, available = self.interact_prompt
+            color = PALETTE_CANDLE if available else PALETTE_STEEL
+            highlight = (self.floor.highlighted_sprites(self.interact_target), color)
+
+        self.floor.draw(self.world_surface, self.player, self.camera, highlight)
+
+        time = pygame.time.get_ticks() / 1000
+        # The player's light first, so it's never the one cut at MAX_LIGHTS
+        lights = [("player", self.player.rect.center)] + self.floor.lights
+        visible = visible_lights(lights, LIGHT_TYPES, self.camera, time)
+        submit_world(
+            self.world_surface, self.camera.topleft, visible, self.floor.light_blockers
+        )
+
+        self.hit_feedback.draw(screen)
+
+        self.hud.draw(
+            screen,
+            self.player,
+            self.run_time,
+            self.floor_index + 1,
+            self.interact_prompt,
+        )
+
+        if self.inventory_open:
+            self.inventory_ui.draw(screen, self.player.inventory)
+
+        self.floor_transition.draw(screen)
+
+    def load_floor(self, map_path):
+        self.floor = Floor(map_path, self.item_database)
+
+        # Move the same player (health, inventory, gear) to this floor's spawn
+        self.player.rect.center = self.floor.player_spawn
+        self.player.pos.xy = self.player.rect.topleft
+        self.player.velocity.update(0, 0)
+        center_camera(self.camera, self.player.rect.center)
+
+        self.interact_target = None
+        self.interact_prompt = None
 
     def update_death(self, dt):
         self.interact_target = None
@@ -184,38 +221,3 @@ class Run:
         x, y = self.player.rect.center
         offset_x, offset_y = self.hit_feedback.camera_offset()
         center_camera(self.camera, (x + offset_x, y + offset_y))
-
-    def draw(self, screen):
-        self.world_surface.fill(MENU_BACKGROUND_COLOR)
-
-        # Outline what F would act on: candle if it will work, steel if not
-        highlight = None
-        if self.interact_target is not None:
-            _, available = self.interact_prompt
-            color = PALETTE_CANDLE if available else PALETTE_STEEL
-            highlight = (self.floor.highlighted_sprites(self.interact_target), color)
-
-        self.floor.draw(self.world_surface, self.player, self.camera, highlight)
-
-        time = pygame.time.get_ticks() / 1000
-        # The player's light first, so it's never the one cut at MAX_LIGHTS
-        lights = [("player", self.player.rect.center)] + self.floor.lights
-        visible = visible_lights(lights, LIGHT_TYPES, self.camera, time)
-        submit_world(
-            self.world_surface, self.camera.topleft, visible, self.floor.light_blockers
-        )
-
-        self.hit_feedback.draw(screen)
-
-        self.hud.draw(
-            screen,
-            self.player,
-            self.run_time,
-            self.floor_index + 1,
-            self.interact_prompt,
-        )
-
-        if self.inventory_open:
-            self.inventory_ui.draw(screen, self.player.inventory)
-
-        self.floor_transition.draw(screen)

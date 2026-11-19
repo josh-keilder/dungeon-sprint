@@ -1,6 +1,7 @@
 from game.data.constants import TILE_SIZE
 
-# Sheet layouts: each entry is a one-row strip of square frames, sliced by load_animations
+# Sheet layouts: each entry is a one-row strip of square frames, sliced by
+# load_animations
 
 # Keys (4-frame spins from make_strip)
 gold_key_texture_data = {

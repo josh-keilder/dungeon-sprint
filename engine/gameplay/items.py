@@ -14,6 +14,7 @@ class Item:
         animation_speed=4,
         value_text=None,
     ):
+        # What it is, how it's described, and how many fit in one slot
         self.id = item_id
         self.name = name
         self.animations = animations
@@ -23,6 +24,7 @@ class Item:
         self.animation_speed = animation_speed
         self.value_text = value_text
 
+        # Icon: the first idle frame
         self.image = animations.get("idle", [None])[0]
 
     def clone(self):

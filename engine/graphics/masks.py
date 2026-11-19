@@ -9,12 +9,6 @@ _MASK_CACHE = {}
 NEIGHBORS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 
-def get_mask(image):
-    if image not in _MASK_CACHE:
-        _MASK_CACHE[image] = pygame.mask.from_surface(image)
-    return _MASK_CACHE[image]
-
-
 def images_overlap(first_image, first_pos, second_image, second_pos):
     offset = (int(second_pos[0] - first_pos[0]), int(second_pos[1] - first_pos[1]))
     return get_mask(first_image).overlap(get_mask(second_image), offset) is not None
@@ -50,6 +44,12 @@ def draw_highlight(screen, sprites, camera, color):
 
     ring_image = ring.to_surface(setcolor=color, unsetcolor=(0, 0, 0, 0))
     screen.blit(ring_image, world_to_screen(camera, area.topleft))
+
+
+def get_mask(image):
+    if image not in _MASK_CACHE:
+        _MASK_CACHE[image] = pygame.mask.from_surface(image)
+    return _MASK_CACHE[image]
 
 
 def grow_mask(mask):

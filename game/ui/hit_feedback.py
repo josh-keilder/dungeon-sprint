@@ -18,6 +18,9 @@ class HitFeedback:
         update_shake(self.shake, dt)
         self.hurt_vignette.update(dt)
 
+    def draw(self, screen):
+        self.hurt_vignette.draw(screen)
+
     def on_hit(self):
         self.shake_camera(HIT_SHAKE_STRENGTH)
 
@@ -26,12 +29,9 @@ class HitFeedback:
         if settings.get_setting("hurt_vignette_enabled"):
             self.hurt_vignette.start()
 
-    def shake_camera(self, strength):
-        if settings.get_setting("screen_shake_enabled"):
-            start_shake(self.shake, strength)
-
     def camera_offset(self):
         return self.shake["offset"]
 
-    def draw(self, screen):
-        self.hurt_vignette.draw(screen)
+    def shake_camera(self, strength):
+        if settings.get_setting("screen_shake_enabled"):
+            start_shake(self.shake, strength)

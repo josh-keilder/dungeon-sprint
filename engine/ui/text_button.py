@@ -16,6 +16,7 @@ class TextButton(Button):
         if hover_color is None:
             hover_color = get_theme("hover_color")
 
+        # Kept so set_text can render new text the same way
         self.font = font
         self.text_color = text_color
         self.hover_color = hover_color

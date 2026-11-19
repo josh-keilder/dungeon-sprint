@@ -45,11 +45,6 @@ def update_swing(enemy, dt):
         end_swing(enemy)
 
 
-def end_swing(enemy):
-    enemy.swing["active"] = False
-    start_timer(enemy.swing["cooldown"], enemy.attack["cooldown"])
-
-
 def interrupt_swing(enemy):
     # A roll hit cancels the wind-up, but never a strike that's already out
     swing = enemy.swing
@@ -77,3 +72,8 @@ def strike_rect(enemy):
     else:
         strike.right = enemy.rect.left
     return strike
+
+
+def end_swing(enemy):
+    enemy.swing["active"] = False
+    start_timer(enemy.swing["cooldown"], enemy.attack["cooldown"])

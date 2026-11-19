@@ -33,9 +33,6 @@ class HurtVignette:
             color = (*PALETTE_BLOOD, round(VIGNETTE_MAX_ALPHA * fade))
             pygame.draw.rect(self.overlay, color, rect, VIGNETTE_STEP)
 
-    def start(self):
-        start_timer(self.timer, VIGNETTE_DURATION)
-
     def update(self, dt):
         advance_timer(self.timer, dt)
 
@@ -44,3 +41,6 @@ class HurtVignette:
             return
         self.overlay.set_alpha(round(255 * fraction_left(self.timer)))
         screen.blit(self.overlay, (0, 0))
+
+    def start(self):
+        start_timer(self.timer, VIGNETTE_DURATION)

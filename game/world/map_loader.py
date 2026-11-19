@@ -130,6 +130,21 @@ def tiled_gid_and_flip(tmx_data, gid):
     return tiled_gid, flipped
 
 
+def assign_door_properties(tmx_data, door_tiles):
+    for layer in tmx_data.objectgroups:
+        if layer.name != "Doors":
+            continue
+
+        for map_object in layer:
+            door_rect = pygame.Rect(
+                map_object.x, map_object.y, map_object.width, map_object.height
+            )
+            for door in door_tiles:
+                if door_rect.colliderect(door.rect):
+                    door.door_id = map_object.properties["door_id"]
+                    door.key = map_object.properties["key"]
+
+
 def find_player_spawn(tmx_data):
     for map_object in tmx_data.objects:
         if map_object.name == "Player":
@@ -178,18 +193,3 @@ def find_placed_items(tmx_data):
             placed_items.append((map_object.name, center))
 
     return placed_items
-
-
-def assign_door_properties(tmx_data, door_tiles):
-    for layer in tmx_data.objectgroups:
-        if layer.name != "Doors":
-            continue
-
-        for map_object in layer:
-            door_rect = pygame.Rect(
-                map_object.x, map_object.y, map_object.width, map_object.height
-            )
-            for door in door_tiles:
-                if door_rect.colliderect(door.rect):
-                    door.door_id = map_object.properties["door_id"]
-                    door.key = map_object.properties["key"]

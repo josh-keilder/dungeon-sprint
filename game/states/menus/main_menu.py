@@ -23,12 +23,13 @@ class MainMenu:
     def __init__(self, game_state_manager):
         self.game_state_manager = game_state_manager
 
+        # Title and button font
         self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
-
         self.title_image, self.title_pos = make_title(
             "DUNGEON SPRINT", TITLE_FONT_SIZE, PALETTE_STEEL, SCREEN_WIDTH, TITLE_Y
         )
 
+        # Buttons, top to bottom
         self.start_button = TextButton(
             "Start",
             self.button_font,

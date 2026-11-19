@@ -53,30 +53,33 @@ class RunEndScreen:
     def __init__(self, game_state_manager, title, title_color, music):
         self.game_state_manager = game_state_manager
 
+        # Title and button font
         self.button_font = pygame.font.Font(FONT_PATH, BUTTON_FONT_SIZE)
-
         self.title_image, self.title_pos = make_title(
             title, TITLE_FONT_SIZE, title_color, SCREEN_WIDTH, TITLE_Y
         )
 
+        # Played once on entering; None keeps what's already playing
         self.music = music
 
+        # Buttons, top to bottom
         self.restart_button = TextButton(
             "Restart",
             self.button_font,
             (SCREEN_WIDTH // 2, RESTART_BUTTON_Y),
         )
-
         self.main_menu_button = TextButton(
             "Main Menu",
             self.button_font,
             (SCREEN_WIDTH // 2, MAIN_MENU_BUTTON_Y),
         )
 
+        # Dims the run's last frame drawn behind the screen
         self.overlay = new_overlay(
             (SCREEN_WIDTH, SCREEN_HEIGHT), (0, 0, 0), OVERLAY_ALPHA
         )
 
+        # Split times and the line above the total, rendered by enter
         self.split_rows = []
         self.divider_rect = pygame.Rect(0, 0, 0, 0)
 

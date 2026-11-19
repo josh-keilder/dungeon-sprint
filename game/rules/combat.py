@@ -87,6 +87,17 @@ def resolve_contact(player, enemy):
     return enemy_hit
 
 
+def hurt_player(player, enemy):
+    take_damage(player.health, enemy.attack_damage)
+    start_timer(player.invulnerability, PLAYER_INVULNERABILITY_DURATION)
+
+    push_direction = pygame.Vector2(player.rect.center) - pygame.Vector2(
+        enemy.rect.center
+    )
+    if push_direction.length_squared() > 0:
+        player.knockback_velocity = push_direction.normalize() * PLAYER_KNOCKBACK_SPEED
+
+
 def resolve_strike(player, enemy):
     if enemy.swing["landed"] or not is_striking(enemy):
         return False
@@ -99,14 +110,3 @@ def resolve_strike(player, enemy):
 
     hurt_player(player, enemy)
     return True
-
-
-def hurt_player(player, enemy):
-    take_damage(player.health, enemy.attack_damage)
-    start_timer(player.invulnerability, PLAYER_INVULNERABILITY_DURATION)
-
-    push_direction = pygame.Vector2(player.rect.center) - pygame.Vector2(
-        enemy.rect.center
-    )
-    if push_direction.length_squared() > 0:
-        player.knockback_velocity = push_direction.normalize() * PLAYER_KNOCKBACK_SPEED

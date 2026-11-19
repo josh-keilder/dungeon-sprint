@@ -71,15 +71,15 @@ def describe_target(player, floor, found):
     return (f"Press F to pick up {target.item.name}", True)
 
 
+def unlock_door(floor, door, inventory):
+    floor.unlock_door(door.door_id)
+    remove_item(inventory, door.key)
+
+
 def open_chest(chest, floor):
     drops = roll_loot(CHEST_LOOT)
     floor.spawn_loot(drops, chest.rect.center)
     chest.kill()
-
-
-def unlock_door(floor, door, inventory):
-    floor.unlock_door(door.door_id)
-    remove_item(inventory, door.key)
 
 
 def pick_up_item(ground_item, inventory):

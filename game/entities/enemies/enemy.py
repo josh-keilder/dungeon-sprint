@@ -174,6 +174,46 @@ class Enemy:
             offset_x = self.image.get_width() - self.body_x - self.rect.width
         return (self.rect.x - offset_x, self.rect.y - self.body_y)
 
+    def shove(self, displacement, walls):
+        move_and_collide(self.rect, displacement, walls)
+        self.pos.xy = self.rect.topleft
+
+    def start_dying(self):
+        self.dying = True
+        self.death_time = 0.0
+        self.swing["active"] = False
+
+    def is_done_dying(self):
+        return self.dying and self.death_time >= self.death_duration
+
+    def is_solid(self):
+        return not self.dying and self.behavior != "fly"
+
+    def update_knockback(self, dt, walls):
+        self.knockback_velocity = move_knockback(
+            self.rect, self.knockback_velocity, self.knockback_decay_rate, walls, dt
+        )
+
+    def is_staggered(self):
+        # After a roll hit: no walking or new swings while being pushed, or for
+        # the type's stagger time, whichever is longer
+        return is_running(self.stagger) or self.knockback_velocity.length_squared() > 0
+
+    def update_movement(self, dt, walls, target_pos):
+        if self.behavior == "fly":
+            velocity = fly_velocity(self, target_pos, dt)
+            self.rect.x += velocity.x * dt
+            self.rect.y += velocity.y * dt
+            return velocity
+
+        elif self.behavior == "wander_chase":
+            chase_pos = target_pos
+            if self.attack is not None:
+                chase_pos = line_up_spot(self, target_pos)
+            velocity = wander_chase_velocity(self, target_pos, walls, chase_pos)
+            move_and_collide(self.rect, velocity * dt, walls)
+            return velocity
+
     def update_animation(self, dt):
         if self.swing["active"]:
             self.image = swing_frames(self)[swing_step(self)]
@@ -196,43 +236,3 @@ class Enemy:
         else:
             action = "idle"
         return f"{self.animation_prefix}_{action}_{self.facing}"
-
-    def update_movement(self, dt, walls, target_pos):
-        if self.behavior == "fly":
-            velocity = fly_velocity(self, target_pos, dt)
-            self.rect.x += velocity.x * dt
-            self.rect.y += velocity.y * dt
-            return velocity
-
-        elif self.behavior == "wander_chase":
-            chase_pos = target_pos
-            if self.attack is not None:
-                chase_pos = line_up_spot(self, target_pos)
-            velocity = wander_chase_velocity(self, target_pos, walls, chase_pos)
-            move_and_collide(self.rect, velocity * dt, walls)
-            return velocity
-
-    def update_knockback(self, dt, walls):
-        self.knockback_velocity = move_knockback(
-            self.rect, self.knockback_velocity, self.knockback_decay_rate, walls, dt
-        )
-
-    def is_staggered(self):
-        # After a roll hit: no walking or new swings while being pushed, or for
-        # the type's stagger time, whichever is longer
-        return is_running(self.stagger) or self.knockback_velocity.length_squared() > 0
-
-    def shove(self, displacement, walls):
-        move_and_collide(self.rect, displacement, walls)
-        self.pos.xy = self.rect.topleft
-
-    def start_dying(self):
-        self.dying = True
-        self.death_time = 0.0
-        self.swing["active"] = False
-
-    def is_done_dying(self):
-        return self.dying and self.death_time >= self.death_duration
-
-    def is_solid(self):
-        return not self.dying and self.behavior != "fly"

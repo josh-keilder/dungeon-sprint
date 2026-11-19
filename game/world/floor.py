@@ -167,35 +167,6 @@ class Floor:
     def enemies_left(self):
         return sum(1 for enemy in self.enemies if not enemy.dying)
 
-    def remove_dead_enemies(self):
-        for enemy in list(self.enemies):
-            if enemy.is_done_dying():
-                drops = roll_loot(enemy.loot_table)
-                self.spawn_loot(drops, enemy.rect.center)
-                self.enemies.remove(enemy)
-
-    def break_touched_crates(self, player):
-        touch_box = player.rect.inflate(CRATE_TOUCH_MARGIN, CRATE_TOUCH_MARGIN)
-        broke_any = False
-
-        for crate in self.crates:
-            if not crate.breaking and touch_box.colliderect(crate.rect):
-                crate.start_breaking()
-                drops = roll_loot(CRATE_LOOT)
-                self.spawn_loot(drops, crate.rect.center)
-                broke_any = True
-
-        if broke_any:
-            self.refresh_solid_rects()
-
-    def update_crates(self, dt):
-        for crate in self.crates.sprites():
-            crate.update(dt)
-
-            if crate.done_breaking:
-                emit_burst(self.particles, crate.rect.center, CRATE_DEBRIS)
-                crate.kill()
-
     def unlock_door(self, door_id):
         for door in self.door_tiles.sprites():
             if door.door_id == door_id:
@@ -204,6 +175,19 @@ class Floor:
         self.refresh_solid_rects()
         self.refresh_light_blockers()
         self.refresh_padlocks()
+
+    def spawn_loot(self, drops, center):
+        for item_id, quantity in drops:
+            item = self.item_database[item_id]
+            offset_x = random.randint(-LOOT_SCATTER_X, LOOT_SCATTER_X)
+            offset_y = random.randint(-LOOT_SCATTER_Y, LOOT_SCATTER_Y)
+
+            GroundItem(
+                groups=self.ground_items,
+                pos=(center[0] + offset_x, center[1] + offset_y),
+                item=item,
+                quantity=quantity,
+            )
 
     def refresh_solid_rects(self):
         solid_crates = [crate for crate in self.crates if not crate.breaking]
@@ -227,15 +211,31 @@ class Floor:
             door_area = rects[0].unionall(rects[1:])
             self.padlocks.append((doors[0].key, door_area.center))
 
-    def spawn_loot(self, drops, center):
-        for item_id, quantity in drops:
-            item = self.item_database[item_id]
-            offset_x = random.randint(-LOOT_SCATTER_X, LOOT_SCATTER_X)
-            offset_y = random.randint(-LOOT_SCATTER_Y, LOOT_SCATTER_Y)
+    def break_touched_crates(self, player):
+        touch_box = player.rect.inflate(CRATE_TOUCH_MARGIN, CRATE_TOUCH_MARGIN)
+        broke_any = False
 
-            GroundItem(
-                groups=self.ground_items,
-                pos=(center[0] + offset_x, center[1] + offset_y),
-                item=item,
-                quantity=quantity,
-            )
+        for crate in self.crates:
+            if not crate.breaking and touch_box.colliderect(crate.rect):
+                crate.start_breaking()
+                drops = roll_loot(CRATE_LOOT)
+                self.spawn_loot(drops, crate.rect.center)
+                broke_any = True
+
+        if broke_any:
+            self.refresh_solid_rects()
+
+    def remove_dead_enemies(self):
+        for enemy in list(self.enemies):
+            if enemy.is_done_dying():
+                drops = roll_loot(enemy.loot_table)
+                self.spawn_loot(drops, enemy.rect.center)
+                self.enemies.remove(enemy)
+
+    def update_crates(self, dt):
+        for crate in self.crates.sprites():
+            crate.update(dt)
+
+            if crate.done_breaking:
+                emit_burst(self.particles, crate.rect.center, CRATE_DEBRIS)
+                crate.kill()

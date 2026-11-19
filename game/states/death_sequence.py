@@ -17,6 +17,13 @@ class DeathSequence:
         self.active = False
         self.timer = new_timer()
 
+    def update(self, dt, player):
+        # Fades the player's body out; True once the freeze is over
+        advance_timer(self.timer, dt)
+        fade_progress = min(1.0, time_elapsed(self.timer) / DEATH_FADE_DURATION)
+        player.alpha = round(255 * (1 - fade_progress))
+        return not is_running(self.timer)
+
     def start(self):
         self.active = True
         start_timer(self.timer, DEATH_DELAY)
@@ -25,10 +32,3 @@ class DeathSequence:
 
     def is_active(self):
         return self.active
-
-    def update(self, dt, player):
-        # Fades the player's body out; True once the freeze is over
-        advance_timer(self.timer, dt)
-        fade_progress = min(1.0, time_elapsed(self.timer) / DEATH_FADE_DURATION)
-        player.alpha = round(255 * (1 - fade_progress))
-        return not is_running(self.timer)

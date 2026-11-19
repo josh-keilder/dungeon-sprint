@@ -23,9 +23,11 @@ class Slider:
         track_color,
         knob_color,
     ):
+        # Placement: pos is the track's center
         self.pos = pos
         self.size = size
 
+        # The range, and the value the knob is at
         self.min_value = min_value
         self.max_value = max_value
         self.value = initial_value

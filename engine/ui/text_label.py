@@ -28,6 +28,7 @@ class TextLabel:
         self.outline_color = outline_color
         self.pos = pos
 
+        # The shown text; None makes update_text render the first one
         self.text = None
         self.update_text(text)
 

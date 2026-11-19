@@ -1,9 +1,9 @@
 from engine.physics.collision import push_out
 from game.rules.roll import is_rolling
 
-# Solid enemies (walkers, not fliers) may not stack on each other or sit on the player:
-# overlapping bodies are pushed apart along the shortest way out, after combat has had its
-# chance to see the overlap.
+# Solid enemies (walkers, not fliers) may not stack on each other or sit on the
+# player: overlapping bodies are pushed apart along the shortest way out, after combat
+# has had its chance to see the overlap.
 
 
 def separate_enemies(enemies, player, walls):

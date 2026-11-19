@@ -49,7 +49,9 @@ in vec2 uv;
 out vec4 color;
 
 const float SHADOW_STEP = 4.0;
-const ivec2 FRONT_DIRECTIONS[4] = ivec2[4](ivec2(0, 1), ivec2(1, 0), ivec2(-1, 0), ivec2(0, -1));
+const ivec2 FRONT_DIRECTIONS[4] = ivec2[4](
+    ivec2(0, 1), ivec2(1, 0), ivec2(-1, 0), ivec2(0, -1)
+);
 
 ivec2 cell_at(vec2 world_position) {
     return ivec2(floor(world_position / tile_size));
@@ -141,10 +143,12 @@ class Renderer:
         # lighting: {"ambient", "max_light", "bands", "void_color" (0-255 RGB)}
         self.screen_size = screen_size
 
+        # The GPU context, blending each layer over the one below by its alpha
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
 
+        # Shaders: the UI is drawn as it is, the world through the lighting
         self.ui_program = self.ctx.program(
             vertex_shader=VERTEX_SHADER, fragment_shader=TEXTURE_SHADER
         )
@@ -171,6 +175,7 @@ class Renderer:
         )
         self.world_program["bands"].value = lighting["bands"]
 
+        # The textures each frame's surfaces are uploaded into
         self.world_texture = self.make_texture(world_size)
         self.ui_texture = self.make_texture(screen_size)
         # The UI surface's memory is B, G, R, A per pixel (see its masks): upload it
@@ -208,9 +213,24 @@ class Renderer:
         self.ui_texture.write(ui_surface.get_view("1"))
         self.draw_layer(self.ui_texture, self.ui_quad)
 
-    def draw_layer(self, texture, quad):
-        texture.use(0)
-        quad.render(moderngl.TRIANGLE_STRIP)
+    def make_quad(self, program, uv_right, uv_bottom):
+        # Each corner: x, y on screen (-1 to 1, up is +), the u, v in the texture
+        # (0 to 1, from the top-left, like pygame)
+        vertices = array("f", [
+            -1.0, 1.0, 0.0, 0.0,  # top left
+            1.0, 1.0, uv_right, 0.0,  # top right
+            -1.0, -1.0, 0.0, uv_bottom,  # bottom left
+            1.0, -1.0, uv_right, uv_bottom,  # bottom right
+        ])  # fmt: skip
+        buffer = self.ctx.buffer(vertices)
+        return self.ctx.vertex_array(
+            program, [(buffer, "2f 2f", "in_position", "in_uv")]
+        )
+
+    def make_texture(self, size):
+        texture = self.ctx.texture(size, 4)
+        texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        return texture
 
     def set_blockers(self, blockers):
         # A new mask only comes with a new floor or an opened door
@@ -235,21 +255,6 @@ class Renderer:
         self.world_program["light_radii"].value = radii
         self.world_program["light_colors"].value = colors
 
-    def make_quad(self, program, uv_right, uv_bottom):
-        # Each corner: x, y on screen (-1 to 1, up is +), the u, v in the texture
-        # (0 to 1, from the top-left, like pygame)
-        vertices = array("f", [
-            -1.0, 1.0, 0.0, 0.0,  # top left
-            1.0, 1.0, uv_right, 0.0,  # top right
-            -1.0, -1.0, 0.0, uv_bottom,  # bottom left
-            1.0, -1.0, uv_right, uv_bottom,  # bottom right
-        ])  # fmt: skip
-        buffer = self.ctx.buffer(vertices)
-        return self.ctx.vertex_array(
-            program, [(buffer, "2f 2f", "in_position", "in_uv")]
-        )
-
-    def make_texture(self, size):
-        texture = self.ctx.texture(size, 4)
-        texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        return texture
+    def draw_layer(self, texture, quad):
+        texture.use(0)
+        quad.render(moderngl.TRIANGLE_STRIP)

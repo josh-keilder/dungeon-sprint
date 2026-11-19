@@ -32,13 +32,6 @@ class FloorTransition:
         self.fade_overlay = new_overlay((SCREEN_WIDTH, SCREEN_HEIGHT), PALETTE_VOID)
         self.floor_label = TextLabel("", font_size=FLOOR_CARD_FONT_SIZE)
 
-    def start(self):
-        self.phase = "fade_out"
-        start_timer(self.timer, FADE_DURATION)
-
-    def is_active(self):
-        return self.phase is not None
-
     def update(self, dt):
         advance_timer(self.timer, min(dt, MAX_TRANSITION_DT))
         if is_running(self.timer):
@@ -65,6 +58,13 @@ class FloorTransition:
 
         if self.phase == "card":
             self.floor_label.draw(screen)
+
+    def start(self):
+        self.phase = "fade_out"
+        start_timer(self.timer, FADE_DURATION)
+
+    def is_active(self):
+        return self.phase is not None
 
     def set_floor_number(self, floor_number):
         self.floor_label.update_text(f"Floor {floor_number}")

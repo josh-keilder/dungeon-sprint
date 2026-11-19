@@ -1,6 +1,6 @@
 # Colors: every color the game draws with comes from here
 
-# Basic colors: debug drawing and the end-screen titles (game art uses the palette below)
+# Basic colors: debug drawing and end-screen titles (game art uses the palette below)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
