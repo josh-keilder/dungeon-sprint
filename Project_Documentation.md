@@ -10,34 +10,48 @@ The code itself has no docstrings on purpose. Explanations live here so the sour
 
 These are the rules the project was built around. New code should follow them.
 
-**One job per module.** Every file does one thing. `systems/roll.py` only knows about rolling, `systems/health.py` only knows about health, and so on. If a file starts doing two jobs, split it.
+**The engine and the game.** The code is split in two, side by side, with `main.py` at the root:
 
-**Folders by kind.** `states/` holds screens (the gameplay state and the menus), `world/` everything that makes up a floor (map loading, tiles, objects on the floor), `entities/` the player and enemies, `items/` item data (classes, database, sprite layouts, loot tables), `systems/` the rules, `ui_components/` reusable UI, and `tools/` developer scripts.
+```
+engine/   how things work: timers, animation, movement, cameras, the renderer, particles, sound,
+          input, widgets, health, inventories. Nothing in it knows it's Dungeon Sprint.
+game/     what this game is: enemy types, the roll, combat, loot tables, the HUD, the floors.
+main.py   Dungeon Sprint's setup: the theme, the window, the screens, then the engine's game loop.
+```
 
-**Services are modules of functions.** Shared behaviour lives in `systems/` as plain functions. A system takes the data it works on as arguments and either changes it in place or returns a new value. For example, `take_damage(health, amount)` changes a health dict, and `steer(...)` returns a new velocity.
+- **`engine/` never imports the game.** No `game.*`, no `main`, no `tools`. When the engine needs something game-specific (the screen size, the light colors, the key bindings, the settings defaults, the particle presets, the UI colors and font), the game passes it in: as arguments (`Renderer(screen_size=..., lighting=...)`, `load_settings(DEFAULT_SETTINGS, SETTINGS_FILE_PATH)`), as data (`visible_lights(lights, LIGHT_TYPES, camera, time)`), or once at startup (`set_theme(...)`). `tools/check_engine_imports.py` enforces this before every commit (section 3).
+- **Engine = how things work. Game = what this game is.** A timer, an animation, a camera, a particle burst, a button: engine. What a Skeleton does, how the roll hurts, what a chest drops, where the HUD panels sit: game.
+- The engine is a folder in this repo for now; it becomes its own package or repo when a second game starts (section 9, "Reusing the engine").
 
-**Identity is plain data.** An entity's state is stored as simple dicts on the object, and the systems operate on those dicts:
+**Folders by topic.** The engine has `core/` (timers, settings, assets, the state manager, the game loop), `graphics/`, `physics/`, `io/` (input and sound), `ui/` (widgets and the theme) and `gameplay/` (health, stats, inventory, items, loot). The game has `data/` (every table: constants, palette, enemy types, items, loot, particles, lights, texture layouts), `rules/` (combat, the roll, the sword swing, interaction, enemy behaviours), `entities/`, `world/`, `ui/` and `states/`. No folder holds a single file.
+
+**Behaviour lives in modules of functions.** Shared behaviour is plain functions that take the data they work on as arguments and either change it in place or return a new value: `take_damage(health, amount)` changes a health dict, `steer(...)` returns a new velocity. Small classes are used only where something holds state between frames: entities, screens, widgets, the renderer, `HitFeedback`, `DeathSequence`.
+
+**State is plain data.** An entity's state is stored as simple dicts on the object, and the functions operate on those dicts:
 
 | Dict | Created by | Used by |
 | --- | --- | --- |
-| `health` | `systems.health.new_health` | `health`, `combat`, `consumables`, `health_bar` |
-| `roll` | inline in `Player.__init__` (holds `direction` and two timers from `new_timer`) | `systems.roll`, `combat`, `Player` |
-| `invulnerability` | `systems.timer.new_timer` (Player and Enemy) | `timer`, `combat`, `Player.draw` |
-| `heal_cooldown` | `systems.timer.new_timer` (Player) | `timer`, `consumables` |
-| `death_timer` | `systems.timer.new_timer` (Run) | `timer`, `Run.update` |
-| `animation` | `systems.animation.new_animation` | `systems.animation` |
-| `inventory` | `systems.inventory.new_inventory` | `inventory`, `interact`, `consumables`, `inventory_ui` |
-| `stats` | `systems.stats.compute_stats` | `Player` movement and roll |
-| `intent` | `systems.input.read_input` | `Player` and `Run` |
+| `health` | `engine.gameplay.health.new_health` | `health`, `combat`, `consumables`, `health_bar` |
+| `roll` | inline in `Player.__init__` (holds `direction` and two timers from `new_timer`) | `game.rules.roll`, `combat`, `Player` |
+| `swing` | `game.rules.swing.new_swing` (Enemy) | `swing`, `combat`, `Enemy` |
+| `invulnerability`, `stagger` | `engine.core.timer.new_timer` (Player and Enemy) | `timer`, `combat`, the `draw` methods |
+| `heal_cooldown` | `engine.core.timer.new_timer` (Player) | `timer`, `consumables` |
+| `animation` | `engine.graphics.animation.new_animation` | `animation` |
+| `inventory` | `engine.gameplay.inventory.new_inventory` | `inventory`, `interact`, `consumables`, `inventory_ui` |
+| `stats` | `engine.gameplay.stats.compute_stats` | `Player` movement and roll |
+| `intent` | `game.rules.input.read_input` | `Player` and `Run` |
+| `shake` | `engine.graphics.shake.new_shake` (in `HitFeedback`) | `shake`, `Run.update_camera` |
 
-**Rules are separate from application.** Systems decide *what happens* (how fast you accelerate, whether a roll can start, what a chest drops). Entities and states decide *when* to apply them (the player calls `try_start_roll` when the roll intent is set). Content such as enemy stats, loot tables and texture layouts is kept in `*_data.py` files, separate from the logic that reads it.
+A timer remembers the duration it was started with, so `fraction_left(timer)` and `time_elapsed(timer)` need no extra arguments.
+
+**Rules are separate from application.** Rules decide *what happens* (how fast you accelerate, whether a roll can start, what a chest drops). Entities and states decide *when* to apply them (the player calls `try_start_roll` when the roll intent is set). Entities keep their `update` methods as the **order** things happen each frame; the math inside moves to functions. Content such as enemy stats, loot tables and texture layouts lives in `game/data/`, separate from the logic that reads it.
 
 **Code style.**
 - Names are explicit and not abbreviated (`move_direction`, `game_state_manager`, `equipment_slot_x`). Short names are fine only for things like `pos`, `dt`, `x` and `y`.
 - File and folder names are snake_case. Classes are PascalCase. Constants are UPPER_SNAKE_CASE.
 - No type hints and no docstrings. Comments are fine when they are accurate, and section comments are plain `# Like this`.
-- Module-private **caches and state** start with an underscore (`_IMAGE_CACHE`, `_MASK_CACHE`, `_current_music_name`), meaning "don't touch this from outside". Functions and methods never do.
-- **Layout standard** (every file follows it; `ui_components/hud.py` was the model):
+- Module-private **caches and state** start with an underscore (`_IMAGE_CACHE`, `_MASK_CACHE`, `_theme`, `_world`), meaning "don't touch this from outside". Functions and methods never do.
+- **Layout standard** (every file follows it):
 
   ```
   imports (isort groups)
@@ -50,13 +64,15 @@ These are the rules the project was built around. New code should follow them.
 
   class:
       __init__: attributes in labelled groups (# Movement, # Health, ...)
-      lifecycle first: enter, update, draw
-      then the other methods top-down, in the order they're called
+      lifecycle first: run, enter, update, draw
+      then the methods other files call
+      then the private helpers, top-down, in the order they're called
   ```
 
-  Function modules (`systems/`, the tools) put their public functions first, in the order a caller uses them, then the helpers those call. Long modules split their functions with section comments (`ascii_to_tmx.py`: reading, solvability, tile layers, decor, objects, writing, grid helpers, entry point). Magic numbers become named constants with their unit (`INVENTORY_SLOT_COUNT`, `CURSOR_OFFSET`, the slider's `KNOB_WIDTH`), so every value has a name and lives in one place.
+  Function modules put their public functions first, in the order a caller uses them, then the helpers those call. The tools are the exception: helpers first, `main()` last, as Python scripts usually are. Long modules split their functions with section comments (`ascii_to_tmx.py`: reading, solvability, tile layers, decor, objects, writing, grid helpers, entry point). Magic numbers become named constants with their unit (`INVENTORY_SLOT_COUNT`, `CURSOR_OFFSET`, the slider's `KNOB_WIDTH`), so every value has a name and lives in one place.
+- A default argument is evaluated once, when Python first reads the `def`, so a default that comes from the theme or a setting is written as `None` and looked up in the body (`if color is None: color = get_theme("text_color")`). Otherwise it would be frozen at import time, before `main.py` sets the theme.
 - Imports are named (never `import *`), unused imports are removed, and they are grouped as standard library, then third-party, then project, alphabetical within each group.
-- Formatting is done by Black with its default 88-character line length.
+- Formatting is done by Black with its default 88-character line length, comments included (Black doesn't wrap comments, so long ones are wrapped by hand). The pre-commit hook runs isort and Black on every staged file.
 
 ## 3. Running and tooling
 
@@ -99,7 +115,7 @@ from collections import deque
 
 import pygame
 
-from constants import TILE_SIZE
+from game.data.constants import TILE_SIZE
 ```
 
 ```bash
@@ -108,9 +124,9 @@ from constants import TILE_SIZE
 
 As with Black, `--check` only reports.
 
-**`tools/line_counter.py`.** Counts lines in every `.py` file (skipping the `IGNORED_FOLDERS`: `venv`, `.venv`, `.git` and `__pycache__`) and rewrites the "Project Statistics" section at the end of `README.md`.
+**`tools/line_counter.py`.** Counts lines in every `.py` file (skipping the `IGNORED_FOLDERS`: `venv`, `.venv`, `.git`, `__pycache__` and `.claude`, where Claude Code keeps worktree copies of the project) and rewrites the "Project Statistics" section at the end of `README.md`.
 
-**Running tools.** Tools that import project code such as `constants` are run as modules from the project root, with `-m` and a dotted name instead of a file path. `python tools/x.py` puts only the `tools/` folder on Python's import path, so `from constants import ...` fails with `ModuleNotFoundError`; `python -m tools.x` puts the current folder (the project root) on the path instead.
+**Running tools.** Tools that import project code such as `game.data.constants` are run as modules from the project root, with `-m` and a dotted name instead of a file path. `python tools/x.py` puts only the `tools/` folder on Python's import path, so `from game.data.constants import ...` fails with `ModuleNotFoundError`; `python -m tools.x` puts the current folder (the project root) on the path instead.
 
 **`tools/make_sprite.py`.** Generates the game's own pixel art from text. Run it from the project root after editing any sprite; it regenerates every sprite, and an unchanged sprite comes out byte-identical:
 
@@ -131,7 +147,7 @@ SPRITES = {
 }
 ```
 
-`make_sprite(name, sprite)` draws one entry and `__main__` loops over them all. Letters only mean something inside their own sprite, so every sprite can use `o` for its outline, while `m` is the stone ring in the frame but mid leather in the boots. Colors come from the `PALETTE_*` constants in `constants.py`, so the art can only use the game's colors, and `.` is left transparent. The image size comes from the rows themselves (width from the first row, height from the row count), so editing the rows is all that's needed. The surface is created with `pygame.SRCALPHA`, which starts fully transparent, so skipped `.` pixels stay see-through; without it a new surface starts opaque black. Sprites are saved at 1× and scaled up by the game.
+`make_sprite(name, sprite)` draws one entry and `__main__` loops over them all. Letters only mean something inside their own sprite, so every sprite can use `o` for its outline, while `m` is the stone ring in the frame but mid leather in the boots. Colors come from the `PALETTE_*` constants in `game/data/palette.py`, so the art can only use the game's colors, and `.` is left transparent. The image size comes from the rows themselves (width from the first row, height from the row count), so editing the rows is all that's needed. The surface is created with `pygame.SRCALPHA`, which starts fully transparent, so skipped `.` pixels stay see-through; without it a new surface starts opaque black. Sprites are saved at 1× and scaled up by the game.
 
 Typos in text art would otherwise fail silently (a short row leaves transparent pixels, an unknown letter would be skipped), so the tool stops with a `ValueError` naming the sprite and the spot instead: `speed_boots: row 4 is 15 wide, expected 16`, or `speed_boots: unknown letter 'z' at (3, 7)`.
 
@@ -149,7 +165,7 @@ The sprites:
 
 Images are saved to `map_previews/<map name>.png`, a folder listed in `.gitignore` because the images are generated.
 
-- **It reuses the game's loader.** `preview_map(map_path, font)` calls `load_floor_data` from `map_loader.py`, the same function `Run` uses, so the preview always matches the game, and if map loading changes the preview follows; the tool only draws what it's given. The loader calls `.convert()` and `load_image`, which need a display, so `main()` first opens a hidden 1×1 window with `pygame.display.set_mode((1, 1), pygame.HIDDEN)`.
+- **It reuses the game's loader.** `preview_map(map_path, font)` calls `load_floor_data` from `game/world/map_loader.py`, the same function `Run` uses, so the preview always matches the game, and if map loading changes the preview follows; the tool only draws what it's given. The loader calls `.convert()` and `load_image`, which need a display, so `main()` first opens a hidden 1×1 window with `pygame.display.set_mode((1, 1), pygame.HIDDEN)`.
 - **Drawing.** It draws on a `.copy()` of the map surface, so the loader's surface is never touched, then the walls, decor, doors, chests and crates in the game's order (decor after walls, since torches, banners and rings sit on wall tiles), each blitted at its `rect.topleft` with no camera (the whole map is the "screen"), then the placed items (keys) with their real images, centered on their positions. `main` builds the item database once with `initialize_item_database()` and passes it to `preview_map(map_path, font, item_database)`, so the images are the game's own. Then the markers:
   - **Door groups:** one `door_id` label per group. A door can be several tiles wide, so a `set` of already-labeled ids skips the rest; a set is a collection with fast "have I seen this?" checks.
   - **Enemy spawns:** a 1-pixel `PALETTE_BLOOD` box at each spawn, labeled with the first three letters of the type (`enemy_type[:3]`, a slice), so `Skull` and `Skeleton` show as `SKU` and `SKE`.
@@ -340,37 +356,53 @@ The strips so far:
 - **`crate`** → `Assets/Objects/crate_strip.png` (the pack's `box_2`, a plain wooden box, 4 frames of squash and stretch: normal, tall, wide, flattened). The steel-banded `box_1` was skipped because it looks like the chest.
 - **`torch`**, **`side_torch`**, **`candlestick_1`**, **`candlestick_2`** → `Assets/Objects/<name>_strip.png` (the pack's `torch` folder, 4 frames each): the animated versions of the tileset's still light tiles 91, 92, 94 and 96, swapped in by the map loader (section 6, `map_loader.py`). The torch frames line up exactly with the still tiles; the candlestick frames sit 1 pixel further left, too small to notice.
 
-**`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit. It runs `tools/line_counter.py` and stages `README.md`, so the statistics are always current. It has commented-out lines for running Black and Pylint, which are not active. A fresh clone needs `git config core.hooksPath hooks` to enable it.
+**`tools/check_engine_imports.py`.** Parses every `.py` file under `engine/` with Python's own parser (`ast`) and lists any import of the game's top-level modules (`GAME_MODULES`: `game`, `main`, `tools`), inside functions too, in both spellings (`import game.x` and `from game.x import y`). Relative imports (`node.level > 0`) are skipped, since they can only reach other engine files. It exits with an error when it finds one, which is what makes the hook block the commit:
+
+```bash
+.venv/Scripts/python tools/check_engine_imports.py
+```
+
+```
+engine\core\timer.py:33: imports game.data.constants
+The engine imports the game; pass the game's data in instead.
+```
+
+**`hooks/pre-commit`.** The repo's git config sets `core.hooksPath = hooks`, so this script runs before every commit (a fresh clone needs `git config core.hooksPath hooks` to enable it). It uses the project's `.venv` Python (`.venv/Scripts/python` on Windows, `.venv/bin/python` elsewhere, the system `python` as a last resort), because black and isort are only installed there. In order:
+
+```
+1. format     every staged .py file: isort, then black, then git add it again
+              (re-adding stages the whole file, so a file staged only in part is committed in full)
+2. check      tools/check_engine_imports.py: stop the commit if engine/ imports the game
+3. count      tools/line_counter.py rewrites README.md's statistics, then git add README.md
+```
+
+Any step that fails stops the commit with `❌ Error: <what failed>. Fix before committing.` A commented-out Pylint step is kept for later.
 
 ## 4. Startup and the main loop
 
-`main.py` defines `Game`. Its constructor runs in this order, and the order matters:
+`main.py` is Dungeon Sprint's setup, as small functions; the loop itself is the engine's `GameLoop`. `main()` runs in this order, and the order matters:
 
-1. `pygame.init()`.
-2. `settings.load_settings()` reads `settings.json`. It must run before the window is created, because the window needs the fullscreen setting.
-3. `create_window(SCREEN_WIDTH, SCREEN_HEIGHT, fullscreen)` opens an **OpenGL** window (`pygame.OPENGL | pygame.DOUBLEBUF`; in fullscreen, `FULLSCREEN` at the desktop's own resolution, `(0, 0)`). It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display. Right after it, `Renderer()` creates the OpenGL context (it needs the window), and `ui_surface` is made: a transparent 1280×720 `SRCALPHA` surface that every frame is drawn on.
-4. The system mouse is hidden and a `Cursor` is built from `Assets/Cursors/01.png` at half scale.
-5. Sound: all sound effects and music are loaded and the saved volumes are applied. No music starts here.
-6. The FPS counter (`FpsCounter`, see `ui_components/fps_counter.py`) is created. `Game.update` calls `fps_counter.update(dt, clock.get_fps())` every frame, and `Game.draw` draws it when the `fps_enabled` setting is on, so `Game` holds no FPS details itself.
-7. A `GameStateManager` starting on `"main_menu"` is created, then the states are built and registered: `MainMenu` as `"main_menu"`, `OptionsMenu` as `"options"`, `Run` as `"run"`, and `RunEndScreen` twice, as `"game_over"` ("You Died!", red, `GAME_OVER_MUSIC`) and `"run_complete"` ("You Escaped!", green, no music of its own).
-8. `self.game_state_manager.get_state().enter()` runs the first screen's `enter()`, which starts the menu music. The first state is set directly in `GameStateManager.__init__`, not through `set_state`, so its `enter()` has to be called by hand. It must come after the `add_state` calls, because `get_state()` looks the state up in the dict.
+1. `pygame.init()`, then `settings.load_settings(DEFAULT_SETTINGS, SETTINGS_FILE_PATH)` reads `settings.json`. It must run before the window is created, because the window needs the fullscreen setting.
+2. `apply_theme()` calls `set_theme(...)` with the game's font, pixel scale, colors and button sounds. It must come before any screen is built, because every widget reads the theme when it's created (section 6, `engine/ui/theme.py`).
+3. `create_window((SCREEN_WIDTH, SCREEN_HEIGHT), fullscreen, WINDOW_TITLE)` opens an **OpenGL** window (`pygame.OPENGL | pygame.DOUBLEBUF`; in fullscreen, `FULLSCREEN` at the desktop's own resolution, `(0, 0)`) and remembers the game's drawing size for letterboxing. It must exist before any image is loaded, because `load_image` calls `convert_alpha()`, which needs a display.
+4. `make_renderer()` builds the `Renderer` (it needs the window's OpenGL context), passing the screen, world and tile sizes, the world scale, and the light look from `game/data/light_types.py`.
+5. `load_sound()` loads every sound effect and music track from `SFX_FOLDER` and `MUSIC_FOLDER` and applies the saved volumes. No music starts here.
+6. `build_screens()` creates a `GameStateManager` starting on `"main_menu"` and registers the screens, built in this order: `MainMenu` as `"main_menu"`, `OptionsMenu` as `"options"`, `Run` as `"run"`, and `RunEndScreen` twice, as `"game_over"` ("You Died!", red, `GAME_OVER_MUSIC`) and `"run_complete"` ("You Escaped!", green, no music of its own).
+7. `GameLoop(renderer, screen size, manager, FRAME_RATE, cursor_image=..., fps_setting="fps_enabled")` is built with the cursor art (`Assets/Cursors/01.png` at half scale), and `game_loop.run()` starts it. When it returns, `pygame.quit()` closes everything.
 
-`run()` loops `update()` then `draw()` until `self.running` is false.
+**`GameLoop`** (`engine/core/game_loop.py`) knows nothing about Dungeon Sprint. Its `__init__` makes `ui_surface`, a transparent screen-sized `SRCALPHA` surface every frame is drawn on, the clock, the FPS counter, and (when given cursor art) hides the system mouse and builds a `Cursor`. `fps_setting` is the **name** of the setting that shows the FPS counter, so the engine never needs to know the game's setting names. `run()` calls the first screen's `enter()` (the first state is set directly in `GameStateManager.__init__`, not through `set_state`, so its `enter()` has to be called by hand; this is what starts the menu music), then loops `update()` and `draw()` until `running` is false.
 
 **`update()`:**
 - Reads the event queue. A `pygame.QUIT` event (closing the window, or the Exit button) stops the loop.
-- Computes `dt`, the seconds since the last frame, from `clock.tick(FRAME_RATE)`. `FRAME_RATE` is 240. Everything that moves or counts down is multiplied by `dt`, so the game runs at the same speed at any frame rate.
-- Calls `update(dt)` on the current state, then updates the cursor.
-- Every 0.5 seconds (`FPS_REFRESH_INTERVAL`), refreshes the FPS text. The timer subtracts the interval instead of resetting to zero, so the leftover time carries over.
+- Computes `dt`, the seconds since the last frame, from `clock.tick(frame_rate)`. `FRAME_RATE` is 240. Everything that moves or counts down is multiplied by `dt`, so the game runs at the same speed at any frame rate.
+- Calls `update(dt)` on the current state, then updates the cursor and the FPS counter.
 
 **`draw()`:**
 - Clears `ui_surface` to fully transparent and passes it to the current state's `draw(screen)`. States never touch the window: in an OpenGL window, the display surface can't be drawn on with pygame, so `screen` is always this offscreen surface.
-- Draws the FPS label if `fps_enabled` is on, then the cursor (last, so it is on top of everything).
+- Draws the FPS counter if its setting is on, then the cursor (last, so it is on top of everything).
 - `renderer.present(ui_surface)` puts the frame in the window (below), then `pygame.display.flip()` shows it: an OpenGL window draws into a back buffer and swaps it to the front. (`pygame.display.update()` is for software windows and can't be used with `OPENGL`.)
 
-After `run()` returns, `pygame.quit()` closes everything.
-
-**The renderer** (`systems/renderer.py`, ModernGL). The game always draws in a 1280×720 space, and all screen coordinates in the code are in it. Getting that onto the real window is the renderer's job (it used to be `pygame.SCALED`, which can't be combined with OpenGL). A frame is two **layers**, each a **texture** (an image on the GPU) drawn on a **quad** (a rectangle):
+**The renderer** (`engine/graphics/renderer.py`, ModernGL). The game always draws in a 1280×720 space, and all screen coordinates in the code are in it. Getting that onto the real window is the renderer's job (it used to be `pygame.SCALED`, which can't be combined with OpenGL). A frame is two **layers**, each a **texture** (an image on the GPU) drawn on a **quad** (a rectangle):
 
 ```
 Run.draw ── submit_world(world, camera offset, lights, blockers) ──▶ world layer: 427×240 texture, lit, scaled ×3 by the GPU   (only if submitted)
@@ -388,7 +420,7 @@ every state, FPS, cursor ── ui_surface ────────────�
   ```
 
   There are two **programs** (a vertex shader and a fragment shader compiled together): `ui_program` (`TEXTURE_SHADER`, which just shows the texture) and `world_program` (`WORLD_SHADER`, which also lights it). `make_quad(program, uv_right, uv_bottom)` builds a quad for one of them from a flat `array("f", ...)` of 4 corners × (x, y, u, v), marked `# fmt: skip` so Black keeps it as 4 rows; `"2f 2f"` tells the GPU each corner is two floats for `in_position`, then two for `in_uv`.
-- **`WORLD_UV_RIGHT`.** The world is `WORLD_WIDTH` × `GAME_SCALE` = 427 × 3 = 1281 pixels wide, one more than the screen. The CPU version simply cut the last column off; the world quad shows the texture only up to `SCREEN_WIDTH / (WORLD_WIDTH × GAME_SCALE)` = 1280 / 1281 of its width, so one world pixel stays exactly 3 screen pixels. (`WORLD_UV_BOTTOM` is 720 / 720 = 1.)
+- **The sizes come from the game.** `Renderer(screen_size, world_size, world_scale, tile_size, lighting)` is built by `main.py`; `lighting` is a dict of the light look (`ambient`, `max_light`, `bands`, and `void_color`, the wall art's empty color, 0–255 RGB). The world is `world_size` × `world_scale` = 427 × 3 = 1281 pixels wide, one more than the screen, so `__init__` works out how much of the world texture fits: the world quad shows it only up to `uv_right` = `screen width / (world width × world_scale)` = 1280 / 1281 of its width, so one world pixel stays exactly 3 screen pixels. (`uv_bottom` is 720 / 720 = 1.)
 - **Textures** use `NEAREST` filtering, so scaled pixels stay crisp blocks instead of blurring. The UI layer is blended with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, the normal "transparent over opaque" rule.
 - **Uploading.** Each frame both surfaces are copied to their textures (`texture.write`). The world uses `pygame.image.tobytes(surface, "RGBA")`, which converts its pixels into bytes in a known order. For the UI that conversion was the slowest part of the frame, so it's skipped: the UI surface's masks are `R = 0xFF0000, G = 0xFF00, B = 0xFF, A = 0xFF000000`, which on a little-endian PC means each pixel's bytes sit in memory as **B, G, R, A**. `surface.get_view("1")` exposes that memory with no copy, and `ui_texture.swizzle = "BGRA"` tells the texture which byte is which channel, so the GPU reorders them for free. The world keeps `tobytes`: its surface has no alpha, so its fourth byte is padding, and reading that as alpha could make the world see-through; at 427×240 the conversion only costs 0.25 ms.
 
@@ -401,12 +433,12 @@ every state, FPS, cursor ── ui_surface ────────────�
 
 - **`present(ui_surface)`** clears the whole window to black, sets the **viewport** (the part of the window OpenGL draws into) to the letterboxed game area, then draws the world layer (if submitted: camera offset, `set_blockers`, `set_lights`, upload, draw) and the UI layer.
 
-**Lighting** (`systems/lighting.py` for the values and the light list, `WORLD_SHADER` in `systems/renderer.py` for the drawing). Mood lighting: unlit areas are dimmed a little and cooled, and torches, candlesticks and the player add colored glows on top. Everything stays visible.
+**Lighting** (`engine/graphics/lighting.py` for flicker, the visible-light list and the wall mask, `WORLD_SHADER` in `engine/graphics/renderer.py` for the drawing, and `game/data/light_types.py` for the look: `LIGHT_TYPES`, `AMBIENT_LIGHT`, `MAX_LIGHT`, `LIGHT_BANDS`). Mood lighting: unlit areas are dimmed a little and cooled, and torches, candlesticks and the player add colored glows on top. Everything stays visible.
 
 ```
 Floor ── lights: (name, flame position) per torch / candlestick      light_blockers: 1 byte per map tile
    │                                                                   (1 = wall or closed door)
-Run.draw ── visible_lights(floor.lights, player center, camera, time)
+Run.draw ── visible_lights([player light] + floor.lights, LIGHT_TYPES, camera, time)
    │          player light first, then the floor's lights near the view (≤ MAX_LIGHTS = 32),
    │          each as (position on the world surface, radius, color × intensity × flicker)
    ▼
@@ -417,7 +449,7 @@ renderer ── set_blockers: the mask becomes a small integer texture (72×51 o
             WORLD_SHADER: lights every world pixel
 ```
 
-- **Uniforms** are values Python hands to a shader; they're the same for every pixel of one draw. Settings that never change (`world_size`, `tile_size`, `ambient`, `void_color`, `max_light`, `bands`, and which texture slot is which: `image` 0, `blockers` 1) are set once in `Renderer.__init__`. Per frame: `camera_offset`, `light_count` and the arrays `light_positions`, `light_radii`, `light_colors`. GLSL arrays have a fixed size, so `set_lights` always sends `MAX_LIGHTS` entries, padding the unused ones (radius `1.0`, never 0, so a slip could never divide by zero), and the loop stops at `light_count`. The arrays' size comes from Python: the shader source starts with `f"#define MAX_LIGHTS {MAX_LIGHTS}\n"`, so the number is defined once, in `lighting.py`; the rest of the shader is a plain string, because GLSL's `{ }` would clash with an f-string.
+- **Uniforms** are values Python hands to a shader; they're the same for every pixel of one draw. Settings that never change (`world_size`, `tile_size`, `ambient`, `void_color`, `max_light`, `bands`, and which texture slot is which: `image` 0, `blockers` 1) are set once in `Renderer.__init__`. Per frame: `camera_offset`, `light_count` and the arrays `light_positions`, `light_radii`, `light_colors`. GLSL arrays have a fixed size, so `set_lights` always sends `MAX_LIGHTS` entries, padding the unused ones (radius `1.0`, never 0, so a slip could never divide by zero), and the loop stops at `light_count`. The arrays' size comes from Python: the shader source starts with `f"#define MAX_LIGHTS {MAX_LIGHTS}\n"`, so the number is defined once, in `engine/graphics/lighting.py`; the rest of the shader is a plain string, because GLSL's `{ }` would clash with an f-string.
 - **Per world pixel**, the shader works out (`pixel` is the center of the world pixel being drawn, `floor(uv × world_size) + 0.5`, so light is computed once per **art** pixel and stays in crisp 3×3 blocks):
 
   ```
@@ -431,8 +463,8 @@ renderer ── set_blockers: the mask becomes a small integer texture (72×51 o
   ```
 
   `LIGHT_BANDS = 0` is smooth (the default); 5 gives visible rings (`0.93 → 0.8`, `0.55 → 0.4`, `0.15 → 0`, the outer fifth unlit). Linear falloff was chosen over squared: with squared, most of each radius was too dark to read.
-- **Light types** (`LIGHT_TYPES`): `radius` in world pixels, `color` as 0–1 RGB, `intensity`, the flame's `offset` from the tile center, and `flicker`. Torches are warm orange (`(1.0, 0.62, 0.32)`, radius 90, side torches 72), candlesticks a softer yellow (`(1.0, 0.85, 0.50)`, radius 56), and the player a faint cool light (`(0.80, 0.88, 1.0)`, radius 64, intensity 0.3). `flame_position(name, tile_center, flipped)` adds the offset (a side torch's flame leans left; on a mirrored, right-wall torch the x offset flips), so the loader records where the flame is, not the tile's center.
-- **`visible_lights(floor_lights, player_center, camera, time)`** keeps the lights inside the camera rect grown by the largest radius on every side (a torch just off-screen still lights the edge of the view), turns their positions camera-relative (the shader works in world-surface pixels), and multiplies each color by its intensity and flicker, so the shader needs one color per light. The player's light goes first, so it's never the one cut off at `MAX_LIGHTS`.
+- **Light types** (`LIGHT_TYPES`): `radius` in world pixels, `color` as 0–1 RGB, `intensity`, the flame's `offset` from the tile center, and `flicker`. Torches are warm orange (`(1.0, 0.62, 0.32)`, radius 90, side torches 72), candlesticks a softer yellow (`(1.0, 0.85, 0.50)`, radius 56), and the player a faint cool light (`(0.80, 0.88, 1.0)`, radius 64, intensity 0.3). `flame_position(light_type, tile_center, flipped)` adds the type's offset (a side torch's flame leans left; on a mirrored, right-wall torch the x offset flips), so the loader records where the flame is, not the tile's center.
+- **`visible_lights(lights, light_types, camera, time)`** takes `(type name, position)` pairs and the game's `LIGHT_TYPES`, and keeps the lights inside the camera rect grown by the largest radius on every side (a torch just off-screen still lights the edge of the view), turns their positions camera-relative (the shader works in world-surface pixels), and multiplies each color by its intensity and flicker, so the shader needs one color per light. `Run.draw` puts the player's light (`("player", player center)`) first in the list, so it's never the one cut off at `MAX_LIGHTS`.
 - **Flicker.** Every frame each flame's intensity is scaled by `1 + flicker × wave`:
 
   ```
@@ -443,7 +475,7 @@ renderer ── set_blockers: the mask becomes a small integer texture (72×51 o
   ```
 
   Two sine waves at speeds that don't divide evenly (`FLICKER_SPEEDS`) add up to a wobble that never quite repeats, and the position-based phase keeps neighboring flames out of step. Only the intensity flickers, not the radius, so the `visible_lights` area stays exact. `time` is `pygame.time.get_ticks() / 1000`, the game clock rather than `run_time`, so flames keep moving behind the pause menu.
-- **Walls block light.** `refresh_light_blockers()` (`Floor`) builds `light_blockers(map_size, tiles)` from every wall and door tile: `((columns, rows), bytes)`, one byte per tile, row by row. The renderer turns it into a one-channel unsigned-integer texture (`dtype="u1"`, read with a `usampler2D` and `texelFetch`: whole numbers by tile, no filtering, no UV math; integer textures must use `NEAREST`). `set_blockers` compares with `is`, so the texture is only rebuilt when the floor makes a new tuple: on a new floor, or when a door opens (`unlock_door` calls `refresh_light_blockers`). Crates don't cast shadows. For each light that's close enough to matter (`falloff > 0`), the shader checks whether it **reaches** the pixel:
+- **Walls block light.** `refresh_light_blockers()` (`Floor`) builds `light_blockers(map_size, tiles, TILE_SIZE)` from every wall and door tile: `((columns, rows), bytes)`, one byte per tile, row by row. The renderer turns it into a one-channel unsigned-integer texture (`dtype="u1"`, read with a `usampler2D` and `texelFetch`: whole numbers by tile, no filtering, no UV math; integer textures must use `NEAREST`). `set_blockers` compares with `is`, so the texture is only rebuilt when the floor makes a new tuple: on a new floor, or when a door opens (`unlock_door` calls `refresh_light_blockers`). Crates don't cast shadows. For each light that's close enough to matter (`falloff > 0`), the shader checks whether it **reaches** the pixel:
 
   ```
   start  = the light's position          target = the pixel's position
@@ -459,7 +491,7 @@ renderer ── set_blockers: the mask becomes a small integer texture (72×51 o
 - **The empty part of a wall tile never takes light.** Wall art doesn't fill its tile: a side wall's art is 7 of its 16 pixels wide, a bottom wall's about the top half, and the rest is `PALETTE_VOID`. Lit from the room, that void glowed as a strip beside the wall. So a pixel that is inside a blocker tile **and** exactly the void color (within half a color step, `0.5 / 255`, since the shader sees colors as 0–1 decimals) skips every light and keeps only the ambient. Only inside walls: floor tiles use the same color for their grid lines, which should be lit.
 - **Cost.** The whole light shader takes about 0.03 ms a frame on the GPU (RTX 4070 SUPER, 7 lights with wall checks), so lighting is effectively free; the CPU-side frame costs are in section 7, "Performance".
 
-**Letterboxing and the mouse** (`systems/display.py`). `letterbox(window_size)` fits the 1280×720 game into any window at the largest scale that fits, centered, with black bars on the sides that don't fill:
+**Letterboxing and the mouse** (`engine/graphics/display.py`). `letterbox(window_size)` fits the 1280×720 game into any window at the largest scale that fits, centered, with black bars on the sides that don't fill:
 
 ```
 scale = min(window_width / 1280, window_height / 720)
@@ -482,7 +514,7 @@ Inside that, the world is drawn at its true pixel size on a small canvas and sca
 
 ## 5. State flow
 
-A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter()` runs once each time the game switches to that state, and is where a state does its "on arrival" work, such as starting its music. A state with nothing to do on arrival still needs an `enter` whose body is `pass`, or the switch crashes with `AttributeError`. `GameStateManager` (`states/state_manager.py`) holds:
+A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter()` runs once each time the game switches to that state, and is where a state does its "on arrival" work, such as starting its music. A state with nothing to do on arrival still needs an `enter` whose body is `pass`, or the switch crashes with `AttributeError`. `GameStateManager` (`engine/core/state_manager.py`) holds:
 - `states`: a dict of name to state object.
 - `current`: the name of the active state.
 - `previous`: the name of the state before it.
@@ -499,12 +531,12 @@ A *state* is any object with `update(dt)`, `draw(screen)` and `enter()`. `enter(
    "Main Menu" ──▶ MainMenu   "Back" ──▶ Run    (only shown when previous == "run")
 ```
 
-- **MainMenu** (`states/menus/main_menu.py`): Start goes to the run, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally. `enter()` plays `MAIN_MENU_MUSIC` (`"menu_music"`).
-- **Level** (`states/run.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0 it plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). Climbing down the exit ladder (F) loads the next floor from `FLOOR_ORDER`, or switches to `"run_complete"` after the last one (step 7). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `sound.py` in section 6).
-- **Options** (`states/menus/options.py`): music and SFX sliders, an FPS toggle and a fullscreen toggle. Main Menu returns to the main menu. When the menu was opened from the run, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"run"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the run. In that case the menu is drawn over the dimmed, frozen run instead of a solid background. Both buttons save the settings file. `enter()` does nothing, so the pause menu keeps playing whatever music was already on.
-- **RunEndScreen** (`states/menus/run_end.py`): the screen shown when a run ends, either way. It is one class created twice in `main.py` with different settings, `RunEndScreen(game_state_manager, title, title_color, music)`: the differences between the two screens are constructor arguments, not separate classes. It draws the title, the run's split times (one row per floor, then the total) and two text buttons over the frozen run. Restart and Main Menu both call `start_new_run()` (from `states/new_run.py`) first, then switch to `"run"` or `"main_menu"`. `enter()` reads the finished run's `splits`, `run_time` and `dying` from `game_state_manager.states["run"]` and renders the split table. If `music` is a track name, `enter()` stops the current music and plays it once, with `loops=0`. That's how the death screen plays `"game_over"`, and why Restart then starts the run's music again from the beginning. If `music` is `None`, as on the finish screen, the current track keeps playing.
+- **MainMenu** (`game/states/menus/main_menu.py`): Start goes to the run, Options goes to the options menu, Exit posts a `pygame.QUIT` event so the main loop shuts down normally. `enter()` plays `MAIN_MENU_MUSIC` (`"menu_music"`).
+- **Run** (`game/states/run.py`): the dungeon. ESC switches to options and plays the `pause` sound. When the player's health reaches 0, its `DeathSequence` plays `death`, stops the music, freezes for `DEATH_DELAY` (3.0) seconds, then switches to `"game_over"` (section 7, step 6). Climbing down the exit ladder (F) loads the next floor from `FLOOR_ORDER`, or switches to `"run_complete"` after the last one (step 7). `enter()` plays `LEVEL_MUSIC` (`"level_music"`). Unpausing calls it again, but the track keeps going instead of restarting (see `engine/io/sound.py` in section 6).
+- **Options** (`game/states/menus/options.py`): music and SFX sliders, and toggles for the FPS counter, fullscreen, screen shake and the hurt vignette. Main Menu returns to the main menu. When the menu was opened from the run, it first calls `start_new_run()` so the abandoned run is thrown away. Back (`can_go_back()`) only appears when the previous state is `"run"`, so it acts as "resume". ESC does the same as Back, but only when the menu was opened from the run. In that case the menu is drawn over the dimmed, frozen run instead of a solid background. Both buttons save the settings file. `enter()` does nothing, so the pause menu keeps playing whatever music was already on.
+- **RunEndScreen** (`game/states/menus/run_end.py`): the screen shown when a run ends, either way. It is one class created twice in `main.py`'s `build_screens` with different settings, `RunEndScreen(game_state_manager, title, title_color, music)`: the differences between the two screens are constructor arguments, not separate classes. It draws the title, the run's split times (one row per floor, then the total) and two text buttons over the frozen run. Restart and Main Menu both call `start_new_run()` (from `game/states/new_run.py`) first, then switch to `"run"` or `"main_menu"`. `enter()` reads the finished run's `splits`, `run_time` and whether it died (`run.death.is_active()`) from `game_state_manager.states["run"]` and renders the split table. If `music` is a track name, `enter()` stops the current music and plays it once, with `loops=0`. That's how the death screen plays `"game_over"`, and why Restart then starts the run's music again from the beginning. If `music` is `None`, as on the finish screen, the current track keeps playing.
 
-All states are built once at startup and kept alive, so leaving and returning to the run normally resumes it where you left off. The exceptions are a death, and quitting to the main menu from the pause menu. `start_new_run(game_state_manager)` in `states/new_run.py` builds a brand new `Run(game_state_manager)`, which starts on the first floor, and registers it under `"run"` with `add_state`, which replaces the old one in the `states` dict. A rebuild resets everything the Run owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Run can be replaced, code that needs it should look it up through `game_state_manager.states["run"]` when it needs it, not keep a reference from startup. `Game.run_state` in `main.py` still points at the first Run and is not used after registration.
+All states are built once at startup and kept alive, so leaving and returning to the run normally resumes it where you left off. The exceptions are a death, and quitting to the main menu from the pause menu. `start_new_run(game_state_manager)` in `game/states/new_run.py` builds a brand new `Run(game_state_manager)`, which starts on the first floor, and registers it under `"run"` with `add_state`, which replaces the old one in the `states` dict. A rebuild resets everything the Run owns (player, enemies, chests, doors, ground items, the inventory screen) and recenters the camera, while the shared image, animation and mask caches are reused. Because the Run can be replaced, code that needs it should look it up through `game_state_manager.states["run"]` when it needs it, not keep a reference from startup.
 
 ## 6. Folder-by-folder reference
 
