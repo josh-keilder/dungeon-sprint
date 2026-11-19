@@ -2,12 +2,11 @@ import pygame
 
 from engine.core import settings
 from engine.core.assets import load_image
+from engine.core.game_loop import GameLoop
 from engine.core.state_manager import GameStateManager
 from engine.graphics.display import create_window
 from engine.graphics.renderer import Renderer
 from engine.io import sound
-from engine.ui.cursor import Cursor
-from engine.ui.fps_counter import FpsCounter
 from engine.ui.theme import set_theme
 from game.data.constants import (
     DEFAULT_SETTINGS,
@@ -46,122 +45,92 @@ CURSOR_IMAGE_PATH = "Assets/Cursors/01.png"
 GAME_OVER_MUSIC = "game_over"
 
 
-class Game:
-    def __init__(self):
-        pygame.init()
+def main():
+    pygame.init()
+    settings.load_settings(DEFAULT_SETTINGS, SETTINGS_FILE_PATH)
 
-        settings.load_settings(DEFAULT_SETTINGS, SETTINGS_FILE_PATH)
+    # The theme first: every screen and widget reads it when it's built
+    apply_theme()
 
-        # The look every engine widget reads; set before any screen is built
-        set_theme(
-            font_path=FONT_PATH,
-            font_size=24,  # Silkscreen at 24 sits on the 3x pixel grid
-            pixel_scale=GAME_SCALE,
-            text_color=PALETTE_STEEL,
-            text_outline_color=PALETTE_VOID,
-            hover_color=PALETTE_TORCH,
-            button_outline_color=PALETTE_STEEL,
-            slider_empty_color=PALETTE_SHADOW,
-            hover_sound="button_hover",
-            click_sound="button_click",
-            health_bar_border_color=PALETTE_VOID,
-            health_bar_empty_color=PALETTE_SHADOW,
-            health_bar_fill_color=PALETTE_BLOOD,
-        )
+    create_window(
+        (SCREEN_WIDTH, SCREEN_HEIGHT),
+        settings.get_setting("full_screen_enabled"),
+        WINDOW_TITLE,
+    )
+    renderer = make_renderer()
+    load_sound()
 
-        create_window(
-            (SCREEN_WIDTH, SCREEN_HEIGHT),
-            settings.get_setting("full_screen_enabled"),
-            WINDOW_TITLE,
-        )
+    cursor_image = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
+    game_loop = GameLoop(
+        renderer,
+        (SCREEN_WIDTH, SCREEN_HEIGHT),
+        build_screens(),
+        FRAME_RATE,
+        cursor_image=cursor_image,
+        fps_setting="fps_enabled",
+    )
+    game_loop.run()
+    pygame.quit()
 
-        # Every frame is drawn on ui_surface (transparent), then the renderer puts the
-        # world (if a run submitted one) and this surface into the window
-        self.renderer = Renderer(
-            screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
-            world_size=(WORLD_WIDTH, WORLD_HEIGHT),
-            world_scale=GAME_SCALE,
-            tile_size=TILE_SIZE,
-            lighting={
-                "ambient": AMBIENT_LIGHT,
-                "max_light": MAX_LIGHT,
-                "bands": LIGHT_BANDS,
-                "void_color": PALETTE_VOID,  # wall tiles' empty part never takes light
-            },
-        )
-        self.ui_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 
-        self.clock = pygame.time.Clock()
-        self.running = True
+def apply_theme():
+    # The look every engine widget reads
+    set_theme(
+        font_path=FONT_PATH,
+        font_size=24,  # Silkscreen at 24 sits on the 3x pixel grid
+        pixel_scale=GAME_SCALE,
+        text_color=PALETTE_STEEL,
+        text_outline_color=PALETTE_VOID,
+        hover_color=PALETTE_TORCH,
+        button_outline_color=PALETTE_STEEL,
+        slider_empty_color=PALETTE_SHADOW,
+        hover_sound="button_hover",
+        click_sound="button_click",
+        health_bar_border_color=PALETTE_VOID,
+        health_bar_empty_color=PALETTE_SHADOW,
+        health_bar_fill_color=PALETTE_BLOOD,
+    )
 
-        # Custom cursor setup
-        pygame.mouse.set_visible(False)
-        cursor_image = pygame.transform.scale_by(load_image(CURSOR_IMAGE_PATH), 0.5)
-        self.cursor = Cursor(cursor_image)
 
-        # Sound: load files and apply saved volumes
-        music_volume = settings.get_setting("music_volume")
-        sfx_volume = settings.get_setting("sfx_volume")
-        sound.load_sfx(SFX_FOLDER)
-        sound.load_music(MUSIC_FOLDER)
-        sound.set_sfx_volume(sfx_volume)
-        sound.set_music_volume(music_volume)
+def make_renderer():
+    return Renderer(
+        screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+        world_size=(WORLD_WIDTH, WORLD_HEIGHT),
+        world_scale=GAME_SCALE,
+        tile_size=TILE_SIZE,
+        lighting={
+            "ambient": AMBIENT_LIGHT,
+            "max_light": MAX_LIGHT,
+            "bands": LIGHT_BANDS,
+            "void_color": PALETTE_VOID,  # wall tiles' empty part never takes light
+        },
+    )
 
-        # FPS counter, shown when the setting is on
-        self.fps_counter = FpsCounter(SCREEN_WIDTH)
 
-        # Screens, and the manager that switches between them
-        self.game_state_manager = GameStateManager("main_menu")
-        self.main_menu = MainMenu(self.game_state_manager)
-        self.options_menu = OptionsMenu(self.game_state_manager)
-        self.run_state = Run(self.game_state_manager)
-        self.game_over_screen = RunEndScreen(
-            self.game_state_manager, "You Died!", RED, GAME_OVER_MUSIC
-        )
-        self.run_complete_screen = RunEndScreen(
-            self.game_state_manager, "You Escaped!", GREEN, None
-        )
+def load_sound():
+    # Load the files, then apply the saved volumes
+    sound.load_sfx(SFX_FOLDER)
+    sound.load_music(MUSIC_FOLDER)
+    sound.set_sfx_volume(settings.get_setting("sfx_volume"))
+    sound.set_music_volume(settings.get_setting("music_volume"))
 
-        self.game_state_manager.add_state("run", self.run_state)
-        self.game_state_manager.add_state("options", self.options_menu)
-        self.game_state_manager.add_state("main_menu", self.main_menu)
-        self.game_state_manager.add_state("game_over", self.game_over_screen)
-        self.game_state_manager.add_state("run_complete", self.run_complete_screen)
 
-        self.game_state_manager.get_state().enter()
-
-    def run(self):
-        while self.running:
-            self.update()
-            self.draw()
-
-    def update(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-
-        # Seconds since the last frame
-        self.dt = self.clock.tick(FRAME_RATE) / 1000.0
-
-        self.game_state_manager.get_state().update(self.dt)
-        self.cursor.update()
-
-        self.fps_counter.update(self.dt, self.clock.get_fps())
-
-    def draw(self):
-        self.ui_surface.fill((0, 0, 0, 0))
-        self.game_state_manager.get_state().draw(self.ui_surface)
-
-        if settings.get_setting("fps_enabled"):
-            self.fps_counter.draw(self.ui_surface)
-
-        self.cursor.draw(self.ui_surface)
-
-        self.renderer.present(self.ui_surface)
-        pygame.display.flip()
+def build_screens():
+    # Every screen, and the manager that switches between them
+    game_state_manager = GameStateManager("main_menu")
+    game_state_manager.add_state("main_menu", MainMenu(game_state_manager))
+    game_state_manager.add_state("options", OptionsMenu(game_state_manager))
+    game_state_manager.add_state("run", Run(game_state_manager))
+    game_state_manager.add_state(
+        "game_over",
+        RunEndScreen(game_state_manager, "You Died!", RED, GAME_OVER_MUSIC),
+    )
+    game_state_manager.add_state(
+        "run_complete",
+        RunEndScreen(game_state_manager, "You Escaped!", GREEN, None),
+    )
+    return game_state_manager
 
 
 if __name__ == "__main__":
-    game = Game()
-    game.run()
-    pygame.quit()
+    main()
