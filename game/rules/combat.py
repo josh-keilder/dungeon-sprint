@@ -1,7 +1,10 @@
 import pygame
 
 from engine.core.timer import is_running, start_timer
-from engine.gameplay.health import take_damage
+from engine.gameplay.health import is_dead, take_damage
+from engine.graphics.particles import emit_burst
+from engine.io import sound
+from game.rules.contacts import find_player_contacts
 from game.rules.enemy_ai import trigger_flee
 from game.rules.roll import is_rolling
 from game.rules.swing import interrupt_swing, is_striking, strike_rect
@@ -15,6 +18,33 @@ PLAYER_KNOCKBACK_SPEED = 160  # pixels per second, away from the enemy
 # Roll hits: both scale with the player's speed at the moment of impact
 ROLL_DAMAGE_PER_SPEED = 0.15  # damage per pixel per second
 KNOCKBACK_PER_SPEED = 1.2  # knockback speed per pixel per second
+
+
+def resolve_combat(player, enemies, particles):
+    # Roll hits and touches first, then sword strikes; returns whether a roll hit landed
+    hit_landed = False
+
+    living_enemies = [enemy for enemy in enemies if not enemy.dying]
+    for enemy in find_player_contacts(player, living_enemies):
+        if resolve_contact(player, enemy):
+            sound.play_sfx("roll_hit")
+            emit_burst(
+                particles,
+                enemy.rect.center,
+                enemy.hit_particles,
+                enemy.knockback_velocity,
+            )
+            hit_landed = True
+
+        if is_dead(enemy.health):
+            enemy.start_dying()
+
+    # An enemy killed just now can't strike back
+    for enemy in enemies:
+        if enemy.attack is not None and not enemy.dying:
+            resolve_strike(player, enemy)
+
+    return hit_landed
 
 
 def resolve_contact(player, enemy):

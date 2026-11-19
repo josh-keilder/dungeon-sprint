@@ -4,21 +4,18 @@ import pygame
 
 from engine.core import debug
 from engine.core.assets import load_image
-from engine.gameplay.health import is_dead
 from engine.gameplay.loot import roll_loot
 from engine.graphics.camera import is_on_screen, world_to_screen
 from engine.graphics.lighting import light_blockers
 from engine.graphics.masks import draw_highlight, draw_hitbox
 from engine.graphics.particles import draw_particles, emit_burst, update_particles
-from engine.io import sound
 from engine.physics.collision import edge_walls
 from game.data.constants import TILE_SIZE
 from game.data.loot_table_data import CRATE_LOOT
 from game.data.palette import BLUE
 from game.data.particle_presets import CRATE_DEBRIS
 from game.entities.enemies.load_enemies import load_enemies
-from game.rules.combat import resolve_contact, resolve_strike
-from game.rules.contacts import find_player_contacts
+from game.rules.combat import resolve_combat
 from game.rules.roll import is_rolling
 from game.rules.separation import separate_enemies
 from game.world.map_loader import load_floor_data
@@ -59,7 +56,6 @@ class Floor:
         self.ground_items = pygame.sprite.Group()
         self.particles = []
         self.exit_requested = False
-        self.hit_landed = False  # set by resolve_enemy_contacts; read by the run
 
         # Placed items (keys), from the map's Items layer
         for item_id, center in floor_data["placed_items"]:
@@ -82,15 +78,12 @@ class Floor:
         self.refresh_padlocks()
 
     def update(self, dt, player):
-        self.hit_landed = False  # set by resolve_enemy_contacts; read by the run
-
         if is_rolling(player.roll):
             self.break_touched_crates(player)
 
         for enemy in self.enemies:
             enemy.update(dt, self.solid_rects, player.pos)
-        self.resolve_enemy_contacts(player)
-        self.resolve_enemy_strikes(player)
+        hit_landed = resolve_combat(player, self.enemies, self.particles)
         separate_enemies(self.enemies, player, self.solid_rects)
         self.remove_dead_enemies()
 
@@ -98,6 +91,8 @@ class Floor:
         self.ground_items.update(dt)
         self.update_crates(dt)
         update_particles(self.particles, dt)
+
+        return hit_landed
 
     def draw(self, surface, player, camera, highlight=None):
         # Floor
@@ -171,28 +166,6 @@ class Floor:
 
     def enemies_left(self):
         return sum(1 for enemy in self.enemies if not enemy.dying)
-
-    def resolve_enemy_contacts(self, player):
-        living_enemies = [enemy for enemy in self.enemies if not enemy.dying]
-        for enemy in find_player_contacts(player, living_enemies):
-            enemy_hit = resolve_contact(player, enemy)
-            if enemy_hit:
-                sound.play_sfx("roll_hit")
-                emit_burst(
-                    self.particles,
-                    enemy.rect.center,
-                    enemy.hit_particles,
-                    enemy.knockback_velocity,
-                )
-                self.hit_landed = True
-
-            if is_dead(enemy.health):
-                enemy.start_dying()
-
-    def resolve_enemy_strikes(self, player):
-        for enemy in self.enemies:
-            if enemy.attack is not None and not enemy.dying:
-                resolve_strike(player, enemy)
 
     def remove_dead_enemies(self):
         for enemy in list(self.enemies):

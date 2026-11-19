@@ -155,9 +155,9 @@ class Run:
 
         health_before = self.player.health["current"]
         self.player.update(dt, self.floor.player_walls(self.player))
-        self.floor.update(dt, self.player)
+        hit_landed = self.floor.update(dt, self.player)
 
-        if self.floor.hit_landed:
+        if hit_landed:
             self.shake_camera(HIT_SHAKE_STRENGTH)
         if self.player.health["current"] < health_before:
             self.shake_camera(HURT_SHAKE_STRENGTH)
