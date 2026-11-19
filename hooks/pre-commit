@@ -7,20 +7,27 @@ return_error() {
 
 echo "--- Running Pre-Commit Hooks ---"
 
-# python -m black . || return_error "Black formatting failed"
-# git add . 
+# The project's virtual environment has black and isort; fall back to the system Python
+PYTHON=".venv/Scripts/python"
+[ -x "$PYTHON" ] || PYTHON=".venv/bin/python"
+[ -x "$PYTHON" ] || PYTHON="python"
 
-# FILES=$(git diff --name-only --cached | grep '\.py$')
+# Format the staged Python files, then stage the formatted versions.
+# Note: this re-adds whole files, so a file staged only in part is committed in full.
+STAGED_PY=$(git diff --name-only --cached --diff-filter=ACMR -- '*.py')
+if [ -n "$STAGED_PY" ]; then
+    echo "$STAGED_PY" | while IFS= read -r file; do
+        "$PYTHON" -m isort --quiet "$file" || exit 1
+        "$PYTHON" -m black --quiet "$file" || exit 1
+        git add "$file"
+    done || return_error "Formatting with isort and black failed"
+    echo "✅ Staged Python files formatted with isort and black."
+fi
 
-# if [ -n "$FILES" ]; then
-#     echo "Checking for Pylint errors..."
-#     python -m pylint --errors-only $FILES || return_error "Pylint found errors."
-# else
-#     echo "No Python files staged; skipping Pylint."
-# fi
+"$PYTHON" tools/check_engine_imports.py || return_error "engine/ imports the game"
 
 if [ -f "tools/line_counter.py" ]; then
-    python tools/line_counter.py || return_error "Line counting script failed"
+    "$PYTHON" tools/line_counter.py || return_error "Line counting script failed"
 else
     return_error "line_counter.py not found"
 fi

@@ -1,7 +1,7 @@
 import os
 
 # Folders that aren't project code
-IGNORED_FOLDERS = ("venv", ".git", "__pycache__", ".venv")
+IGNORED_FOLDERS = ("venv", ".git", "__pycache__", ".venv", ".claude")
 
 # The README section this tool rewrites
 STATS_HEADER = "\n## Project Statistics\n"
