@@ -4,6 +4,7 @@ from engine.core.timer import is_running, start_timer
 from engine.gameplay.health import take_damage
 from game.rules.enemy_ai import trigger_flee
 from game.rules.roll import is_rolling
+from game.rules.swing import interrupt_swing, is_striking, strike_rect
 
 # Player i-frames after being hit
 PLAYER_INVULNERABILITY_DURATION = 1.0  # seconds
@@ -41,7 +42,7 @@ def resolve_contact(player, enemy):
         start_timer(enemy.stagger, enemy.stagger_duration)
 
         if enemy.attack is not None:
-            enemy.interrupt_attack()
+            interrupt_swing(enemy)
 
         enemy_hit = True
 
@@ -57,12 +58,12 @@ def resolve_contact(player, enemy):
 
 
 def resolve_strike(player, enemy):
-    if enemy.attack_landed or not enemy.is_striking():
+    if enemy.swing["landed"] or not is_striking(enemy):
         return False
-    if not player.rect.colliderect(enemy.strike_rect()):
+    if not player.rect.colliderect(strike_rect(enemy)):
         return False
 
-    enemy.attack_landed = True
+    enemy.swing["landed"] = True
     if is_running(player.invulnerability) or is_rolling(player.roll):
         return False
 

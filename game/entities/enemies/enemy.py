@@ -6,7 +6,6 @@ from engine.core.timer import (
     advance_timer,
     is_running,
     new_timer,
-    start_timer,
     time_left,
 )
 from engine.gameplay.health import new_health
@@ -27,6 +26,16 @@ from game.rules.enemy_ai import (
     fly_velocity,
     random_idle_direction,
     wander_chase_velocity,
+)
+from game.rules.swing import (
+    is_striking,
+    line_up_spot,
+    new_swing,
+    strike_rect,
+    swing_frames,
+    swing_step,
+    try_start_swing,
+    update_swing,
 )
 
 # Health bar, in world pixels, shown above the sprite once the enemy is hurt
@@ -87,11 +96,8 @@ class Enemy:
         self.return_timer = new_timer()
         self.idle_direction = random_idle_direction()
 
-        # Swing state (only for types with an "attack")
-        self.attacking = False
-        self.attack_time = 0.0
-        self.attack_landed = False
-        self.attack_cooldown = new_timer()
+        # Swing state (only used by types with an "attack")
+        self.swing = new_swing()
 
         # Knockback from roll hits, decayed each frame
         self.knockback_velocity = pygame.Vector2()
@@ -102,19 +108,19 @@ class Enemy:
             self.update_knockback(dt, walls)
         else:
             start_center = pygame.Vector2(self.rect.center)
-            if self.attacking:
+            if self.swing["active"]:
                 velocity = pygame.Vector2()
-                self.update_attack(dt)
+                update_swing(self, dt)
             elif self.is_staggered():
                 velocity = pygame.Vector2()
             else:
                 velocity = self.update_movement(dt, walls, target_pos)
-                self.try_start_attack(target_pos)
+                try_start_swing(self, target_pos)
 
             self.update_knockback(dt, walls)
             advance_timer(self.invulnerability, dt)
             advance_timer(self.stagger, dt)
-            advance_timer(self.attack_cooldown, dt)
+            advance_timer(self.swing["cooldown"], dt)
 
             self.moving = pygame.Vector2(self.rect.center) != start_center
             if velocity.x < 0:
@@ -156,8 +162,8 @@ class Enemy:
             draw_hitbox(screen, self.image, art_rect, camera, RED)
             body_on_screen = rect_to_screen(camera, self.rect)
 
-            if self.is_striking():
-                strike_on_screen = rect_to_screen(camera, self.strike_rect())
+            if is_striking(self):
+                strike_on_screen = rect_to_screen(camera, strike_rect(self))
                 pygame.draw.rect(screen, RED, strike_on_screen, 1)
 
             pygame.draw.rect(screen, YELLOW, body_on_screen, 1)
@@ -169,8 +175,8 @@ class Enemy:
         return (self.rect.x - offset_x, self.rect.y - self.body_y)
 
     def update_animation(self, dt):
-        if self.attacking:
-            self.image = self.attack_frames()[self.attack_step()]
+        if self.swing["active"]:
+            self.image = swing_frames(self)[swing_step(self)]
             return
 
         if self.animation_prefix is not None:
@@ -201,7 +207,7 @@ class Enemy:
         elif self.behavior == "wander_chase":
             chase_pos = target_pos
             if self.attack is not None:
-                chase_pos = self.line_up_spot(target_pos)
+                chase_pos = line_up_spot(self, target_pos)
             velocity = wander_chase_velocity(self, target_pos, walls, chase_pos)
             move_and_collide(self.rect, velocity * dt, walls)
             return velocity
@@ -220,59 +226,10 @@ class Enemy:
         move_and_collide(self.rect, displacement, walls)
         self.pos.xy = self.rect.topleft
 
-    def try_start_attack(self, target_pos):
-        if self.attack is None or is_running(self.attack_cooldown):
-            return
-        if self.pos.distance_to(target_pos) > self.attack["range"]:
-            return
-        if abs(target_pos.y - self.pos.y) > self.attack["level_tolerance"]:
-            return
-
-        self.attacking = True
-        self.attack_time = 0.0
-        self.attack_landed = False
-        self.facing = "right" if target_pos.x >= self.pos.x else "left"
-
-    def line_up_spot(self, target_pos):
-        # The swing only reaches sideways, so walk beside the target, level with it
-        side = 1 if self.pos.x >= target_pos.x else -1
-        return pygame.Vector2(
-            target_pos.x + side * self.attack["line_up_gap"], target_pos.y
-        )
-
-    def update_attack(self, dt):
-        self.attack_time += dt
-        if self.attack_step() >= len(self.attack_frames()):
-            self.attacking = False
-            start_timer(self.attack_cooldown, self.attack["cooldown"])
-
-    def attack_frames(self):
-        return self.animation["frames"][f"{self.animation_prefix}_attack_{self.facing}"]
-
-    def attack_step(self):
-        return int(self.attack_time * self.attack["frame_rate"])
-
-    def is_striking(self):
-        return self.attacking and self.attack_step() in self.attack["strike_frames"]
-
-    def strike_rect(self):
-        reach = self.attack["reach"]
-        strike = pygame.FRect(0, self.rect.y, reach, self.rect.height)
-        if self.facing == "right":
-            strike.left = self.rect.right
-        else:
-            strike.right = self.rect.left
-        return strike
-
-    def interrupt_attack(self):
-        if self.attacking and not self.is_striking() and not self.attack_landed:
-            self.attacking = False
-            start_timer(self.attack_cooldown, self.attack["cooldown"])
-
     def start_dying(self):
         self.dying = True
         self.death_time = 0.0
-        self.attacking = False
+        self.swing["active"] = False
 
     def is_done_dying(self):
         return self.dying and self.death_time >= self.death_duration
