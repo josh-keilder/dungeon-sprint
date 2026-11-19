@@ -1,18 +1,10 @@
 import pygame
 
-from engine.core import debug, settings
-from engine.core.timer import (
-    advance_timer,
-    is_running,
-    new_timer,
-    start_timer,
-    time_elapsed,
-)
+from engine.core import debug
 from engine.gameplay.health import is_dead
 from engine.graphics.camera import center_camera, new_camera
 from engine.graphics.lighting import visible_lights
 from engine.graphics.renderer import submit_world
-from engine.graphics.shake import new_shake, start_shake, update_shake
 from engine.io import sound
 from game.data.constants import FLOOR_ORDER, WORLD_HEIGHT, WORLD_WIDTH
 from game.data.item_database import initialize_item_database
@@ -21,25 +13,18 @@ from game.data.palette import MENU_BACKGROUND_COLOR, PALETTE_CANDLE, PALETTE_STE
 from game.entities.player.load_player import load_player
 from game.rules import interact
 from game.rules.input import read_input
+from game.states.death_sequence import DeathSequence
 from game.ui.floor_transition import FloorTransition
+from game.ui.hit_feedback import HitFeedback
 from game.ui.hud import HUD
-from game.ui.hurt_vignette import HurtVignette
 from game.ui.inventory_ui import InventoryUI
 from game.world.floor import Floor
 
 # Music
 LEVEL_MUSIC = "level_music"
 
-# Death: the world freezes while the player's body fades, then the game-over screen
-DEATH_DELAY = 3.0  # seconds, the whole freeze
-DEATH_FADE_DURATION = 1.5  # seconds; must be no longer than DEATH_DELAY
-
 # True makes the inventory pause the game (it's an overlay by default)
 INVENTORY_PAUSES_GAME = False
-
-# Hit feel
-HIT_SHAKE_STRENGTH = 1  # world pixels
-HURT_SHAKE_STRENGTH = 4  # world pixels
 
 
 class Run:
@@ -77,12 +62,9 @@ class Run:
         self.interact_target = None
         self.interact_prompt = None
 
-        self.dying = False
-        self.death_timer = new_timer()
-
-        self.shake = new_shake()
-
-        self.hurt_vignette = HurtVignette()
+        # Shake and vignette on hits; the freeze and fade when the player dies
+        self.hit_feedback = HitFeedback()
+        self.death = DeathSequence()
 
         # Fade to black, "Floor N" card, fade back in
         self.floor_transition = FloorTransition()
@@ -103,18 +85,10 @@ class Run:
         sound.play_music(LEVEL_MUSIC)
 
     def update(self, dt):
-        self.hurt_vignette.update(dt)
-        if self.dying:
-            self.interact_target = None
-            self.interact_prompt = None
+        self.hit_feedback.update(dt)
 
-            advance_timer(self.death_timer, dt)
-            elapsed = time_elapsed(self.death_timer)
-            fade_progress = min(1.0, elapsed / DEATH_FADE_DURATION)
-            self.player.alpha = round(255 * (1 - fade_progress))
-
-            if not is_running(self.death_timer):
-                self.game_state_manager.set_state("game_over")
+        if self.death.is_active():
+            self.update_death(dt)
             return
 
         if self.floor_transition.is_active():
@@ -129,9 +103,38 @@ class Run:
             return
 
         self.run_time += dt
+        self.handle_actions()
 
-        update_shake(self.shake, dt)
+        if self.inventory_open and INVENTORY_PAUSES_GAME:
+            return
 
+        self.update_world(dt)
+        self.update_interact_target()
+
+        if is_dead(self.player.health):
+            self.death.start()
+            return
+
+        if self.floor.exit_requested:
+            self.finish_floor()
+            return
+
+        self.update_camera()
+
+    def update_death(self, dt):
+        self.interact_target = None
+        self.interact_prompt = None
+        if self.death.update(dt, self.player):
+            self.game_state_manager.set_state("game_over")
+
+    def update_transition(self, dt):
+        if self.floor_transition.update(dt):
+            self.floor_index += 1
+            self.load_floor(FLOOR_ORDER[self.floor_index])
+            self.floor_transition.set_floor_number(self.floor_index + 1)
+
+    def handle_actions(self):
+        # The keys that act right away: debug view, interact, the inventory
         if self.player.intent["debug"]:
             debug.toggle_hitboxes()
 
@@ -150,20 +153,17 @@ class Run:
                 self.player.intent["mouse_left_click"], self.player.inventory
             )
 
-        if self.inventory_open and INVENTORY_PAUSES_GAME:
-            return
-
+    def update_world(self, dt):
         health_before = self.player.health["current"]
         self.player.update(dt, self.floor.player_walls(self.player))
         hit_landed = self.floor.update(dt, self.player)
 
         if hit_landed:
-            self.shake_camera(HIT_SHAKE_STRENGTH)
+            self.hit_feedback.on_hit()
         if self.player.health["current"] < health_before:
-            self.shake_camera(HURT_SHAKE_STRENGTH)
-            if settings.get_setting("hurt_vignette_enabled"):
-                self.hurt_vignette.start()
+            self.hit_feedback.on_hurt()
 
+    def update_interact_target(self):
         # What F would act on now; drives the outline and the HUD prompt
         self.interact_target = interact.find_target(self.player, self.floor)
         self.interact_prompt = None
@@ -172,37 +172,17 @@ class Run:
                 self.player, self.floor, self.interact_target
             )
 
-        if is_dead(self.player.health) and not self.dying:
-            self.dying = True
-            start_timer(self.death_timer, DEATH_DELAY)
-            sound.stop_music()
-            sound.play_sfx("death")
-            return
-
-        if self.floor.exit_requested:
-            self.floor.exit_requested = False
-            self.splits.append(self.run_time)
-            if self.floor_index + 1 < len(FLOOR_ORDER):
-                self.floor_transition.start()
-            else:
-                self.game_state_manager.set_state("run_complete")
-            return
-
-        self.update_camera()
-
-    def update_transition(self, dt):
-        if self.floor_transition.update(dt):
-            self.floor_index += 1
-            self.load_floor(FLOOR_ORDER[self.floor_index])
-            self.floor_transition.set_floor_number(self.floor_index + 1)
-
-    def shake_camera(self, strength):
-        if settings.get_setting("screen_shake_enabled"):
-            start_shake(self.shake, strength)
+    def finish_floor(self):
+        self.floor.exit_requested = False
+        self.splits.append(self.run_time)
+        if self.floor_index + 1 < len(FLOOR_ORDER):
+            self.floor_transition.start()
+        else:
+            self.game_state_manager.set_state("run_complete")
 
     def update_camera(self):
         x, y = self.player.rect.center
-        offset_x, offset_y = self.shake["offset"]
+        offset_x, offset_y = self.hit_feedback.camera_offset()
         center_camera(self.camera, (x + offset_x, y + offset_y))
 
     def draw(self, screen):
@@ -225,7 +205,7 @@ class Run:
             self.world_surface, self.camera.topleft, visible, self.floor.light_blockers
         )
 
-        self.hurt_vignette.draw(screen)
+        self.hit_feedback.draw(screen)
 
         self.hud.draw(
             screen,

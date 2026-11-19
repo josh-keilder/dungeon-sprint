@@ -82,7 +82,7 @@ class RunEndScreen:
 
     def enter(self):
         run = self.game_state_manager.states["run"]
-        self.render_splits(run.splits, run.run_time, run.dying)
+        self.render_splits(run.splits, run.run_time, run.death.is_active())
 
         if self.music is not None:
             sound.stop_music()
