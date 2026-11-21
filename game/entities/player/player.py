@@ -20,18 +20,18 @@ from game.rules.roll import (
     try_start_roll,
 )
 
-# Hit feedback
-BLINK_INTERVAL = 0.1  # seconds per blink on/off while invulnerable
-PLAYER_KNOCKBACK_DECAY = 16  # how fast a knockback slows; distance = speed / decay
-
-# Inventory
-INVENTORY_SLOT_COUNT = 20
-# Equipment slots, in the order the inventory screen draws them
-EQUIPMENT_SLOT_NAMES = ("head", "chest", "boots", "ability")
-
 
 class Player:
-    def __init__(self, animations, pos=(0, 0)):
+    def __init__(self, player_data, animations, pos=(0, 0)):
+        # Values from the player data (PLAYER_DATA)
+        self.base_stats = dict(player_data["base_stats"])
+        self.invulnerability_duration = player_data["invulnerability_duration"]
+        self.blink_interval = player_data["blink_interval"]
+        self.knockback_speed = player_data["knockback_speed"]
+        self.knockback_decay_rate = player_data["knockback_decay_rate"]
+        inventory_slot_count = player_data["inventory_slot_count"]
+        equipment_slot_names = player_data["equipment_slot_names"]
+
         # Facing and movement
         self.facing = "down"
         self.walking = False
@@ -42,17 +42,6 @@ class Player:
 
         # What the player asked for this frame, set by the run from input
         self.intent = {"move": pygame.Vector2(), "roll": False, "heal": False}
-
-        # Base values before equipment bonuses
-        self.base_stats = {
-            "defense": 0,
-            "health": 25,
-            "roll_speed": 200,
-            "max_speed": 70,
-            "acceleration_rate": 20,
-            "deceleration_rate": 60,
-            "grip": 50,
-        }
 
         # Roll, and the hit and heal timers
         self.roll = {
@@ -72,7 +61,7 @@ class Player:
 
         # Health, inventory, and stats
         self.health = new_health(self.base_stats["health"])
-        self.inventory = new_inventory(INVENTORY_SLOT_COUNT, EQUIPMENT_SLOT_NAMES)
+        self.inventory = new_inventory(inventory_slot_count, equipment_slot_names)
         self.stats = compute_stats(
             self.base_stats, self.inventory["equipment"].values()
         )
@@ -121,7 +110,7 @@ class Player:
         self.pos = pygame.math.Vector2(self.rect.topleft)
 
     def draw(self, screen, camera):
-        blink_hidden = is_blink_hidden(self.invulnerability, BLINK_INTERVAL)
+        blink_hidden = is_blink_hidden(self.invulnerability, self.blink_interval)
 
         if not blink_hidden:
             image_to_draw = self.image
@@ -182,7 +171,7 @@ class Player:
 
     def update_knockback(self, dt, walls):
         self.knockback_velocity = move_knockback(
-            self.rect, self.knockback_velocity, PLAYER_KNOCKBACK_DECAY, walls, dt
+            self.rect, self.knockback_velocity, self.knockback_decay_rate, walls, dt
         )
 
     def update_animation(self):

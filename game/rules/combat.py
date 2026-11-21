@@ -9,12 +9,6 @@ from game.rules.enemy_ai import trigger_flee
 from game.rules.roll import is_rolling
 from game.rules.swing import interrupt_swing, is_striking, strike_rect
 
-# Player i-frames after being hit
-PLAYER_INVULNERABILITY_DURATION = 1.0  # seconds
-
-# Player knockback when hurt
-PLAYER_KNOCKBACK_SPEED = 160  # pixels per second, away from the enemy
-
 # Roll hits: both scale with the player's speed at the moment of impact
 ROLL_DAMAGE_PER_SPEED = 0.15  # damage per pixel per second
 KNOCKBACK_PER_SPEED = 1.2  # knockback speed per pixel per second
@@ -89,13 +83,13 @@ def resolve_contact(player, enemy):
 
 def hurt_player(player, enemy):
     take_damage(player.health, enemy.attack_damage)
-    start_timer(player.invulnerability, PLAYER_INVULNERABILITY_DURATION)
+    start_timer(player.invulnerability, player.invulnerability_duration)
 
     push_direction = pygame.Vector2(player.rect.center) - pygame.Vector2(
         enemy.rect.center
     )
     if push_direction.length_squared() > 0:
-        player.knockback_velocity = push_direction.normalize() * PLAYER_KNOCKBACK_SPEED
+        player.knockback_velocity = push_direction.normalize() * player.knockback_speed
 
 
 def resolve_strike(player, enemy):

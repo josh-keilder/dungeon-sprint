@@ -148,5 +148,5 @@ Run every tool from the project root as a module (`-m tools.<name>`), so it can 
 - More items, equipment, and progression systems
 
 ## Project Statistics
-- **Total Files:** 85
-- **Total Lines of Code:** 6559
+- **Total Files:** 86
+- **Total Lines of Code:** 6566
