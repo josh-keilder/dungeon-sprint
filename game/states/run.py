@@ -14,8 +14,8 @@ from game.entities.player.load_player import load_player
 from game.rules import interact
 from game.rules.input import read_input
 from game.states.death_sequence import DeathSequence
+from game.ui.feedback import Feedback
 from game.ui.floor_transition import FloorTransition
-from game.ui.hit_feedback import HitFeedback
 from game.ui.hud import HUD
 from game.ui.inventory_ui import InventoryUI
 from game.world.floor import Floor
@@ -64,8 +64,8 @@ class Run:
         self.interact_target = None
         self.interact_prompt = None
 
-        # Shake and vignette on hits; the freeze and fade when the player dies
-        self.hit_feedback = HitFeedback()
+        # Feedback for each frame's events; the freeze and fade when the player dies
+        self.feedback = Feedback()
         self.death = DeathSequence()
 
         # Fade to black, "Floor N" card, fade back in
@@ -75,7 +75,7 @@ class Run:
         sound.play_music(LEVEL_MUSIC)
 
     def update(self, dt):
-        self.hit_feedback.update(dt)
+        self.feedback.update(dt)
 
         if self.death.is_active():
             self.update_death(dt)
@@ -131,7 +131,7 @@ class Run:
             self.world_surface, self.camera.topleft, visible, self.floor.light_blockers
         )
 
-        self.hit_feedback.draw(screen)
+        self.feedback.draw(screen)
 
         self.hud.draw(
             screen,
@@ -190,14 +190,11 @@ class Run:
             )
 
     def update_world(self, dt):
-        health_before = self.player.health["current"]
-        self.player.update(dt, self.floor.player_walls(self.player))
-        hit_landed = self.floor.update(dt, self.player)
-
-        if hit_landed:
-            self.hit_feedback.on_hit()
-        if self.player.health["current"] < health_before:
-            self.hit_feedback.on_hurt()
+        # Everything that happens this frame is recorded in events, then shown and heard
+        events = []
+        self.player.update(dt, self.floor.player_walls(self.player), events)
+        self.floor.update(dt, self.player, events)
+        self.feedback.handle(events, self.floor.particles)
 
     def update_interact_target(self):
         # What F would act on now; drives the outline and the HUD prompt
@@ -218,5 +215,5 @@ class Run:
 
     def update_camera(self):
         x, y = self.player.rect.center
-        offset_x, offset_y = self.hit_feedback.camera_offset()
+        offset_x, offset_y = self.feedback.camera_offset()
         center_camera(self.camera, (x + offset_x, y + offset_y))

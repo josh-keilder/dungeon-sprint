@@ -9,7 +9,6 @@ from engine.graphics.animation import advance_animation, new_animation, set_anim
 from engine.graphics.blink import is_blink_hidden
 from engine.graphics.camera import world_to_screen
 from engine.graphics.masks import draw_hitbox
-from engine.io.sound import play_sfx
 from engine.physics.movement import move_and_collide, move_knockback, steer
 from game.data.palette import GREEN
 from game.rules.consumables import use_small_health_potion
@@ -65,7 +64,7 @@ class Player:
             self.base_stats, self.inventory["equipment"].values()
         )
 
-    def update(self, dt, walls):
+    def update(self, dt, walls, events):
         # Where the player starts this frame, to measure the speed afterwards
         start_pos = pygame.Vector2(self.rect.center)
 
@@ -90,7 +89,7 @@ class Player:
                 self.health, self.inventory, self.heal_cooldown
             )
             if healed:
-                play_sfx("heal")
+                events.append({"name": "healed"})
 
         self.update_movement(dt, walls)
         self.update_roll(dt, walls)

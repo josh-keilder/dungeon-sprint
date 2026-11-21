@@ -8,12 +8,11 @@ from engine.gameplay.loot import roll_loot
 from engine.graphics.camera import is_on_screen, world_to_screen
 from engine.graphics.lighting import light_blockers
 from engine.graphics.masks import draw_highlight, draw_hitbox
-from engine.graphics.particles import draw_particles, emit_burst, update_particles
+from engine.graphics.particles import draw_particles, update_particles
 from engine.physics.collision import edge_walls
 from game.data.constants import TILE_SIZE
 from game.data.loot_table_data import CRATE_LOOT
 from game.data.palette import BLUE
-from game.data.particle_presets import CRATE_DEBRIS
 from game.entities.enemies.load_enemies import load_enemies
 from game.rules.combat import resolve_combat
 from game.rules.roll import is_rolling
@@ -77,23 +76,21 @@ class Floor:
         self.refresh_light_blockers()
         self.refresh_padlocks()
 
-    def update(self, dt, player):
+    def update(self, dt, player, events):
         if is_rolling(player.roll):
             self.break_touched_crates(player)
 
         target_pos = pygame.Vector2(player.rect.topleft)
         for enemy in self.enemies:
             enemy.update(dt, self.solid_rects, target_pos)
-        hit_landed = resolve_combat(player, self.enemies, self.particles)
+        resolve_combat(player, self.enemies, events)
         separate_enemies(self.enemies, player, self.solid_rects)
         self.remove_dead_enemies()
 
         self.decor_tiles.update(dt)
         self.ground_items.update(dt)
-        self.update_crates(dt)
+        self.update_crates(dt, events)
         update_particles(self.particles, dt)
-
-        return hit_landed
 
     def draw(self, surface, player, camera, highlight=None):
         # Floor
@@ -233,10 +230,10 @@ class Floor:
                 self.spawn_loot(drops, enemy.rect.center)
                 self.enemies.remove(enemy)
 
-    def update_crates(self, dt):
+    def update_crates(self, dt, events):
         for crate in self.crates.sprites():
             crate.update(dt)
 
             if crate.done_breaking:
-                emit_burst(self.particles, crate.rect.center, CRATE_DEBRIS)
+                events.append({"name": "crate_broken", "crate": crate})
                 crate.kill()

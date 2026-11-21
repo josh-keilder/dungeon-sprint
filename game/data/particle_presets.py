@@ -10,7 +10,8 @@ from game.data.palette import (
     PALETTE_TORCH,
 )
 
-# Particle looks, handed to emit_burst by the floor and ENEMY_TYPES
+# Particle looks, burst by the game's Feedback: crate debris, and each enemy type's
+# hit_particles (named in ENEMY_TYPES)
 
 # Crates breaking: all around the crate
 CRATE_DEBRIS = {
