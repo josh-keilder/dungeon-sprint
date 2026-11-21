@@ -31,16 +31,17 @@ def trigger_flee(enemy):
 
 
 def fly_velocity(enemy, target_pos, dt):
-    distance = enemy.pos.distance_to(target_pos)
+    position = pygame.Vector2(enemy.rect.topleft)
+    distance = position.distance_to(target_pos)
 
     if is_running(enemy.flee_timer):
         advance_timer(enemy.flee_timer, dt)
-        velocity = (enemy.pos - target_pos).normalize() * enemy.speed
+        velocity = (position - target_pos).normalize() * enemy.speed
     elif is_running(enemy.return_timer):
         advance_timer(enemy.return_timer, dt)
-        velocity = (target_pos - enemy.pos).normalize() * enemy.speed
+        velocity = (target_pos - position).normalize() * enemy.speed
     elif distance < CHASE_RANGE:
-        velocity = (target_pos - enemy.pos).normalize() * enemy.speed
+        velocity = (target_pos - position).normalize() * enemy.speed
     else:
         if random.random() < IDLE_TURN_CHANCE:
             enemy.idle_direction = random_idle_direction()
@@ -54,8 +55,9 @@ def wander_chase_velocity(enemy, target_pos, walls, chase_pos=None):
     if chase_pos is None:
         chase_pos = target_pos
 
-    if has_line_of_sight(enemy.pos, target_pos, walls):
-        offset = chase_pos - enemy.pos
+    position = pygame.Vector2(enemy.rect.topleft)
+    if has_line_of_sight(position, target_pos, walls):
+        offset = chase_pos - position
         if offset.length_squared() < ARRIVE_DISTANCE**2:
             return pygame.Vector2()
         velocity = offset.normalize() * enemy.speed

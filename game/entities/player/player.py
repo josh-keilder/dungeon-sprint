@@ -22,7 +22,7 @@ from game.rules.roll import (
 
 
 class Player:
-    def __init__(self, player_data, animations, pos=(0, 0)):
+    def __init__(self, player_data, animations, center=(0, 0)):
         # Values from the player data (PLAYER_DATA)
         self.base_stats = dict(player_data["base_stats"])
         self.invulnerability_duration = player_data["invulnerability_duration"]
@@ -35,7 +35,6 @@ class Player:
         # Facing and movement
         self.facing = "down"
         self.walking = False
-        self.pos = pygame.math.Vector2(pos)
         self.velocity = pygame.Vector2()
         self.speed = 0.0  # pixels per second, measured each frame
         self.knockback_velocity = pygame.Vector2()
@@ -56,7 +55,7 @@ class Player:
         self.animation = new_animation(animations, "player_idle_down")
         self.image = animations["player_idle_down"][0]
         self.rect = self.image.get_frect()
-        self.rect.center = pos
+        self.rect.center = center
         self.alpha = 255  # lowered by the run during the death fade
 
         # Health, inventory, and stats
@@ -106,8 +105,6 @@ class Player:
 
         self.update_animation()
         self.image = advance_animation(self.animation, dt)
-
-        self.pos = pygame.math.Vector2(self.rect.topleft)
 
     def draw(self, screen, camera):
         blink_hidden = is_blink_hidden(self.invulnerability, self.blink_interval)

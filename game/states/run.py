@@ -151,7 +151,6 @@ class Run:
 
         # Move the same player (health, inventory, gear) to this floor's spawn
         self.player.rect.center = self.floor.player_spawn
-        self.player.pos.xy = self.player.rect.topleft
         self.player.velocity.update(0, 0)
         center_camera(self.camera, self.player.rect.center)
 

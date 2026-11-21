@@ -18,7 +18,8 @@ def new_swing():
 
 def line_up_spot(enemy, target_pos):
     # The swing only reaches sideways, so walk beside the target, level with it
-    side = 1 if enemy.pos.x >= target_pos.x else -1
+    position = pygame.Vector2(enemy.rect.topleft)
+    side = 1 if position.x >= target_pos.x else -1
     return pygame.Vector2(
         target_pos.x + side * enemy.attack["line_up_gap"], target_pos.y
     )
@@ -26,17 +27,18 @@ def line_up_spot(enemy, target_pos):
 
 def try_start_swing(enemy, target_pos):
     swing = enemy.swing
+    position = pygame.Vector2(enemy.rect.topleft)
     if enemy.attack is None or is_running(swing["cooldown"]):
         return
-    if enemy.pos.distance_to(target_pos) > enemy.attack["range"]:
+    if position.distance_to(target_pos) > enemy.attack["range"]:
         return
-    if abs(target_pos.y - enemy.pos.y) > enemy.attack["level_tolerance"]:
+    if abs(target_pos.y - position.y) > enemy.attack["level_tolerance"]:
         return
 
     swing["active"] = True
     swing["time"] = 0.0
     swing["landed"] = False
-    enemy.facing = "right" if target_pos.x >= enemy.pos.x else "left"
+    enemy.facing = "right" if target_pos.x >= position.x else "left"
 
 
 def update_swing(enemy, dt):

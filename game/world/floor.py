@@ -81,8 +81,9 @@ class Floor:
         if is_rolling(player.roll):
             self.break_touched_crates(player)
 
+        target_pos = pygame.Vector2(player.rect.topleft)
         for enemy in self.enemies:
-            enemy.update(dt, self.solid_rects, player.pos)
+            enemy.update(dt, self.solid_rects, target_pos)
         hit_landed = resolve_combat(player, self.enemies, self.particles)
         separate_enemies(self.enemies, player, self.solid_rects)
         self.remove_dead_enemies()

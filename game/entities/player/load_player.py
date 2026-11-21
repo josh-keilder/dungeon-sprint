@@ -8,4 +8,4 @@ from game.entities.player.player import Player
 def load_player(spawn_pos):
     player_animations = load_animations(player_texture_data, crop_size=TILE_SIZE)
 
-    return Player(PLAYER_DATA, player_animations, pos=spawn_pos)
+    return Player(PLAYER_DATA, player_animations, center=spawn_pos)

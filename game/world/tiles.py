@@ -44,7 +44,6 @@ class Door(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = image
         self.rect = self.image.get_frect(topleft=pos)
-        self.pos = pygame.math.Vector2(pos)
         self.door_id = None
         self.key = None
 

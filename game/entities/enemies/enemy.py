@@ -68,7 +68,6 @@ class Enemy:
         self.stagger_duration = type_data["stagger_duration"]
 
         # Position, sprite and animation
-        self.pos = pygame.math.Vector2(pos)
         self.animation = new_animation(animations, start_animation)
         self.image = animations[start_animation][0]
 
@@ -84,7 +83,7 @@ class Enemy:
         body_x, body_y, body_width, body_height = type_data["body"]
         self.body_x = body_x
         self.body_y = body_y
-        self.rect = pygame.FRect(self.pos, (body_width, body_height))
+        self.rect = pygame.FRect(pos, (body_width, body_height))
 
         # Health and hit timers
         self.health = new_health(type_data["max_health"])
@@ -129,7 +128,6 @@ class Enemy:
                 self.facing = "right"
 
         self.update_animation(dt)
-        self.pos.xy = self.rect.topleft
 
     def draw(self, screen, camera):
         blink_hidden = (
@@ -176,7 +174,6 @@ class Enemy:
 
     def shove(self, displacement, walls):
         move_and_collide(self.rect, displacement, walls)
-        self.pos.xy = self.rect.topleft
 
     def start_dying(self):
         self.dying = True

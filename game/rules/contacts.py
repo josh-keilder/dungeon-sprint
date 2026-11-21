@@ -1,3 +1,5 @@
+import pygame
+
 from engine.graphics.masks import images_overlap
 
 # Broad phase: only enemies this close get the pixel-perfect mask check
@@ -6,9 +8,10 @@ CONTACT_CHECK_RANGE = 100  # pixels
 
 def find_player_contacts(player, enemies):
     contacts = []
+    player_pos = pygame.Vector2(player.rect.topleft)
 
     for enemy in enemies:
-        if player.pos.distance_to(enemy.pos) < CONTACT_CHECK_RANGE:
+        if player_pos.distance_to(enemy.rect.topleft) < CONTACT_CHECK_RANGE:
             if images_overlap(
                 player.image, player.rect.topleft, enemy.image, enemy.art_topleft()
             ):
