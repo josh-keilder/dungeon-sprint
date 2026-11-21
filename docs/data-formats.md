@@ -4,7 +4,9 @@
 
 **`light_blockers`** (`floor.light_blockers`): `((columns, rows), bytes)`, one byte per map tile, row by row (`row × columns + column`), 1 where light can't pass (a wall or closed door), else 0. Floor 1: 72×51 tiles, 2574 blockers (2570 walls and 4 door tiles).
 
-**Player `base_stats`** (`player.py`). These are the values before equipment:
+**`PLAYER_DATA`** (`game/data/player_data.py`), read once by `Player.__init__` the way `ENEMY_TYPES` is read by `Enemy`; the keys that mean the same thing have the same names in both. Besides `base_stats` (below) it holds `invulnerability_duration` (1.0 s of i-frames after a hit), `blink_interval` (0.1 s per blink on and off while invulnerable), `knockback_speed` (160 px/s away from the enemy that hit), `knockback_decay_rate` (16; the slide is about speed ÷ decay = 10 px), `inventory_slot_count` (20) and `equipment_slot_names` (`head`, `chest`, `boots`, `ability`, in the order the inventory screen draws them). `Player` copies `base_stats` with `dict(...)`, so nothing a player does can change the shared data.
+
+**Player `base_stats`** (`PLAYER_DATA["base_stats"]`). These are the values before equipment:
 
 | Stat | Value | Used for |
 | --- | --- | --- |
@@ -22,7 +24,7 @@ Roll timing is in `game/rules/roll.py`: `ROLL_DURATION` 0.4 s, `ROLL_COOLDOWN` 1
 
 **Timers** (`engine/core/timer.py`). Every countdown in the game is a `{"time_left": seconds, "duration": seconds}` dict made with `new_timer()`, including the enemies' flee and return countdowns. `start_timer(timer, duration)` sets both, so the timer remembers how long it was started for and `fraction_left(timer)` and `time_elapsed(timer)` need nothing else, `advance_timer(timer, dt)` subtracts `dt` each frame, and `is_running(timer)` is true while it is `> 0`. `time_left(timer)` returns the seconds left, never below 0, for code that needs the number itself, such as the roll ease-out and the player's blink. The value keeps counting below 0, which is harmless because every check goes through `is_running` or `time_left`. Only `timer.py` reads the `"time_left"` key directly, so the key could change again without touching anything else (it was renamed from `"timer"`, since a timer with a "timer" key read oddly and `time_left()` already returns it). The roll's `active_timer` and `cooldown_timer` are timers too. The one exception is animation, which is a different kind of timer that counts *up* to advance frames.
 
-**`invulnerability` dict** (player and enemies): a timer holding the seconds of invulnerability left. The player's window is `PLAYER_INVULNERABILITY_DURATION` (1.0 s, `game/rules/combat.py`), and each enemy's is its own `invulnerability_duration` from `ENEMY_TYPES`. The player's `BLINK_INTERVAL` is 0.1 s (`player.py`), and `ROLL_DAMAGE_PER_SPEED` is 0.15 (`game/rules/combat.py`), so an enemy with 100 health dies after about 3 rolls.
+**`invulnerability` dict** (player and enemies): a timer holding the seconds of invulnerability left. The player's window is its `invulnerability_duration` (1.0 s, `PLAYER_DATA`), and each enemy's is its own `invulnerability_duration` from `ENEMY_TYPES`. The player's `blink_interval` is 0.1 s, and `ROLL_DAMAGE_PER_SPEED` is 0.15 (`game/rules/combat.py`), so an enemy with 100 health dies after about 3 rolls.
 
 **`heal_cooldown` dict** (player): a timer holding the seconds left before another potion can be used. `use_small_health_potion` refuses while `is_running(heal_cooldown)`. `HEAL_COOLDOWN` is 3.0 s (`game/rules/consumables.py`). The cooldown only starts when a potion is actually used, so a refused Q press (full health or no potion) doesn't start it.
 
@@ -107,7 +109,7 @@ Every key is required. `Enemy.__init__` reads them with `type_data["..."]`, so a
 
 `knockback_multiplier` scales the player's hit strength: 1.0 is normal, above 1 is light (pushed further), below 1 is heavy, and 0 can't be moved at all. The Skull is 1.2 and the Skeleton 0.7, so the same roll slides a Skull about 38 px and a Skeleton about 14 px.
 
-**Blink** (`engine/graphics/blink.py`). `is_blink_hidden(invulnerability, blink_interval)` is the shared rule: while the timer is running, `int(time_left / blink_interval)` counts up once per interval, and every odd count is hidden. The rule is shared, but each entity owns its interval: the player's `BLINK_INTERVAL` and each enemy's `blink_interval`.
+**Blink** (`engine/graphics/blink.py`). `is_blink_hidden(invulnerability, blink_interval)` is the shared rule: while the timer is running, `int(time_left / blink_interval)` counts up once per interval, and every odd count is hidden. The rule is shared, but each entity owns its interval: the player's `blink_interval` (`PLAYER_DATA`) and each enemy's (`ENEMY_TYPES`).
 
 ```
 blink_phase = int(time_left(invulnerability) ÷ blink_interval)    (counts up once per interval)

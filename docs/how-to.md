@@ -19,7 +19,7 @@
 3. To make it drop, add an entry to `CHEST_LOOT` (`game/data/loot_table_data.py`).
 4. If it does something when used, add a function to `game/rules/consumables.py` and call it from the player on a new intent.
 
-**New equipment.** Use `EquipmentItem` with `slot` set to one of `head`, `chest`, `boots` or `ability`. Its `bonuses` keys must match names in `base_stats`. For a new slot, add the name to `EQUIPMENT_SLOT_NAMES` in `game/entities/player/player.py`. The inventory screen draws one equipment slot per name and resizes its window to fit.
+**New equipment.** Use `EquipmentItem` with `slot` set to one of `head`, `chest`, `boots` or `ability`. Its `bonuses` keys must match names in `base_stats`. For a new slot, add the name to `equipment_slot_names` in `PLAYER_DATA` (`game/data/player_data.py`). The inventory screen draws one equipment slot per name and resizes its window to fit.
 
 **A new key binding.** Add an `action: key` entry to `ACTION_KEYS` in `game/rules/input.py` (the intent dict gets the field automatically), then react to it in `Run.handle_actions` (run-wide actions) or `Player.update` (player actions).
 
@@ -32,6 +32,10 @@
 **A new sound or music track.** Drop a `.wav` or `.ogg` into `Assets/Sounds` or `Assets/Music` and play it by filename: `sound.play_sfx("name")` or `sound.play_music("name")`. To give a screen its own track, call `play_music` in that state's `enter()`.
 
 **A new setting.** Add its key and default to `DEFAULT_SETTINGS` in `game/data/constants.py`, read it with `settings.get_setting("key")`, and add a toggle or slider to Options. Saved files that don't have it yet get the default.
+
+**A new sound or effect for something that happens.** Add an `events.append({"name": "...", ...})` where it happens, with whatever the effect needs (an enemy, a position), and a branch for that name in `Feedback.handle` (`game/ui/feedback.py`) that plays the sound or bursts the particles. The logic stays free of sound and particle code.
+
+**Player stats or values.** Edit `PLAYER_DATA` in `game/data/player_data.py`; nothing in `Player` needs to change.
 
 **A new engine module.** Put it in the `engine/` folder for its topic, and give it no imports from `game`, `main` or `tools`: anything game-specific comes in as an argument, as data, or through the theme. The pre-commit hook rejects the commit otherwise.
 
@@ -51,7 +55,7 @@
 | sound folders | `SFX_FOLDER`, `MUSIC_FOLDER` | `load_sfx(folder)`, `load_music(folder)` |
 | key bindings | `MOVE_KEYS`, `ACTION_KEYS` | `move_direction`, `pressed_actions` |
 | particle looks | `CRATE_DEBRIS` and the rest | `emit_burst(particles, center, preset)` |
-| equipment slot names | `EQUIPMENT_SLOT_NAMES` | `new_inventory(slot_count, equipment_slot_names)` |
+| equipment slot names | `PLAYER_DATA["equipment_slot_names"]` | `new_inventory(slot_count, equipment_slot_names)` |
 | its screens | `MainMenu`, `Run`, ... | `GameStateManager`, then `GameLoop(...).run()` |
 
 **The smallest game.** A screen is any object with `enter()`, `update(dt)` and `draw(screen)`; the engine supplies the window, the loop, the renderer and the widgets:

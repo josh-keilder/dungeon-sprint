@@ -61,7 +61,7 @@ The code is split into a reusable engine and the game built on it. `engine/` nev
   - `rules/` - Combat, the roll, the enemy sword swing, enemy behaviour, interaction, consumables, input bindings
   - `entities/` - The player and enemies
   - `world/` - Floors: map loading, tiles, and the objects placed on them (ground items, chests, crates)
-  - `ui/` - HUD, inventory screen, floor transition, hit feedback and the hurt vignette
+  - `ui/` - HUD, inventory screen, floor transition, the feedback for each frame's events (sounds, particles, shake) and the hurt vignette
   - `states/` - The run, its death sequence, and the main, options and end-of-run menus
 - `tools/` - Developer scripts: sprite generator, strip maker, map preview, ASCII → TMX map converter, the engine import check and the line counter (see [Developer Tools](#developer-tools))
 - `hooks/` - Git pre-commit hook: formats staged files with isort and black, runs the engine import check, updates the statistics below

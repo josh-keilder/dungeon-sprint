@@ -2,7 +2,7 @@
 
 This is `Run.update(dt)` followed by `Run.draw(screen)`. `update` reads as a list of steps, each a method of `Run` ([Game reference](game.md)): `handle_actions`, `update_world`, `update_interact_target`, `finish_floor`, `update_camera`.
 
-First of all, `hit_feedback.update(dt)` advances the camera shake and the hurt vignette, on every frame, frozen ones included, so a vignette started by the killing hit still fades during the death freeze. Then come two early exits. While `death.is_active()`, it only calls `update_death(dt)` (step 6). Then, while `floor_transition.is_active()`, it only calls `update_transition(dt)` and returns. Both come before `read_input()` and `run_time += dt`, so input, ESC, the world and the run timer are all frozen; transition time doesn't count toward the run, since loading speed differs between computers.
+First of all, `feedback.update(dt)` advances the camera shake and the hurt vignette, on every frame, frozen ones included, so a vignette started by the killing hit still fades during the death freeze. Then come two early exits. While `death.is_active()`, it only calls `update_death(dt)` (step 6). Then, while `floor_transition.is_active()`, it only calls `update_transition(dt)` and returns. Both come before `read_input()` and `run_time += dt`, so input, ESC, the world and the run timer are all frozen; transition time doesn't count toward the run, since loading speed differs between computers.
 
 **1. Read input.** `read_input()` returns a fresh intent dict and stores it on `player.intent`:
 
@@ -33,7 +33,7 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 1. Sets `walking` and updates `facing` from the move direction. Facing doesn't change mid-roll. Vertical input wins over horizontal for facing.
 2. Recomputes `stats` from `base_stats` plus equipment bonuses, every frame, so equipping takes effect immediately. If the health stat changed, `set_max_health` updates the maximum and clamps current health.
 3. `roll` intent → `try_start_roll`. A roll needs a move direction, can't start during another roll (`is_rolling`), and can't start while `cooldown_timer` is running. Starting one starts both `active_timer` and `cooldown_timer`.
-4. `heal` intent → `use_small_health_potion`. Heals `SMALL_HEALTH_POTION_VALUE` (10 of the 25 max), removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player play the `heal` sound. The sound is played here rather than in `game/rules/consumables.py` because it is feedback, not a rule.
+4. `heal` intent → `use_small_health_potion`. Heals `SMALL_HEALTH_POTION_VALUE` (10 of the 25 max), removes one potion and starts the heal cooldown, unless the cooldown is still running, health is already full or there is no potion. It returns whether a potion was used, and only then does the player add a `healed` event; `Feedback` plays the `heal` sound for it (step 5). The rule only decides; how it sounds lives elsewhere.
 5. `update_movement`: `steer` computes the new velocity from the move direction and the `max_speed`, `acceleration_rate`, `deceleration_rate` and `grip` stats, then `move_and_collide` moves the rect against the walls the run passed in, `floor.player_walls(player)`: the solid tiles, plus solid enemies while walking (step 5). Hitting a wall zeros velocity on that axis.
 6. `update_roll`: while rolling, the player is also moved by `roll_speed` in the roll direction (on top of normal movement), scaled by `roll_speed_multiplier` so the push fades out at the end of the roll (see below), then `advance_roll` counts down `active_timer` and `cooldown_timer`.
    Then the player's `speed` is measured. At the very start of `update`, the player's center is copied into `start_pos`, before anything moves. After `update_movement` and `update_roll`, the distance from `start_pos` to the new center, divided by `dt`, gives the actual speed in pixels per second. Because it is measured rather than calculated, it includes walls: rolling into a wall gives a low speed.
@@ -45,7 +45,8 @@ The game keeps running while the inventory is open. It is an overlay, not a paus
 
 7. `advance_timer` counts down the invulnerability timer, then the heal cooldown.
 8. Picks the animation `player_{idle|walk|roll}_{direction}` and advances it.
-9. Copies `rect.topleft` into `pos`.
+
+There's no separate position to sync afterwards: the player's position **is** its rect, and everything that needs it (contacts, enemy targeting) reads `rect.topleft` or `rect.center` directly, so it can never be stale mid-frame.
 
 **How `steer` works.** `steer` is a kinematic controller, like Godot's: it doesn't push the player with forces, it moves the current velocity toward a *target velocity*, `direction * max_speed` (zero when there is no input). Each frame it closes a fraction of the gap between the two.
 
@@ -193,10 +194,10 @@ size on screen        = ceil(start size × (1 − age ÷ lifetime)), at least 1
   `is_striking(enemy)` is true while the step is one of `strike_frames` (6 and 7, where the slash is drawn). `strike_rect(enemy)` is the hitbox in front of the body: `reach` (18 px) wide and as tall as the body, against the body's right edge when facing right and its left edge when facing left. When the step passes the last frame, `end_swing` ends it and starts the cooldown; it's the one place a swing finishes, shared with `interrupt_swing`. The 0.6 s wind-up is the telegraph: long enough to walk out of the swing or roll through it.
 - **Knockback**, after the behaviour's movement: `update_knockback` calls the engine's `move_knockback`, which moves the enemy by `knockback_velocity * dt` with `move_and_collide`, sets the shove to 0 on any axis that hits a wall (so the enemy doesn't keep pressing into it), then fades it with `decay_velocity` at the enemy's `knockback_decay_rate`. The player's knockback when hurt uses the same function. Walls block knockback for every enemy, including flying Skulls that otherwise pass through walls. The AI keeps running during a shove for types with no stagger, and since a hit also starts the flee, both push the enemy away.
 
-**5. The floor's frame: contact and combat** (`resolve_combat(player, enemies, particles)` in `game/rules/combat.py`). `find_player_contacts` checks enemies within 100 pixels and keeps those whose masks actually overlap the player (pixel-perfect, not rectangle). For each contact, `resolve_contact`:
+**5. The floor's frame: contact and combat** (`resolve_combat(player, enemies, events)` in `game/rules/combat.py`). `find_player_contacts` checks enemies within 100 pixels and keeps those whose masks actually overlap the player (pixel-perfect, not rectangle). For each contact, `resolve_contact`:
 - **only while the player is rolling**, deals `round(player.speed * ROLL_DAMAGE_PER_SPEED)` to the enemy, shoves it, and starts the enemy's own invulnerability window for `enemy.invulnerability_duration`, unless the enemy is already invulnerable. Rolling is the player's only attack: walking into an enemy doesn't hurt it.
 - **interrupts a swing**: a roll hit on an enemy with an `attack` calls `interrupt_swing(enemy)`, which cancels a swing still in its wind-up (not once it's striking or has landed) and starts the attack cooldown, so rolling into a winding-up Skeleton stops the blow,
-- **only for types with `touch_damage`** (the Skull), hurts the player with `hurt_player(player, enemy)`: the enemy's `attack_damage`, the player's invulnerability window, and a knockback away from the enemy (`PLAYER_KNOCKBACK_SPEED`, 160 px/s), unless the player is already invulnerable or is rolling. The Skeleton only hurts with its swing,
+- **only for types with `touch_damage`** (the Skull), hurts the player with `hurt_player(player, enemy, events)`: a `player_hurt` event, the enemy's `attack_damage`, the player's invulnerability window, and a knockback away from the enemy (its `knockback_speed`, 160 px/s), unless the player is already invulnerable or is rolling. The Skeleton only hurts with its swing,
 - always starts the enemy's flee (2 s) then return (3 s) timers, even when both hits were skipped, so an enemy can't stay on top of the player.
 
 An enemy whose health reaches 0 calls `start_dying()`: it stops moving, attacking and blocking, and plays its death animation. Once `is_done_dying()`, `remove_dead_enemies` rolls its `loot_table` with `roll_loot`, spawns the drops at its center with `spawn_loot`, then removes it from `enemies`. The drops are spawned before the removal, while the enemy and its position still exist.
@@ -238,7 +239,7 @@ knockback velocity = direction (player → enemy, length 1) × knockback speed
 slide distance     ≈ knockback speed ÷ enemy.knockback_decay_rate
 ```
 
-The player's window lasts `PLAYER_INVULNERABILITY_DURATION` (1 s), and each enemy's lasts its own `invulnerability_duration`, so each side can be hit at most once per window however long the sprites overlap. If several enemies touch the player on the same frame, the first one's hit starts the window and the rest are skipped, because the contacts are resolved one at a time. A roll blocks damage for its 0.4 s but doesn't start a window. Enemies at 0 health start dying.
+The player's window lasts its `invulnerability_duration` (1 s, `PLAYER_DATA`), and each enemy's lasts its own `invulnerability_duration`, so each side can be hit at most once per window however long the sprites overlap. If several enemies touch the player on the same frame, the first one's hit starts the window and the rest are skipped, because the contacts are resolved one at a time. A roll blocks damage for its 0.4 s but doesn't start a window. Enemies at 0 health start dying.
 
 ```
 roll damage = round(player.speed  ×  ROLL_DAMAGE_PER_SPEED)
@@ -246,7 +247,27 @@ roll damage = round(player.speed  ×  ROLL_DAMAGE_PER_SPEED)
                       roll speed
 ```
 
-`ROLL_DAMAGE_PER_SPEED` is 0.15, so a roll at about 204 pixels per second deals 31, and a 100 health enemy takes about 3 rolls. Because damage comes from measured speed and the roll push fades out, a hit near the end of a roll does less damage than one early in it, which rewards rolling *into* enemies. Because an enemy's invulnerability (1 s) lasts longer than a roll (0.4 s), each enemy can be hit at most once per roll, but different enemies each have their own window, so rolling through a group hits them all. `resolve_contact` returns `True` when the enemy was hit, and `resolve_combat` then plays the `roll_hit` sound and bursts the enemy's `hit_particles` along its knockback. `resolve_combat` returns whether any roll hit landed, `floor.update` passes that on, and `update_world` calls `hit_feedback.on_hit()` for it (a 1-pixel camera shake) and `hit_feedback.on_hurt()` when the player's health went down this frame (a 4-pixel shake and the red vignette, each only if its setting is on).
+`ROLL_DAMAGE_PER_SPEED` is 0.15, so a roll at about 204 pixels per second deals 31, and a 100 health enemy takes about 3 rolls. Because damage comes from measured speed and the roll push fades out, a hit near the end of a roll does less damage than one early in it, which rewards rolling *into* enemies. Because an enemy's invulnerability (1 s) lasts longer than a roll (0.4 s), each enemy can be hit at most once per roll, but different enemies each have their own window, so rolling through a group hits them all. `resolve_contact` returns `True` when the enemy was hit, and `resolve_combat` then adds a `roll_hit` event for that enemy.
+
+**Events: what happened this frame.** Game logic never plays a sound or bursts a particle itself; it records what happened, and one class decides how that looks and sounds. `update_world` makes an empty list each frame and passes it down, the same way `walls` is passed:
+
+```
+Run.update_world
+    events = []
+    player.update(dt, walls, events)            → {"name": "healed"}
+    floor.update(dt, player, events)
+        resolve_combat(player, enemies, events)
+            a roll hit                          → {"name": "roll_hit", "enemy": enemy}
+            hurt_player                         → {"name": "player_hurt", "enemy": enemy}
+        update_crates(dt, events)               → {"name": "crate_broken", "crate": crate}
+    feedback.handle(events, floor.particles)
+        healed        → the heal sound
+        roll_hit      → roll_hit sound, the enemy's hit_particles along its knockback, 1 px shake
+        player_hurt   → 4 px shake and the red vignette
+        crate_broken  → CRATE_DEBRIS at the crate's center
+```
+
+An event is a small dict: a `"name"` and whatever the feedback needs to know. The shake and the vignette only play if their setting is on. `player_hurt` is recorded where the hurt happens, so a drop in health from anything else (like the maximum being lowered when gear comes off) is never mistaken for a hit. Bursts are created after the floor's frame, so a new burst first moves on the next frame.
 
 **6. Player death.** After `update_world` and the interaction target, the run checks `is_dead(player.health)`. The check is here rather than in `engine/gameplay/health.py` because `is_dead` is the rule and what happens next is the run's decision.
 

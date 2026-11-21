@@ -17,7 +17,7 @@ main.py   Dungeon Sprint's setup: the theme, the window, the screens, then the e
 
 **Folders by topic.** The engine has `core/` (timers, settings, assets, the state manager, the game loop), `graphics/`, `physics/`, `io/` (input and sound), `ui/` (widgets and the theme) and `gameplay/` (health, stats, inventory, items, loot). The game has `data/` (every table: constants, palette, enemy types, items, loot, particles, lights, texture layouts), `rules/` (combat, the roll, the sword swing, interaction, enemy behaviours), `entities/`, `world/`, `ui/` and `states/`. No folder holds a single file.
 
-**Behaviour lives in modules of functions.** Shared behaviour is plain functions that take the data they work on as arguments and either change it in place or return a new value: `take_damage(health, amount)` changes a health dict, `steer(...)` returns a new velocity. Small classes are used only where something holds state between frames: entities, screens, widgets, the renderer, `HitFeedback`, `DeathSequence`.
+**Behaviour lives in modules of functions.** Shared behaviour is plain functions that take the data they work on as arguments and either change it in place or return a new value: `take_damage(health, amount)` changes a health dict, `steer(...)` returns a new velocity. Small classes are used only where something holds state between frames: entities, screens, widgets, the renderer, `Feedback`, `DeathSequence`.
 
 **State is plain data.** An entity's state is stored as simple dicts on the object, and the functions operate on those dicts:
 
@@ -32,11 +32,16 @@ main.py   Dungeon Sprint's setup: the theme, the window, the screens, then the e
 | `inventory` | `engine.gameplay.inventory.new_inventory` | `inventory`, `interact`, `consumables`, `inventory_ui` |
 | `stats` | `engine.gameplay.stats.compute_stats` | `Player` movement and roll |
 | `intent` | `game.rules.input.read_input` | `Player` and `Run` |
-| `shake` | `engine.graphics.shake.new_shake` (in `HitFeedback`) | `shake`, `Run.update_camera` |
+| `shake` | `engine.graphics.shake.new_shake` (in `Feedback`) | `shake`, `Run.update_camera` |
+| `events` | a new list in `Run.update_world` each frame | `Player.update`, `Floor.update`, `combat`, `Feedback.handle` |
 
 A timer remembers the duration it was started with, so `fraction_left(timer)` and `time_elapsed(timer)` need no extra arguments.
 
-**Rules are separate from application.** Rules decide *what happens* (how fast you accelerate, whether a roll can start, what a chest drops). Entities and states decide *when* to apply them (the player calls `try_start_roll` when the roll intent is set). Entities keep their `update` methods as the **order** things happen each frame; the math inside moves to functions. Content such as enemy stats, loot tables and texture layouts lives in `game/data/`, separate from the logic that reads it.
+**Rules are separate from application.** Rules decide *what happens* (how fast you accelerate, whether a roll can start, what a chest drops). Entities and states decide *when* to apply them (the player calls `try_start_roll` when the roll intent is set). Entities keep their `update` methods as the **order** things happen each frame; the math inside moves to functions. Content such as the player's and enemies' values, loot tables and texture layouts lives in `game/data/`, separate from the logic that reads it.
+
+**Logic records what happened; feedback is separate.** Game logic never plays a sound, bursts a particle or shakes the camera. It adds an event (`{"name": "roll_hit", "enemy": enemy}`) to the frame's `events` list, and `Feedback.handle` decides how each one looks and sounds ([One frame](frame.md), step 5). Screen changes (the pause sound, the death sequence) are the exception: they belong to the screen, not to a frame of play.
+
+**One position per thing.** An entity's position is its `rect`, read directly (`rect.topleft`, `rect.center`) wherever it's needed. There's no second copy to keep in sync, so nothing can read a position that's a frame old.
 
 **Code style.**
 - Names are explicit and not abbreviated (`move_direction`, `game_state_manager`, `equipment_slot_x`). Short names are fine only for things like `pos`, `dt`, `x` and `y`.
@@ -61,7 +66,7 @@ A timer remembers the duration it was started with, so `fraction_left(timer)` an
       then the private helpers, top-down, in the order they're called
   ```
 
-  Function modules put their public functions first, in the order a caller uses them, then the helpers those call. The tools are the exception: helpers first, `main()` last, as Python scripts usually are. Long modules split their functions with section comments (`ascii_to_tmx.py`: reading, solvability, tile layers, decor, objects, writing, grid helpers, entry point). Magic numbers become named constants with their unit (`INVENTORY_SLOT_COUNT`, `CURSOR_OFFSET`, the slider's `KNOB_WIDTH`), so every value has a name and lives in one place.
+  Function modules put their public functions first, in the order a caller uses them, then the helpers those call. The tools are the exception: helpers first, `main()` last, as Python scripts usually are. Long modules split their functions with section comments (`ascii_to_tmx.py`: reading, solvability, tile layers, decor, objects, writing, grid helpers, entry point). Magic numbers become named constants with their unit (`CURSOR_OFFSET`, the slider's `KNOB_WIDTH`, `HIT_SHAKE_STRENGTH`), so every value has a name and lives in one place.
 - A default argument is evaluated once, when Python first reads the `def`, so a default that comes from the theme or a setting is written as `None` and looked up in the body (`if color is None: color = get_theme("text_color")`). Otherwise it would be frozen at import time, before `main.py` sets the theme.
 - Imports are named (never `import *`), unused imports are removed, and they are grouped as standard library, then third-party, then project, alphabetical within each group.
 - Formatting is done by Black with its default 88-character line length, comments included (Black doesn't wrap comments, so long ones are wrapped by hand). The pre-commit hook runs isort and Black on every staged file.
